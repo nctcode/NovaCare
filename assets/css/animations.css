@@ -1,0 +1,145 @@
+/* ============================================
+   AOS-like Animations (Lightweight)
+   ============================================ */
+
+/* Fade Up */
+[data-aos="fade-up"] {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+[data-aos="fade-up"].aos-animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Fade Down */
+[data-aos="fade-down"] {
+    opacity: 0;
+    transform: translateY(-40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+[data-aos="fade-down"].aos-animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Fade Left */
+[data-aos="fade-left"] {
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+[data-aos="fade-left"].aos-animate {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Fade Right */
+[data-aos="fade-right"] {
+    opacity: 0;
+    transform: translateX(-40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+[data-aos="fade-right"].aos-animate {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Zoom In */
+[data-aos="zoom-in"] {
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+[data-aos="zoom-in"].aos-animate {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Flip Up */
+[data-aos="flip-up"] {
+    opacity: 0;
+    transform: perspective(2500px) rotateX(50deg);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+[data-aos="flip-up"].aos-animate {
+    opacity: 1;
+    transform: perspective(2500px) rotateX(0);
+}
+
+/* Delays */
+[data-aos-delay="100"] {
+    transition-delay: 100ms !important;
+}
+
+[data-aos-delay="200"] {
+    transition-delay: 200ms !important;
+}
+
+[data-aos-delay="300"] {
+    transition-delay: 300ms !important;
+}
+
+[data-aos-delay="400"] {
+    transition-delay: 400ms !important;
+}
+
+[data-aos-delay="500"] {
+    transition-delay: 500ms !important;
+}
+
+[data-aos-delay="600"] {
+    transition-delay: 600ms !important;
+}
+
+/* Counter Animation */
+.counter-animate {
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+/* Pulse animation for icons */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.pulse-hover:hover {
+    animation: pulse 0.6s ease;
+}
+
+/* Gradient shimmer on text */
+@keyframes shimmer {
+    0% {
+        background-position: -200% center;
+    }
+
+    100% {
+        background-position: 200% center;
+    }
+}
+
+.shimmer-text {
+    background: linear-gradient(90deg, #0ea5e9, #22c55e, #0ea5e9);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+}

@@ -1,0 +1,94 @@
+<?php
+/**
+ * Medicine Model - Quản lý thuốc + tồn kho
+ */
+require_once __DIR__ . '/../config/database.php';
+
+class Medicine {
+    private $conn;
+
+    public function __construct() {
+        $db = new Database();
+        $this->conn = $db->getConnection();
+    }
+
+    // Lấy tất cả thuốc
+    public function getAll() {
+        $sql = "SELECT * FROM medicines ORDER BY name ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Tìm thuốc theo ID
+    public function findById($id) {
+        $sql = "SELECT * FROM medicines WHERE id = :id LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
+    // Tạo thuốc mới
+    public function create($data) {
+        $sql = "INSERT INTO medicines (name, description, quantity, expiry_date, price) 
+                VALUES (:name, :description, :quantity, :expiry_date, :price)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':description', $data['description']);
+        $stmt->bindParam(':quantity', $data['quantity']);
+        $stmt->bindParam(':expiry_date', $data['expiry_date']);
+        $stmt->bindParam(':price', $data['price']);
+        $stmt->execute();
+        return $this->conn->lastInsertId();
+    }
+
+    // Cập nhật thuốc
+    public function update($id, $data) {
+        $sql = "UPDATE medicines SET name = :name, description = :description, 
+                quantity = :quantity, expiry_date = :expiry_date, price = :price 
+                WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':description', $data['description']);
+        $stmt->bindParam(':quantity', $data['quantity']);
+        $stmt->bindParam(':expiry_date', $data['expiry_date']);
+        $stmt->bindParam(':price', $data['price']);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+
+    // Xóa thuốc
+    public function delete($id) {
+        $sql = "DELETE FROM medicines WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+
+    // Đếm tổng thuốc
+    public function count() {
+        $sql = "SELECT COUNT(*) as total FROM medicines";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row['total'];
+    }
+
+    // Lấy thuốc sắp hết hạn (trong 30 ngày)
+    public function getExpiringSoon() {
+        $sql = "SELECT * FROM medicines WHERE expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) 
+                AND expiry_date >= CURDATE() ORDER BY expiry_date ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Lấy thuốc hết hàng (quantity <= 10)
+    public function getLowStock() {
+        $sql = "SELECT * FROM medicines WHERE quantity <= 10 ORDER BY quantity ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+}

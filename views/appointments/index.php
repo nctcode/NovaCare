@@ -1,4 +1,4 @@
-<!-- Appointment List -->
+﻿<!-- Appointment List -->
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-custom alert-dismissible fade show">
         <i class="bi bi-check-circle-fill"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
@@ -121,13 +121,13 @@
                                         Cập nhật
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=confirmed">
+                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=confirmed')">
                                             <i class="bi bi-check-circle text-primary"></i> Xác nhận</a></li>
-                                        <li><a class="dropdown-item" href="index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=completed">
+                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=completed')">
                                             <i class="bi bi-check-all text-success"></i> Hoàn thành</a></li>
-                                        <li><a class="dropdown-item" href="index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=cancelled">
+                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=cancelled')">
                                             <i class="bi bi-x-circle text-danger"></i> Hủy</a></li>
-                                        <li><a class="dropdown-item" href="index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=emergency">
+                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=emergency')">
                                             <i class="fa-solid fa-triangle-exclamation text-danger"></i> Đánh dấu khẩn cấp</a></li>
                                     </ul>
                                 </div>
@@ -141,4 +141,5 @@
         </div>
     </div>
 </div>
+
 

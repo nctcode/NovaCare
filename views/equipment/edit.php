@@ -1,7 +1,8 @@
-<!-- Form Sửa Trang thiết bị -->
+﻿<!-- Form Sửa Trang thiết bị -->
 <div class="form-section" data-aos="fade-up">
     <h5 class="mb-4"><i class="fa-solid fa-pen-to-square me-2"></i>Sửa Thiết bị</h5>
     <form method="POST" action="index.php?page=equipment&action=update">
+                            <?php echo Security::csrfField(); ?>
         <input type="hidden" name="id" value="<?= $equipment['id'] ?>">
         <div class="row">
             <div class="col-md-6 mb-3">
@@ -30,3 +31,4 @@
         </div>
     </form>
 </div>
+

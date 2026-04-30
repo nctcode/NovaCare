@@ -1,8 +1,9 @@
-<!-- Form Tạo Ca trực -->
+﻿<!-- Form Tạo Ca trực -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-clock-history me-2"></i>Tạo Ca trực mới</h5>
 
     <form method="POST" action="index.php?page=shifts&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="shift_date" class="form-label">Ngày <span class="text-danger">*</span></label>
@@ -28,3 +29,4 @@
         </div>
     </form>
 </div>
+

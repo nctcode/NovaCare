@@ -1,7 +1,8 @@
-<!-- Form Thêm Khoa -->
+﻿<!-- Form Thêm Khoa -->
 <div class="form-section" data-aos="fade-up">
     <h5 class="mb-4"><i class="fa-solid fa-building-columns me-2"></i>Thêm Khoa mới</h5>
     <form method="POST" action="index.php?page=departments&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="mb-3">
             <label for="name" class="form-label">Tên khoa <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="name" name="name" required placeholder="Nhập tên khoa...">
@@ -16,3 +17,4 @@
         </div>
     </form>
 </div>
+

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -89,6 +89,7 @@
                 <div class="form-section" style="max-width:100%;">
                     <h5 class="mb-4"><i class="fa-solid fa-paper-plane me-2"></i>Gửi tin nhắn</h5>
                     <form>
+                            <?php echo Security::csrfField(); ?>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Họ tên</label>
@@ -124,3 +125,4 @@
 <script src="assets/js/dashboard.js"></script>
 </body>
 </html>
+

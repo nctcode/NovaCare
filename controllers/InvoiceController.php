@@ -6,6 +6,8 @@
  */
 require_once __DIR__ . '/../models/Invoice.php';
 require_once __DIR__ . '/../models/Patient.php';
+require_once __DIR__ . '/../helpers/Security.php';
+require_once __DIR__ . '/../helpers/AuditLog.php';
 
 class InvoiceController {
     private $invoiceModel;
@@ -45,6 +47,7 @@ class InvoiceController {
 
     // Form tạo hóa đơn
     public function create() {
+        Security::requireRole('admin');
         $patients = $this->invoiceModel->getPatients();
         $services = $this->invoiceModel->getServices();
         $medicines = $this->invoiceModel->getMedicines();
@@ -57,10 +60,9 @@ class InvoiceController {
 
     // Lưu hóa đơn
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?page=invoices');
-            exit;
-        }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=invoices');
+        Security::requireCsrf();
 
         try {
             $user = $_SESSION['user'];
@@ -87,6 +89,15 @@ class InvoiceController {
 
             $finalAmount = $totalAmount - $discount;
 
+            // Validate discount: không được âm hoặc lớn hơn tổng
+            if ($discount < 0) $discount = 0;
+            if ($discount > $totalAmount) {
+                $_SESSION['error'] = 'Giảm giá không được lớn hơn tổng tiền.';
+                header('Location: index.php?page=invoices&action=create');
+                exit;
+            }
+            $finalAmount = $totalAmount - $discount;
+
             $invoiceData = [
                 'patient_id' => $_POST['patient_id'],
                 'appointment_id' => $_POST['appointment_id'] ?: null,
@@ -107,6 +118,7 @@ class InvoiceController {
             }
 
             $_SESSION['success'] = 'Tạo hóa đơn thành công! Mã hóa đơn: #' . $invoiceId;
+            AuditLog::logCreate('invoices', $invoiceId, ['patient_id' => $invoiceData['patient_id'], 'final_amount' => $finalAmount]);
             header("Location: index.php?page=invoices&action=detail&id=$invoiceId");
             exit;
 
@@ -138,11 +150,16 @@ class InvoiceController {
 
     // Đánh dấu đã thanh toán
     public function markPaid() {
-        $id = $_GET['id'] ?? 0;
-        $method = $_GET['method'] ?? 'cash';
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=invoices');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+        $method = $_POST['method'] ?? 'cash';
 
         try {
             $this->invoiceModel->markPaid($id, $method);
+            AuditLog::logUpdate('invoices', $id, null, ['status' => 'paid', 'method' => $method]);
             $_SESSION['success'] = 'Hóa đơn #' . $id . ' đã được thanh toán!';
         } catch (Exception $e) {
             $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
@@ -153,9 +170,14 @@ class InvoiceController {
 
     // Hủy hóa đơn
     public function cancel() {
-        $id = $_GET['id'] ?? 0;
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=invoices');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
         try {
             $this->invoiceModel->cancel($id);
+            AuditLog::logUpdate('invoices', $id, null, ['status' => 'cancelled']);
             $_SESSION['success'] = 'Đã hủy hóa đơn #' . $id;
         } catch (Exception $e) {
             $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();

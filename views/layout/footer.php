@@ -170,12 +170,73 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-// ── Confirm delete (improved) ──
+// ── Confirm delete (improved with POST + CSRF) ──
 function confirmDelete(url, itemName) {
     const msg = itemName
         ? `Bạn có chắc chắn muốn xóa "${itemName}"?\nHành động này không thể khôi phục.`
         : 'Bạn có chắc chắn muốn xóa mục này?\nHành động này không thể khôi phục.';
-    if (confirm(msg)) window.location.href = url;
+    if (confirm(msg)) {
+        // Create a form to POST the request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        
+        // Extract URL parameters and convert to hidden inputs for the POST body
+        const urlObj = new URL(url, window.location.origin);
+        for (const [key, value] of urlObj.searchParams.entries()) {
+            if (key === 'page' || key === 'action') continue; // keep in URL query
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+        }
+        
+        // Add CSRF token
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfMeta.content;
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// ── Execute POST action from link (for status updates, etc) ──
+function postAction(url) {
+    // Create a form to POST the request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    
+    // Extract URL parameters and convert to hidden inputs for the POST body
+    const urlObj = new URL(url, window.location.origin);
+    for (const [key, value] of urlObj.searchParams.entries()) {
+        if (key === 'page' || key === 'action') continue; // keep in URL query
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+    }
+    
+    // Add CSRF token
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfMeta.content;
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
 </body>

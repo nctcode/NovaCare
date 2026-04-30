@@ -8,7 +8,12 @@
 session_start();
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/helpers/Security.php';
+require_once __DIR__ . '/helpers/AuditLog.php';
 require_once __DIR__ . '/routes.php';
+
+// Khởi tạo CSRF token cho mọi request
+Security::getCsrfToken();
 
 // Lấy page và action từ URL
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';

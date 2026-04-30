@@ -16,11 +16,15 @@ class Shift {
         $this->conn = $db->getConnection();
     }
 
-    // Lấy tất cả ca trực
+    // Lấy tất cả ca trực (dùng LEFT JOIN thay correlated subquery cho performance)
     public function getAll() {
-        $sql = "SELECT s.*, 
-                (SELECT COUNT(*) FROM doctor_shifts ds WHERE ds.shift_id = s.id) as registered_count
-                FROM shifts s 
+        $sql = "SELECT s.*, COALESCE(ds_count.registered_count, 0) as registered_count
+                FROM shifts s
+                LEFT JOIN (
+                    SELECT shift_id, COUNT(*) as registered_count 
+                    FROM doctor_shifts 
+                    GROUP BY shift_id
+                ) ds_count ON ds_count.shift_id = s.id
                 ORDER BY s.shift_date ASC, s.shift_type ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();

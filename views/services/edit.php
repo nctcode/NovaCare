@@ -1,7 +1,8 @@
-<!-- Form Sửa Dịch vụ -->
+﻿<!-- Form Sửa Dịch vụ -->
 <div class="form-section" data-aos="fade-up">
     <h5 class="mb-4"><i class="fa-solid fa-pen-to-square me-2"></i>Sửa thông tin Dịch vụ</h5>
     <form method="POST" action="index.php?page=services-admin&action=update">
+                            <?php echo Security::csrfField(); ?>
         <input type="hidden" name="id" value="<?= $service['id'] ?>">
         <div class="row">
             <div class="col-md-6 mb-3">
@@ -23,3 +24,4 @@
         </div>
     </form>
 </div>
+

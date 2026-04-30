@@ -1,4 +1,4 @@
-<!-- Invoice Detail -->
+﻿<!-- Invoice Detail -->
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-custom alert-dismissible fade show">
         <i class="fa-solid fa-check-circle"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
@@ -122,11 +122,11 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
                         <i class="fa-solid fa-check me-2"></i>Thanh toán
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=cash">💵 Tiền mặt</a></li>
-                        <li><a class="dropdown-item" href="index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=card">💳 Thẻ ngân hàng</a></li>
-                        <li><a class="dropdown-item" href="index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=momo">📱 MoMo</a></li>
-                        <li><a class="dropdown-item" href="index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=vnpay">🏦 VNPay</a></li>
-                        <li><a class="dropdown-item" href="index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=transfer">🔄 Chuyển khoản</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=cash')">💵 Tiền mặt</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=card')">💳 Thẻ ngân hàng</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=momo')">📱 MoMo</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=vnpay')">🏦 VNPay</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=transfer')">🔄 Chuyển khoản</a></li>
                     </ul>
                 </div>
                 <a href="index.php?page=invoices&action=cancel&id=<?= $invoice['id'] ?>" class="btn btn-outline-danger" style="border-radius:20px; font-weight:500;" onclick="return confirm('Bạn chắc chắn muốn hủy hóa đơn này?')">
@@ -145,3 +145,4 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
     .content-card { box-shadow: none !important; border: 1px solid #ddd !important; }
 }
 </style>
+

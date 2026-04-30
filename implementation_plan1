@@ -1,0 +1,199 @@
+# Triển khai System Review — NovaCare (Phân giai đoạn)
+
+## Trạng thái tổng quan
+
+Dựa trên `system_review.md` và kiểm tra code hiện tại, tôi đã xác định **những gì ĐÃ LÀM** và **CÒN LẠI**.
+
+---
+
+## ✅ ĐÃ HOÀN THÀNH (Bỏ qua)
+
+| # | Hạng mục | Trạng thái |
+|---|----------|------------|
+| 1.1 | Hash password (bcrypt) | ✅ `Security::hashPassword()`, `AuthController` dùng `password_verify()`, auto-hash khi login |
+| 1.2 | CSRF Protection | ✅ `Security::csrfField()`, `requireCsrf()` có trong tất cả controller |
+| 1.4 | Chuyển hành động nhạy cảm sang POST | ✅ `updateStatus`, `markPaid`, `cancel`, `discharge`, `delete` đều đã POST + CSRF |
+| 1.6 | Define GEMINI constants | ✅ `config/ai.php` đã define `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_API_URL` |
+| 4 | Phân quyền Controller | ✅ Tất cả controller đã có `Security::requireRole()` |
+| 5.1 | Singleton Database | ✅ `Database` đã dùng Singleton pattern |
+| 7 | Bảo vệ Migration Files | ✅ `.htaccess` chặn `add_*.php`, `migrate_*.php` |
+| 8 | Validate appointments (ngày quá khứ + trùng lịch) | ✅ `AppointmentController::store()` validate + `checkDuplicate()` |
+| Plan 3 | Hash password khi tạo Patient/Doctor | ✅ `Patient::create()` và `Doctor::create()` dùng `Security::hashPassword()` |
+
+---
+
+## ❌ CÒN LẠI — Chia thành 5 giai đoạn
+
+---
+
+## Giai đoạn 1: Database — Sửa Schema & Engine (🔴 Critical)
+
+### 1.1 Chuyển MyISAM → InnoDB + Foreign Key
+
+#### [MODIFY] [hospital_management.sql](file:///c:/wamp64/www/CNM1/hospital_management.sql)
+- Cập nhật SQL dump từ `ENGINE=MyISAM` → `ENGINE=InnoDB`
+
+#### [NEW] migrate_to_innodb.php
+- Script migration chuyển tất cả bảng sang InnoDB
+- Thêm Foreign Key constraints:
+  - `doctors.user_id → users.id`
+  - `patients.user_id → users.id`
+  - `nurses.user_id → users.id`
+  - `appointments.patient_id → patients.id`
+  - `appointments.doctor_id → doctors.id`
+  - `medical_records.patient_id → patients.id`
+  - `medical_records.doctor_id → doctors.id`
+  - `prescriptions.medical_record_id → medical_records.id`
+  - `prescription_items.prescription_id → prescriptions.id`
+  - `prescription_items.medicine_id → medicines.id`
+  - `doctor_shifts.doctor_id → doctors.id`
+  - `doctor_shifts.shift_id → shifts.id`
+- Thêm index cho cột filter thường xuyên:
+  - `appointments.appointment_date`
+  - `appointments.status`
+
+### 1.2 Sửa lỗi cột `treatment` trong `medical_records`
+
+#### [NEW] migrate_fix_treatment.php (đã có file nhưng cần kiểm tra đã chạy chưa)
+- `ALTER TABLE medical_records ADD COLUMN treatment TEXT AFTER diagnosis` (nếu chưa có)
+
+### 1.3 Thêm bảng `activity_logs` (Audit Log)
+
+#### [NEW] migrate_add_audit_log.php
+- Tạo bảng `activity_logs` (`id`, `user_id`, `action`, `table_name`, `record_id`, `old_data`, `new_data`, `ip_address`, `created_at`)
+
+---
+
+## Giai đoạn 2: Business Logic Fixes (🟡 Important)
+
+### 2.1 Trừ tồn kho thuốc khi kê đơn + kiểm tra hạn sử dụng
+
+#### [MODIFY] [Medicine.php](file:///c:/wamp64/www/CNM1/models/Medicine.php)
+- Thêm `deductStock($medicineId, $quantity)` — trừ tồn kho
+- Thêm `isExpired($medicineId)` — kiểm tra hạn sử dụng
+
+#### [MODIFY] [PrescriptionController.php](file:///c:/wamp64/www/CNM1/controllers/PrescriptionController.php)
+- `store()`: Kiểm tra thuốc hết hạn trước khi kê
+- `store()`: Trừ tồn kho sau khi kê thành công
+
+### 2.2 Validate discount trong hóa đơn
+
+#### [MODIFY] [InvoiceController.php](file:///c:/wamp64/www/CNM1/controllers/InvoiceController.php)
+- `store()`: Giới hạn discount `0 ≤ discount ≤ total_amount`
+
+### 2.3 Hash password khi tạo Nurse
+
+#### [MODIFY] [Nurse.php](file:///c:/wamp64/www/CNM1/models/Nurse.php)
+- `create()`: Dùng `Security::hashPassword()` thay vì plaintext `'123456'`
+
+### 2.4 Fix XSS trong ConsultationController
+
+#### [MODIFY] [ConsultationController.php](file:///c:/wamp64/www/CNM1/controllers/ConsultationController.php)
+- `store()`: Đảm bảo `$_SESSION['success']` không chứa raw HTML
+
+### 2.5 Fix InpatientController truy vấn DB trực tiếp
+
+#### [MODIFY] [InpatientController.php](file:///c:/wamp64/www/CNM1/controllers/InpatientController.php)
+- Di chuyển truy vấn trực tiếp dòng 106-112 vào Room model
+
+#### [MODIFY] [Room.php](file:///c:/wamp64/www/CNM1/models/Room.php)
+- Thêm method `getRoomIdByBedId($bedId)` 
+
+---
+
+## Giai đoạn 3: Performance & Audit (🟡 Important)
+
+### 3.1 Tối ưu query Shift
+
+#### [MODIFY] [Shift.php](file:///c:/wamp64/www/CNM1/models/Shift.php)
+- `getAll()`: Chuyển correlated subquery sang `LEFT JOIN ... GROUP BY`
+
+### 3.2 Tạo Audit Log helper
+
+#### [NEW] helpers/AuditLog.php
+- Class `AuditLog` ghi lại mọi hành động CRUD
+- Method `log($action, $tableName, $recordId, $oldData, $newData)`
+
+### 3.3 Tích hợp Audit Log vào controllers
+
+#### [MODIFY] Tất cả controllers có action CRUD:
+- `PatientController`: store, update, delete
+- `DoctorController`: store, update, delete
+- `AppointmentController`: store, updateStatus
+- `InvoiceController`: store, markPaid, cancel
+- `MedicineController`: store, update, delete
+- `PrescriptionController`: store
+
+### 3.4 Enforce rule ca trực (2 night/tuần)
+
+#### [MODIFY] [ShiftController.php](file:///c:/wamp64/www/CNM1/controllers/ShiftController.php)
+- `register()`: Gọi `countNightShiftsInWeek()` để kiểm tra rule trước khi cho đăng ký
+
+---
+
+## Giai đoạn 4: Bảo mật bổ sung (🟡 Important)
+
+### 4.1 Fix GeminiAI SSL verification
+
+#### [MODIFY] [GeminiAI.php](file:///c:/wamp64/www/CNM1/models/GeminiAI.php)
+- `chat()`: Đổi `CURLOPT_SSL_VERIFYPEER => true` (nhất quán)
+
+### 4.2 Dọn dẹp controller chồng chéo
+
+#### [DELETE hoặc DEPRECATE] [MeetingController.php](file:///c:/wamp64/www/CNM1/controllers/MeetingController.php)
+- Xóa hoặc đánh dấu deprecated vì `ConsultationController` đã thay thế
+
+### 4.3 Chuyển API Key Gemini sang header
+
+#### [MODIFY] [GeminiAI.php](file:///c:/wamp64/www/CNM1/models/GeminiAI.php)
+- Chuyển `?key=` từ URL sang header `x-goog-api-key`
+
+---
+
+## Giai đoạn 5: AI Improvements (🟢 Nice-to-have)
+
+### 5.1 Refactor BaseAI
+
+#### [NEW] models/BaseAI.php
+- Abstract class chứa `parseAIResponse()`, `normalizeResponse()`, `summarizeMedicalRecords()`
+
+#### [MODIFY] [OllamaAI.php](file:///c:/wamp64/www/CNM1/models/OllamaAI.php)
+- Extend từ `BaseAI`
+
+#### [MODIFY] [GeminiAI.php](file:///c:/wamp64/www/CNM1/models/GeminiAI.php)
+- Extend từ `BaseAI`
+
+### 5.2 Kích hoạt AI Summarize
+
+#### [MODIFY] [MedicalRecordController.php](file:///c:/wamp64/www/CNM1/controllers/MedicalRecordController.php)
+- Thêm action `summarize` gọi `summarizeMedicalRecords()`
+
+---
+
+## Verification Plan
+
+### Automated
+- Chạy migration scripts qua browser/CLI
+- Kiểm tra login với password đã hash
+- Test CRUD operations trên tất cả modules
+
+### Manual
+- Verify audit log ghi lại đúng các hành động
+- Verify thuốc hết hạn không thể kê
+- Verify tồn kho giảm sau khi kê đơn
+- Verify discount không vượt total_amount
+
+---
+
+## Thứ tự thực hiện
+
+```
+Giai đoạn 1 → Database (InnoDB + FK + treatment + audit table)
+Giai đoạn 2 → Business Logic (thuốc, hóa đơn, nurse hash, XSS, MVC)
+Giai đoạn 3 → Performance & Audit (query tối ưu, audit log, shift rule)
+Giai đoạn 4 → Bảo mật bổ sung (SSL, cleanup, API key)
+Giai đoạn 5 → AI Improvements (BaseAI, summarize)
+```
+
+> [!IMPORTANT]
+> Mỗi giai đoạn sẽ được triển khai và test hoàn chỉnh trước khi chuyển sang giai đoạn tiếp theo.

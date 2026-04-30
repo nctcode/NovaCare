@@ -1,13 +1,13 @@
 <?php
 /**
  * AppointmentController - Quản lý lịch hẹn
- * - Patient: đặt lịch khám
- * - Admin: xem tất cả, cập nhật trạng thái
- * - Doctor: xem lịch của mình
+ * Quyền: Patient = đặt lịch; Admin = full; Doctor = xem lịch mình
  */
 require_once __DIR__ . '/../models/Appointment.php';
 require_once __DIR__ . '/../models/Doctor.php';
 require_once __DIR__ . '/../models/Patient.php';
+require_once __DIR__ . '/../helpers/Security.php';
+require_once __DIR__ . '/../helpers/AuditLog.php';
 
 class AppointmentController {
     private $appointmentModel;
@@ -45,6 +45,7 @@ class AppointmentController {
 
     // Form đặt lịch
     public function create() {
+        Security::requireRole(['admin', 'patient']);
         $doctors = $this->doctorModel->getAll();
         $pageTitle = 'Đặt lịch khám';
         require_once __DIR__ . '/../views/layout/header.php';
@@ -54,48 +55,86 @@ class AppointmentController {
 
     // Lưu lịch hẹn
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $user = $_SESSION['user'];
+        Security::requireRole(['admin', 'patient']);
+        Security::requirePost('index.php?page=appointments');
+        Security::requireCsrf();
 
-            // Tìm patient_id
-            $patient = $this->patientModel->findByUserId($user['id']);
-            if (!$patient && $user['role'] !== 'admin') {
-                $_SESSION['error'] = 'Không tìm thấy thông tin bệnh nhân.';
-                header('Location: index.php?page=appointments');
+        $user = $_SESSION['user'];
+
+        // Tìm patient_id
+        $patient = $this->patientModel->findByUserId($user['id']);
+        if (!$patient && $user['role'] !== 'admin') {
+            $_SESSION['error'] = 'Không tìm thấy thông tin bệnh nhân.';
+            header('Location: index.php?page=appointments');
+            exit;
+        }
+
+        $data = [
+            'patient_id'       => $user['role'] === 'admin' ? ($_POST['patient_id'] ?? 0) : $patient['id'],
+            'doctor_id'        => $_POST['doctor_id'] ?? 0,
+            'appointment_date' => $_POST['appointment_date'] ?? '',
+            'reason'           => trim($_POST['reason'] ?? ''),
+        ];
+
+        // Validate ngày không ở quá khứ
+        if (!empty($data['appointment_date'])) {
+            $appointmentTime = strtotime($data['appointment_date']);
+            if ($appointmentTime === false || $appointmentTime < time()) {
+                $_SESSION['error'] = 'Ngày khám không hợp lệ hoặc đã ở quá khứ.';
+                header('Location: index.php?page=appointments&action=create');
                 exit;
             }
+        } else {
+            $_SESSION['error'] = 'Vui lòng chọn ngày khám.';
+            header('Location: index.php?page=appointments&action=create');
+            exit;
+        }
 
-            $data = [
-                'patient_id'       => $user['role'] === 'admin' ? ($_POST['patient_id'] ?? 0) : $patient['id'],
-                'doctor_id'        => $_POST['doctor_id'] ?? 0,
-                'appointment_date' => $_POST['appointment_date'] ?? '',
-                'reason'           => trim($_POST['reason'] ?? ''),
-            ];
+        // Validate doctor_id
+        if (empty($data['doctor_id'])) {
+            $_SESSION['error'] = 'Vui lòng chọn bác sĩ.';
+            header('Location: index.php?page=appointments&action=create');
+            exit;
+        }
 
-            try {
-                $this->appointmentModel->create($data);
-                $_SESSION['success'] = 'Đặt lịch khám thành công! 📧 (Hệ thống đã gửi email xác nhận đến bạn).';
-            } catch (Exception $e) {
-                $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
-            }
+        // Kiểm tra trùng lịch (cùng bác sĩ, cùng khung giờ ±30 phút)
+        if ($this->appointmentModel->checkDuplicate($data['doctor_id'], $data['appointment_date'])) {
+            $_SESSION['error'] = 'Bác sĩ đã có lịch hẹn trong khung giờ này. Vui lòng chọn giờ khác.';
+            header('Location: index.php?page=appointments&action=create');
+            exit;
+        }
+
+        try {
+            $id = $this->appointmentModel->create($data);
+            AuditLog::logCreate('appointments', $id, ['doctor_id' => $data['doctor_id'], 'date' => $data['appointment_date']]);
+            $_SESSION['success'] = 'Đặt lịch khám thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }
         header('Location: index.php?page=appointments');
         exit;
     }
 
-    // Cập nhật trạng thái (Admin)
+    // Cập nhật trạng thái (Admin/Doctor - POST only)
     public function updateStatus() {
-        $id = $_GET['id'] ?? 0;
-        $status = $_GET['status'] ?? '';
+        Security::requireRole(['admin', 'doctor']);
+        Security::requirePost('index.php?page=appointments');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+        $status = $_POST['status'] ?? '';
 
         $validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
         if (in_array($status, $validStatuses)) {
             try {
                 $this->appointmentModel->updateStatus($id, $status);
+                AuditLog::logUpdate('appointments', $id, null, ['status' => $status]);
                 $_SESSION['success'] = 'Cập nhật trạng thái thành công!';
             } catch (Exception $e) {
                 $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
             }
+        } else {
+            $_SESSION['error'] = 'Trạng thái không hợp lệ.';
         }
         header('Location: index.php?page=appointments');
         exit;
@@ -103,14 +142,9 @@ class AppointmentController {
 
     // Xem lịch hẹn dạng Calendar (Admin/Doctor)
     public function calendar() {
+        Security::requireRole(['admin', 'doctor']);
         $user = $_SESSION['user'];
         $role = $user['role'];
-
-        if ($role === 'patient') {
-            $_SESSION['error'] = 'Bạn không có quyền xem lịch tổng hợp.';
-            header('Location: index.php?page=appointments');
-            exit;
-        }
 
         if ($role === 'admin') {
             $appointments = $this->appointmentModel->getAll();
@@ -123,10 +157,10 @@ class AppointmentController {
         $events = [];
         foreach ($appointments as $apt) {
             $color = '#3788d8'; // default
-            if ($apt['status'] === 'pending') $color = '#f59e0b'; // warning
-            if ($apt['status'] === 'confirmed') $color = '#10b981'; // success
-            if ($apt['status'] === 'completed') $color = '#64748b'; // secondary
-            if ($apt['status'] === 'cancelled') $color = '#ef4444'; // danger
+            if ($apt['status'] === 'pending') $color = '#f59e0b';
+            if ($apt['status'] === 'confirmed') $color = '#10b981';
+            if ($apt['status'] === 'completed') $color = '#64748b';
+            if ($apt['status'] === 'cancelled') $color = '#ef4444';
 
             $events[] = [
                 'id' => $apt['id'],
@@ -134,7 +168,7 @@ class AppointmentController {
                 'start' => $apt['appointment_date'],
                 'backgroundColor' => $color,
                 'borderColor' => $color,
-                'url' => 'index.php?page=appointments' // trỏ về trang danh sách để xem chi tiết
+                'url' => 'index.php?page=appointments'
             ];
         }
 

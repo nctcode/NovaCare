@@ -56,7 +56,8 @@ class Patient {
         $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':email', $data['email']);
         $password = $data['password'] ?? '123456';
-        $stmt->bindParam(':password', $password);
+        $hashedPassword = Security::hashPassword($password);
+        $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':phone', $data['phone']);
         $stmt->execute();
         $userId = $this->conn->lastInsertId();

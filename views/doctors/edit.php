@@ -1,8 +1,9 @@
-<!-- Form Sửa Bác sĩ -->
+﻿<!-- Form Sửa Bác sĩ -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-pencil-square me-2"></i>Sửa thông tin Bác sĩ</h5>
 
     <form method="POST" action="index.php?page=doctors&action=update" id="editDoctorForm">
+                            <?php echo Security::csrfField(); ?>
         <input type="hidden" name="id" value="<?= $doctor['id'] ?>">
 
         <div class="row">
@@ -58,3 +59,4 @@
         </div>
     </form>
 </div>
+

@@ -1,4 +1,4 @@
-<!-- Create Invoice -->
+﻿<!-- Create Invoice -->
 <div class="content-card" data-aos="fade-up" style="border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.03);">
     <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
         <h5 class="m-0" style="font-weight:700;"><i class="fa-solid fa-file-circle-plus me-2 text-primary"></i>Tạo hóa đơn mới</h5>
@@ -6,6 +6,7 @@
     </div>
     <div class="card-body">
         <form method="POST" action="index.php?page=invoices&action=store" id="invoiceForm">
+                            <?php echo Security::csrfField(); ?>
             <!-- Thông tin chung -->
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
@@ -193,3 +194,4 @@ document.getElementById('discountInput').addEventListener('input', recalc);
 // Add first row by default
 addRow();
 </script>
+

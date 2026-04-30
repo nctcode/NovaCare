@@ -3,6 +3,7 @@
  * User Model - Quản lý bảng users
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class User {
     private $conn;
@@ -39,18 +40,28 @@ class User {
         return $stmt->fetchAll();
     }
 
-    // Tạo user mới
+    // Tạo user mới (password sẽ được hash)
     public function create($data) {
         $sql = "INSERT INTO {$this->table} (name, email, password, phone, role) 
                 VALUES (:name, :email, :password, :phone, :role)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':email', $data['email']);
-        $stmt->bindParam(':password', $data['password']);
+        $hashedPassword = Security::hashPassword($data['password']);
+        $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':phone', $data['phone']);
         $stmt->bindParam(':role', $data['role']);
         $stmt->execute();
         return $this->conn->lastInsertId();
+    }
+
+    // Cập nhật password (dùng cho auto-hash khi login)
+    public function updatePassword($userId, $hashedPassword) {
+        $sql = "UPDATE {$this->table} SET password = :password WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':id', $userId);
+        return $stmt->execute();
     }
 
     // Đếm số user theo role

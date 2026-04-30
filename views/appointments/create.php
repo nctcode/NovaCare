@@ -1,8 +1,9 @@
-<!-- Form Đặt lịch khám -->
+﻿<!-- Form Đặt lịch khám -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-calendar-plus me-2"></i>Đặt lịch khám mới</h5>
 
     <form method="POST" action="index.php?page=appointments&action=store" id="createAppointmentForm">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="doctor_id" class="form-label">Chọn Bác sĩ <span class="text-danger">*</span></label>
@@ -38,3 +39,4 @@
         </div>
     </form>
 </div>
+

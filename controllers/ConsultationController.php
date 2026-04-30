@@ -4,6 +4,7 @@
  * Replaces old MeetingController with improved functionality
  */
 require_once __DIR__ . '/../models/OnlineConsultation.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class ConsultationController {
     private $model;
@@ -35,18 +36,17 @@ class ConsultationController {
     }
 
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_SESSION['user']['role'] === 'admin') {
-            $appointmentId = $_POST['appointment_id'];
-            $result = $this->model->create($appointmentId);
-            
-            if ($result) {
-                // Simulate email reminder
-                $_SESSION['success'] = '✅ Phòng tư vấn đã tạo thành công!<br>
-                    📧 Email reminder sent to patient with meeting link: <strong>' . $result['meeting_link'] . '</strong><br>
-                    🔗 Meeting ID: <strong>' . $result['meeting_id'] . '</strong>';
-            } else {
-                $_SESSION['error'] = 'Không thể tạo phòng tư vấn.';
-            }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=consultations');
+        Security::requireCsrf();
+
+        $appointmentId = $_POST['appointment_id'];
+        $result = $this->model->create($appointmentId);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Phòng tư vấn đã tạo thành công! Meeting ID: ' . htmlspecialchars($result['meeting_id']);
+        } else {
+            $_SESSION['error'] = 'Không thể tạo phòng tư vấn.';
         }
         header('Location: index.php?page=consultations');
         exit;

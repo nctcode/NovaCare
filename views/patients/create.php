@@ -1,8 +1,9 @@
-<!-- Form Thêm Bệnh nhân -->
+﻿<!-- Form Thêm Bệnh nhân -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-person-plus-fill me-2"></i>Thêm Bệnh nhân mới</h5>
 
     <form method="POST" action="index.php?page=patients&action=store" id="createPatientForm">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="name" class="form-label">Họ tên <span class="text-danger">*</span></label>
@@ -70,3 +71,4 @@
         </div>
     </form>
 </div>
+

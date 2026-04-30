@@ -111,7 +111,7 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
             </a>
             <?php if ($admission['status'] === 'active'): ?>
-            <a href="index.php?page=inpatient&action=discharge&id=<?= $admission['id'] ?>" class="btn btn-success" style="border-radius:20px; font-weight:500;" onclick="return confirm('Xác nhận xuất viện bệnh nhân?')">
+            <a href="javascript:void(0)" class="btn btn-success" style="border-radius:20px; font-weight:500;" onclick="if(confirm('Xác nhận xuất viện bệnh nhân?')) postAction('index.php?page=inpatient&action=discharge&id=<?= $admission['id'] ?>')">
                 <i class="fa-solid fa-right-from-bracket me-2"></i>Xuất viện
             </a>
             <?php endif; ?>

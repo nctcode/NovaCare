@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -27,6 +27,7 @@
             <?php endif; ?>
 
             <form method="POST" action="index.php?page=login" id="loginForm">
+                            <?php echo Security::csrfField(); ?>
                 <div class="mb-3">
                     <label for="email" class="form-label fw-semibold">Email</label>
                     <div class="input-group">
@@ -77,3 +78,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

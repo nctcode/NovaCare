@@ -1,7 +1,8 @@
-<!-- Form Thêm Trang thiết bị -->
+﻿<!-- Form Thêm Trang thiết bị -->
 <div class="form-section" data-aos="fade-up">
     <h5 class="mb-4"><i class="fa-solid fa-bed-pulse me-2"></i>Thêm Trang thiết bị</h5>
     <form method="POST" action="index.php?page=equipment&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="equipment_name" class="form-label">Tên thiết bị <span class="text-danger">*</span></label>
@@ -29,3 +30,4 @@
         </div>
     </form>
 </div>
+

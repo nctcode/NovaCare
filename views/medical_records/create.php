@@ -1,8 +1,9 @@
-<!-- Form Tạo Hồ sơ bệnh án -->
+﻿<!-- Form Tạo Hồ sơ bệnh án -->
 <div class="form-section form-card" data-aos="fade-up" style="max-width:800px; margin:0 auto; padding:30px; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.03);">
     <h5 class="mb-4" style="color:var(--primary); font-weight:700;"><i class="fa-solid fa-file-medical me-2"></i>Tạo Hồ sơ Cấp Bệnh án</h5>
     
     <form method="POST" action="index.php?page=records&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <?php if ($user['role'] === 'admin'): ?>
             <div class="col-md-12 mb-3">
@@ -64,3 +65,4 @@
         </div>
     </form>
 </div>
+

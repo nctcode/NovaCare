@@ -1,8 +1,9 @@
-<!-- Form Thêm Thiết bị Y tế -->
+﻿<!-- Form Thêm Thiết bị Y tế -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-cpu me-2"></i>Thêm Thiết bị Y tế</h5>
 
     <form method="POST" action="index.php?page=devices&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="name" class="form-label">Tên thiết bị <span class="text-danger">*</span></label>
@@ -44,3 +45,4 @@
         </div>
     </form>
 </div>
+

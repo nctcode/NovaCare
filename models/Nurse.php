@@ -3,6 +3,7 @@
  * Nurse Model - Quản lý y tá
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class Nurse {
     private $conn;
@@ -50,11 +51,14 @@ class Nurse {
     public function create($data) {
         $this->conn->beginTransaction();
         try {
-            // Tạo user với role nurse
-            $sql = "INSERT INTO users (name, email, password, phone, role) VALUES (:name, :email, '123456', :phone, 'nurse')";
+            // Tạo user với role nurse (password mặc định được hash)
+            $password = $data['password'] ?? '123456';
+            $hashedPassword = Security::hashPassword($password);
+            $sql = "INSERT INTO users (name, email, password, phone, role) VALUES (:name, :email, :password, :phone, 'nurse')";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':name', $data['name']);
             $stmt->bindParam(':email', $data['email']);
+            $stmt->bindParam(':password', $hashedPassword);
             $stmt->bindParam(':phone', $data['phone']);
             $stmt->execute();
             $userId = $this->conn->lastInsertId();

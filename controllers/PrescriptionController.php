@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/Prescription.php';
 require_once __DIR__ . '/../models/Doctor.php';
 require_once __DIR__ . '/../models/Patient.php';
 require_once __DIR__ . '/../models/Medicine.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class PrescriptionController {
     private $prescriptionModel;
@@ -47,6 +48,7 @@ class PrescriptionController {
 
     // Form tạo đơn thuốc (Doctor)
     public function create() {
+        Security::requireRole(['admin', 'doctor']);
         $user = $_SESSION['user'];
         $doctor = $this->doctorModel->findByUserId($user['id']);
         $medicalRecords = $doctor ? $this->prescriptionModel->getMedicalRecordsByDoctorId($doctor['id']) : [];
@@ -60,48 +62,66 @@ class PrescriptionController {
 
     // Lưu đơn thuốc
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $user = $_SESSION['user'];
-            $doctor = $this->doctorModel->findByUserId($user['id']);
+        Security::requireRole(['admin', 'doctor']);
+        Security::requirePost('index.php?page=prescriptions');
+        Security::requireCsrf();
 
-            if (!$doctor) {
-                $_SESSION['error'] = 'Không tìm thấy thông tin bác sĩ.';
-                header('Location: index.php?page=prescriptions');
-                exit;
-            }
+        $user = $_SESSION['user'];
+        $doctor = $this->doctorModel->findByUserId($user['id']);
 
-            // Tạo đơn thuốc
-            $prescriptionData = [
-                'medical_record_id' => $_POST['medical_record_id'] ?? 0,
-                'doctor_id'         => $doctor['id'],
-            ];
+        if (!$doctor) {
+            $_SESSION['error'] = 'Không tìm thấy thông tin bác sĩ.';
+            header('Location: index.php?page=prescriptions');
+            exit;
+        }
 
-            try {
-                $prescriptionId = $this->prescriptionModel->create($prescriptionData);
+        // Tạo đơn thuốc
+        $prescriptionData = [
+            'medical_record_id' => $_POST['medical_record_id'] ?? 0,
+            'doctor_id'         => $doctor['id'],
+        ];
 
-                // Thêm các thuốc vào đơn
-                $medicineIds   = $_POST['medicine_id'] ?? [];
-                $dosages       = $_POST['dosage'] ?? [];
-                $durations     = $_POST['duration'] ?? [];
-                $instructions  = $_POST['instructions'] ?? [];
+        try {
+            // Validate thuốc trước khi tạo đơn
+            $medicineIds   = $_POST['medicine_id'] ?? [];
+            $dosages       = $_POST['dosage'] ?? [];
+            $durations     = $_POST['duration'] ?? [];
+            $instructions  = $_POST['instructions'] ?? [];
 
-                for ($i = 0; $i < count($medicineIds); $i++) {
-                    if (!empty($medicineIds[$i])) {
-                        $itemData = [
-                            'prescription_id' => $prescriptionId,
-                            'medicine_id'     => $medicineIds[$i],
-                            'dosage'          => $dosages[$i] ?? '',
-                            'duration'        => $durations[$i] ?? '',
-                            'instructions'    => $instructions[$i] ?? '',
-                        ];
-                        $this->prescriptionModel->addItem($itemData);
+            // Kiểm tra thuốc hết hạn trước khi kê
+            for ($i = 0; $i < count($medicineIds); $i++) {
+                if (!empty($medicineIds[$i])) {
+                    if ($this->medicineModel->isExpired($medicineIds[$i])) {
+                        $med = $this->medicineModel->findById($medicineIds[$i]);
+                        $_SESSION['error'] = "Thuốc '{$med['name']}' đã hết hạn (HSD: {$med['expiry_date']}). Không thể kê đơn.";
+                        header('Location: index.php?page=prescriptions&action=create');
+                        exit;
                     }
                 }
-
-                $_SESSION['success'] = 'Tạo đơn thuốc thành công!';
-            } catch (Exception $e) {
-                $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
             }
+
+            $prescriptionId = $this->prescriptionModel->create($prescriptionData);
+
+            // Thêm các thuốc vào đơn + trừ tồn kho
+            for ($i = 0; $i < count($medicineIds); $i++) {
+                if (!empty($medicineIds[$i])) {
+                    $itemData = [
+                        'prescription_id' => $prescriptionId,
+                        'medicine_id'     => $medicineIds[$i],
+                        'dosage'          => $dosages[$i] ?? '',
+                        'duration'        => $durations[$i] ?? '',
+                        'instructions'    => $instructions[$i] ?? '',
+                    ];
+                    $this->prescriptionModel->addItem($itemData);
+
+                    // Trừ tồn kho (1 đơn vị mỗi thuốc kê)
+                    $this->medicineModel->deductStock($medicineIds[$i], 1);
+                }
+            }
+
+            $_SESSION['success'] = 'Tạo đơn thuốc thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }
         header('Location: index.php?page=prescriptions');
         exit;

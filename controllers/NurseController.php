@@ -1,9 +1,10 @@
 <?php
 /**
- * NurseController - Quản lý Y tá (admin only)
+ * NurseController - Quản lý Y tá (Admin only)
  */
 require_once __DIR__ . '/../models/Nurse.php';
 require_once __DIR__ . '/../models/Department.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class NurseController {
     private $nurseModel;
@@ -15,6 +16,7 @@ class NurseController {
     }
 
     public function index() {
+        Security::requireRole('admin');
         $nurses = $this->nurseModel->getAll();
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/nurses/index.php';
@@ -22,6 +24,7 @@ class NurseController {
     }
 
     public function create() {
+        Security::requireRole('admin');
         $departments = $this->deptModel->getAll();
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/nurses/create.php';
@@ -29,25 +32,31 @@ class NurseController {
     }
 
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'name' => $_POST['name'],
-                'email' => $_POST['email'],
-                'phone' => $_POST['phone'] ?? '',
-                'department_id' => $_POST['department_id'] ?: null,
-            ];
-            $result = $this->nurseModel->create($data);
-            if ($result) {
-                $_SESSION['success'] = 'Thêm y tá thành công!';
-            } else {
-                $_SESSION['error'] = 'Có lỗi xảy ra. Email có thể đã tồn tại.';
-            }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=nurses');
+        Security::requireCsrf();
+
+        $data = [
+            'name' => $_POST['name'],
+            'email' => $_POST['email'],
+            'phone' => $_POST['phone'] ?? '',
+            'password' => '123456', // Thêm password default
+            'department_id' => $_POST['department_id'] ?: null,
+        ];
+        // Note: Y tá chưa có trong Users DB theo structure cũ, nhưng Model Nurse có method create
+        $result = $this->nurseModel->create($data);
+        if ($result) {
+            $_SESSION['success'] = 'Thêm y tá thành công!';
+        } else {
+            $_SESSION['error'] = 'Có lỗi xảy ra. Email có thể đã tồn tại.';
         }
+        
         header('Location: index.php?page=nurses');
         exit;
     }
 
     public function edit() {
+        Security::requireRole('admin');
         $id = $_GET['id'] ?? null;
         $nurse = $this->nurseModel->findById($id);
         if (!$nurse) {
@@ -62,23 +71,30 @@ class NurseController {
     }
 
     public function update() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'];
-            $data = [
-                'name' => $_POST['name'],
-                'email' => $_POST['email'],
-                'phone' => $_POST['phone'] ?? '',
-                'department_id' => $_POST['department_id'] ?: null,
-            ];
-            $this->nurseModel->update($id, $data);
-            $_SESSION['success'] = 'Cập nhật y tá thành công!';
-        }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=nurses');
+        Security::requireCsrf();
+
+        $id = $_POST['id'];
+        $data = [
+            'name' => $_POST['name'],
+            'email' => $_POST['email'],
+            'phone' => $_POST['phone'] ?? '',
+            'department_id' => $_POST['department_id'] ?: null,
+        ];
+        $this->nurseModel->update($id, $data);
+        $_SESSION['success'] = 'Cập nhật y tá thành công!';
+        
         header('Location: index.php?page=nurses');
         exit;
     }
 
     public function delete() {
-        $id = $_GET['id'] ?? null;
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=nurses');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? null;
         if ($id) {
             $this->nurseModel->delete($id);
             $_SESSION['success'] = 'Đã xóa y tá.';

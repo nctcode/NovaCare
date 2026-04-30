@@ -99,6 +99,20 @@ class Appointment {
         return $stmt->execute();
     }
 
+    // Kiểm tra trùng lịch hẹn (cùng bác sĩ, trong khung giờ ±30 phút)
+    public function checkDuplicate($doctorId, $appointmentDate) {
+        $sql = "SELECT COUNT(*) as cnt FROM appointments 
+                WHERE doctor_id = :doctor_id 
+                AND status NOT IN ('cancelled') 
+                AND ABS(TIMESTAMPDIFF(MINUTE, appointment_date, :appointment_date)) < 30";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':doctor_id', $doctorId);
+        $stmt->bindParam(':appointment_date', $appointmentDate);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row['cnt'] > 0;
+    }
+
     // Lấy các lịch hẹn mới nhất
     public function getRecentAppointments($limit = 5) {
         $sql = "SELECT u.name as patient_name, a.appointment_date, a.status 

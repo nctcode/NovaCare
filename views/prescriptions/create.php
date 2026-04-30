@@ -1,8 +1,9 @@
-<!-- Form Tạo Đơn thuốc -->
+﻿<!-- Form Tạo Đơn thuốc -->
 <div class="form-section" style="max-width: 900px;">
     <h5 class="mb-4"><i class="bi bi-file-earmark-medical-fill me-2"></i>Tạo Đơn thuốc mới</h5>
 
     <form method="POST" action="index.php?page=prescriptions&action=store" id="createPrescriptionForm">
+                            <?php echo Security::csrfField(); ?>
         <div class="mb-3">
             <label for="medical_record_id" class="form-label">Hồ sơ bệnh án <span class="text-danger">*</span></label>
             <select class="form-select" id="medical_record_id" name="medical_record_id" required>
@@ -68,3 +69,4 @@ function addMedicineItem() {
     container.appendChild(item);
 }
 </script>
+

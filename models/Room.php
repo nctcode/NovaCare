@@ -107,4 +107,18 @@ class Room {
         $stmt->execute();
         return $stmt->fetch()['total'];
     }
+
+    /**
+     * Lấy room_id từ bed_id
+     * @param int $bedId
+     * @return int|null
+     */
+    public function getRoomIdByBedId($bedId) {
+        $sql = "SELECT room_id FROM beds WHERE id = :id LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $bedId);
+        $stmt->execute();
+        $bed = $stmt->fetch();
+        return $bed ? $bed['room_id'] : null;
+    }
 }

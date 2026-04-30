@@ -3,6 +3,7 @@
  * Doctor Model - Quản lý bảng doctors + users + departments
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class Doctor {
     private $conn;
@@ -59,7 +60,8 @@ class Doctor {
         $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':email', $data['email']);
         $password = $data['password'] ?? '123456';
-        $stmt->bindParam(':password', $password);
+        $hashedPassword = Security::hashPassword($password);
+        $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':phone', $data['phone']);
         $stmt->execute();
         $userId = $this->conn->lastInsertId();

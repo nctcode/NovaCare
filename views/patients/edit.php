@@ -1,8 +1,9 @@
-<!-- Form Sửa Bệnh nhân -->
+﻿<!-- Form Sửa Bệnh nhân -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-pencil-square me-2"></i>Sửa Bệnh nhân</h5>
 
     <form method="POST" action="index.php?page=patients&action=update" id="editPatientForm">
+                            <?php echo Security::csrfField(); ?>
         <input type="hidden" name="id" value="<?= $patient['id'] ?>">
 
         <div class="row">
@@ -76,3 +77,4 @@
         </div>
     </form>
 </div>
+

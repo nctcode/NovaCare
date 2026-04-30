@@ -3,6 +3,7 @@
  * EquipmentController - Quản lý trang thiết bị y tế (Admin)
  */
 require_once __DIR__ . '/../models/Equipment.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class EquipmentController {
     private $equipmentModel;
@@ -12,6 +13,7 @@ class EquipmentController {
     }
 
     public function index() {
+        Security::requireRole('admin');
         $equipmentList = $this->equipmentModel->getAll();
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/equipment/index.php';
@@ -19,27 +21,32 @@ class EquipmentController {
     }
 
     public function create() {
+        Security::requireRole('admin');
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/equipment/create.php';
         require_once __DIR__ . '/../views/layout/footer.php';
     }
 
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'equipment_name' => $_POST['equipment_name'],
-                'quantity' => (int)$_POST['quantity'],
-                'status' => $_POST['status'],
-                'description' => $_POST['description'] ?? '',
-            ];
-            $this->equipmentModel->create($data);
-            $_SESSION['success'] = 'Thêm trang thiết bị thành công!';
-        }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=equipment');
+        Security::requireCsrf();
+
+        $data = [
+            'equipment_name' => $_POST['equipment_name'],
+            'quantity' => (int)$_POST['quantity'],
+            'status' => $_POST['status'],
+            'description' => $_POST['description'] ?? '',
+        ];
+        $this->equipmentModel->create($data);
+        $_SESSION['success'] = 'Thêm trang thiết bị thành công!';
+        
         header('Location: index.php?page=equipment');
         exit;
     }
 
     public function edit() {
+        Security::requireRole('admin');
         $id = $_GET['id'] ?? null;
         $equipment = $this->equipmentModel->findById($id);
         if (!$equipment) {
@@ -53,23 +60,30 @@ class EquipmentController {
     }
 
     public function update() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'];
-            $data = [
-                'equipment_name' => $_POST['equipment_name'],
-                'quantity' => (int)$_POST['quantity'],
-                'status' => $_POST['status'],
-                'description' => $_POST['description'] ?? '',
-            ];
-            $this->equipmentModel->update($id, $data);
-            $_SESSION['success'] = 'Cập nhật trang thiết bị thành công!';
-        }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=equipment');
+        Security::requireCsrf();
+
+        $id = $_POST['id'];
+        $data = [
+            'equipment_name' => $_POST['equipment_name'],
+            'quantity' => (int)$_POST['quantity'],
+            'status' => $_POST['status'],
+            'description' => $_POST['description'] ?? '',
+        ];
+        $this->equipmentModel->update($id, $data);
+        $_SESSION['success'] = 'Cập nhật trang thiết bị thành công!';
+        
         header('Location: index.php?page=equipment');
         exit;
     }
 
     public function delete() {
-        $id = $_GET['id'] ?? null;
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=equipment');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? null;
         if ($id) {
             $this->equipmentModel->delete($id);
             $_SESSION['success'] = 'Đã xóa trang thiết bị.';

@@ -3,6 +3,7 @@
  * MedicineController - CRUD thuốc + quản lý tồn kho (Admin)
  */
 require_once __DIR__ . '/../models/Medicine.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class MedicineController {
     private $medicineModel;
@@ -13,6 +14,7 @@ class MedicineController {
 
     // Danh sách thuốc
     public function index() {
+        Security::requireRole(['admin', 'doctor']);
         $medicines = $this->medicineModel->getAll();
         $pageTitle = 'Quản lý Thuốc';
         require_once __DIR__ . '/../views/layout/header.php';
@@ -22,6 +24,7 @@ class MedicineController {
 
     // Form thêm thuốc
     public function create() {
+        Security::requireRole('admin');
         $pageTitle = 'Thêm Thuốc';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/medicines/create.php';
@@ -30,21 +33,23 @@ class MedicineController {
 
     // Lưu thuốc mới
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'name'        => trim($_POST['name'] ?? ''),
-                'description' => trim($_POST['description'] ?? ''),
-                'quantity'    => intval($_POST['quantity'] ?? 0),
-                'expiry_date' => $_POST['expiry_date'] ?? '',
-                'price'       => floatval($_POST['price'] ?? 0),
-            ];
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=medicines');
+        Security::requireCsrf();
 
-            try {
-                $this->medicineModel->create($data);
-                $_SESSION['success'] = 'Thêm thuốc thành công!';
-            } catch (Exception $e) {
-                $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
-            }
+        $data = [
+            'name'        => trim($_POST['name'] ?? ''),
+            'description' => trim($_POST['description'] ?? ''),
+            'quantity'    => intval($_POST['quantity'] ?? 0),
+            'expiry_date' => $_POST['expiry_date'] ?? '',
+            'price'       => floatval($_POST['price'] ?? 0),
+        ];
+
+        try {
+            $this->medicineModel->create($data);
+            $_SESSION['success'] = 'Thêm thuốc thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }
         header('Location: index.php?page=medicines');
         exit;
@@ -52,6 +57,7 @@ class MedicineController {
 
     // Form sửa thuốc
     public function edit() {
+        Security::requireRole('admin');
         $id = $_GET['id'] ?? 0;
         $medicine = $this->medicineModel->findById($id);
 
@@ -69,22 +75,24 @@ class MedicineController {
 
     // Lưu cập nhật thuốc
     public function update() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'] ?? 0;
-            $data = [
-                'name'        => trim($_POST['name'] ?? ''),
-                'description' => trim($_POST['description'] ?? ''),
-                'quantity'    => intval($_POST['quantity'] ?? 0),
-                'expiry_date' => $_POST['expiry_date'] ?? '',
-                'price'       => floatval($_POST['price'] ?? 0),
-            ];
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=medicines');
+        Security::requireCsrf();
 
-            try {
-                $this->medicineModel->update($id, $data);
-                $_SESSION['success'] = 'Cập nhật thuốc thành công!';
-            } catch (Exception $e) {
-                $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
-            }
+        $id = $_POST['id'] ?? 0;
+        $data = [
+            'name'        => trim($_POST['name'] ?? ''),
+            'description' => trim($_POST['description'] ?? ''),
+            'quantity'    => intval($_POST['quantity'] ?? 0),
+            'expiry_date' => $_POST['expiry_date'] ?? '',
+            'price'       => floatval($_POST['price'] ?? 0),
+        ];
+
+        try {
+            $this->medicineModel->update($id, $data);
+            $_SESSION['success'] = 'Cập nhật thuốc thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }
         header('Location: index.php?page=medicines');
         exit;
@@ -92,7 +100,11 @@ class MedicineController {
 
     // Xóa thuốc
     public function delete() {
-        $id = $_GET['id'] ?? 0;
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=medicines');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
         try {
             $this->medicineModel->delete($id);
             $_SESSION['success'] = 'Xóa thuốc thành công!';

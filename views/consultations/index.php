@@ -1,4 +1,4 @@
-<!-- Online Consultations -->
+﻿<!-- Online Consultations -->
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-custom alert-dismissible fade show">
         <i class="fa-solid fa-check-circle"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
@@ -20,6 +20,7 @@
     </div>
     <div class="card-body">
         <form method="POST" action="index.php?page=consultations&action=store" class="row align-items-end">
+                            <?php echo Security::csrfField(); ?>
             <div class="col-md-8 mb-3 mb-md-0">
                 <label for="appointment_id" class="form-label">Chọn lịch hẹn cần tư vấn online</label>
                 <select class="form-select" id="appointment_id" name="appointment_id" required>
@@ -82,3 +83,4 @@
         </div>
     </div>
 </div>
+

@@ -1,6 +1,11 @@
 <?php
 /**
  * MeetingController - Tư vấn online (Online Consultation)
+ * 
+ * @deprecated Đã được thay thế bởi ConsultationController.
+ * File này được giữ lại để tương thích ngược. 
+ * Hãy sử dụng ConsultationController cho tất cả tính năng tư vấn online.
+ * 
  * Tạo meeting_id, meeting_link. Giả lập email reminder.
  */
 require_once __DIR__ . '/../config/database.php';

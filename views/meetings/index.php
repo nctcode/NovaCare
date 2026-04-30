@@ -1,4 +1,4 @@
-<!-- Online Meetings -->
+﻿<!-- Online Meetings -->
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-custom alert-dismissible fade show">
         <i class="bi bi-check-circle-fill"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
@@ -20,6 +20,7 @@
     </div>
     <div class="card-body">
         <form method="POST" action="index.php?page=meetings&action=store" class="row align-items-end g-3">
+                            <?php echo Security::csrfField(); ?>
             <div class="col-md-8">
                 <label for="appointment_id" class="form-label">Chọn lịch hẹn</label>
                 <select class="form-select" id="appointment_id" name="appointment_id" required>
@@ -87,3 +88,4 @@
         </div>
     </div>
 </div>
+

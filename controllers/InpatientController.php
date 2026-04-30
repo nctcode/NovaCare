@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/Room.php';
 require_once __DIR__ . '/../models/Admission.php';
 require_once __DIR__ . '/../models/Patient.php';
 require_once __DIR__ . '/../models/Doctor.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class InpatientController {
     private $roomModel;
@@ -24,6 +25,7 @@ class InpatientController {
 
     // Danh sách nhập viện
     public function index() {
+        Security::requireRole(['admin', 'doctor']);
         $user = $_SESSION['user'];
         $filter = $_GET['filter'] ?? 'active';
 
@@ -63,6 +65,7 @@ class InpatientController {
 
     // Form nhập viện
     public function admit() {
+        Security::requireRole('admin');
         $patients = [];
         $allPatients = $this->patientModel->getAll();
         foreach ($allPatients as $p) {
@@ -80,10 +83,9 @@ class InpatientController {
 
     // Lưu nhập viện
     public function storeAdmit() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?page=inpatient');
-            exit;
-        }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=inpatient');
+        Security::requireCsrf();
 
         try {
             $data = [
@@ -100,16 +102,10 @@ class InpatientController {
             // Cập nhật trạng thái giường
             $this->roomModel->updateBedStatus($data['bed_id'], 'occupied');
 
-            // Lấy room_id từ bed để refresh room status
-            $sql = "SELECT room_id FROM beds WHERE id = :id";
-            $db = new Database();
-            $conn = $db->getConnection();
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':id', $data['bed_id']);
-            $stmt->execute();
-            $bed = $stmt->fetch();
-            if ($bed) {
-                $this->roomModel->refreshRoomStatus($bed['room_id']);
+            // Lấy room_id từ bed để refresh room status (qua Model)
+            $roomId = $this->roomModel->getRoomIdByBedId($data['bed_id']);
+            if ($roomId) {
+                $this->roomModel->refreshRoomStatus($roomId);
             }
 
             $_SESSION['success'] = 'Nhập viện thành công! Mã: #' . $admissionId;
@@ -149,7 +145,11 @@ class InpatientController {
 
     // Xuất viện
     public function discharge() {
-        $id = $_GET['id'] ?? 0;
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=inpatient');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
 
         try {
             $admission = $this->admissionModel->findById($id);

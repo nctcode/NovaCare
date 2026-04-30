@@ -1,7 +1,8 @@
-<!-- Form Sửa Khoa -->
+﻿<!-- Form Sửa Khoa -->
 <div class="form-section" data-aos="fade-up">
     <h5 class="mb-4"><i class="fa-solid fa-pen-to-square me-2"></i>Sửa thông tin Khoa</h5>
     <form method="POST" action="index.php?page=departments&action=update">
+                            <?php echo Security::csrfField(); ?>
         <input type="hidden" name="id" value="<?= $department['id'] ?>">
         <div class="mb-3">
             <label for="name" class="form-label">Tên khoa <span class="text-danger">*</span></label>
@@ -17,3 +18,4 @@
         </div>
     </form>
 </div>
+

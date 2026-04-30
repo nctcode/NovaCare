@@ -91,4 +91,45 @@ class Medicine {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    /**
+     * Trừ tồn kho thuốc khi kê đơn
+     * @param int $medicineId
+     * @param int $quantity - Số lượng cần trừ (mặc định 1 đơn vị)
+     * @return bool
+     * @throws Exception nếu không đủ tồn kho
+     */
+    public function deductStock($medicineId, $quantity = 1) {
+        $medicine = $this->findById($medicineId);
+        if (!$medicine) {
+            throw new Exception("Không tìm thấy thuốc ID: $medicineId");
+        }
+        if ($medicine['quantity'] < $quantity) {
+            throw new Exception("Thuốc '{$medicine['name']}' không đủ tồn kho (còn {$medicine['quantity']}, cần $quantity).");
+        }
+        $sql = "UPDATE medicines SET quantity = quantity - :qty WHERE id = :id AND quantity >= :qty";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':qty', $quantity, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $medicineId, PDO::PARAM_INT);
+        $stmt->execute();
+        if ($stmt->rowCount() === 0) {
+            throw new Exception("Không thể trừ tồn kho thuốc '{$medicine['name']}'.");
+        }
+        return true;
+    }
+
+    /**
+     * Kiểm tra thuốc đã hết hạn chưa
+     * @param int $medicineId
+     * @return bool - true nếu đã hết hạn
+     */
+    public function isExpired($medicineId) {
+        $sql = "SELECT expiry_date FROM medicines WHERE id = :id LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $medicineId);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if (!$row || empty($row['expiry_date'])) return false;
+        return strtotime($row['expiry_date']) < strtotime(date('Y-m-d'));
+    }
 }

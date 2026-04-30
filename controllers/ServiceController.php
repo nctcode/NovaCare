@@ -1,8 +1,9 @@
 <?php
 /**
- * ServiceController - Quản lý Dịch vụ Y tế (admin only)
+ * ServiceController - Quản lý Dịch vụ Y tế (Admin only)
  */
 require_once __DIR__ . '/../models/Service.php';
+require_once __DIR__ . '/../helpers/Security.php';
 
 class ServiceController {
     private $serviceModel;
@@ -12,6 +13,7 @@ class ServiceController {
     }
 
     public function index() {
+        Security::requireRole('admin');
         $services = $this->serviceModel->getAll();
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/services/index.php';
@@ -19,26 +21,31 @@ class ServiceController {
     }
 
     public function create() {
+        Security::requireRole('admin');
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/services/create.php';
         require_once __DIR__ . '/../views/layout/footer.php';
     }
 
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'service_name' => $_POST['service_name'],
-                'price' => $_POST['price'],
-                'description' => $_POST['description'] ?? '',
-            ];
-            $this->serviceModel->create($data);
-            $_SESSION['success'] = 'Thêm dịch vụ thành công!';
-        }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=services-admin');
+        Security::requireCsrf();
+
+        $data = [
+            'service_name' => $_POST['service_name'],
+            'price' => $_POST['price'],
+            'description' => $_POST['description'] ?? '',
+        ];
+        $this->serviceModel->create($data);
+        $_SESSION['success'] = 'Thêm dịch vụ thành công!';
+        
         header('Location: index.php?page=services-admin');
         exit;
     }
 
     public function edit() {
+        Security::requireRole('admin');
         $id = $_GET['id'] ?? null;
         $service = $this->serviceModel->findById($id);
         if (!$service) {
@@ -52,22 +59,29 @@ class ServiceController {
     }
 
     public function update() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'];
-            $data = [
-                'service_name' => $_POST['service_name'],
-                'price' => $_POST['price'],
-                'description' => $_POST['description'] ?? '',
-            ];
-            $this->serviceModel->update($id, $data);
-            $_SESSION['success'] = 'Cập nhật dịch vụ thành công!';
-        }
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=services-admin');
+        Security::requireCsrf();
+
+        $id = $_POST['id'];
+        $data = [
+            'service_name' => $_POST['service_name'],
+            'price' => $_POST['price'],
+            'description' => $_POST['description'] ?? '',
+        ];
+        $this->serviceModel->update($id, $data);
+        $_SESSION['success'] = 'Cập nhật dịch vụ thành công!';
+        
         header('Location: index.php?page=services-admin');
         exit;
     }
 
     public function delete() {
-        $id = $_GET['id'] ?? null;
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=services-admin');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? null;
         if ($id) {
             $this->serviceModel->delete($id);
             $_SESSION['success'] = 'Đã xóa dịch vụ.';

@@ -1,7 +1,8 @@
-<!-- Form Thêm Dịch vụ -->
+﻿<!-- Form Thêm Dịch vụ -->
 <div class="form-section" data-aos="fade-up">
     <h5 class="mb-4"><i class="fa-solid fa-stethoscope me-2"></i>Thêm Dịch vụ mới</h5>
     <form method="POST" action="index.php?page=services-admin&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="service_name" class="form-label">Tên dịch vụ <span class="text-danger">*</span></label>
@@ -22,3 +23,4 @@
         </div>
     </form>
 </div>
+

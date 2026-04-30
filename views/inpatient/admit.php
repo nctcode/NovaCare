@@ -1,4 +1,4 @@
-<!-- Admit Patient -->
+﻿<!-- Admit Patient -->
 <div class="content-card" data-aos="fade-up" style="border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.03);">
     <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
         <h5 class="m-0" style="font-weight:700;"><i class="fa-solid fa-hospital-user me-2 text-primary"></i>Nhập viện bệnh nhân</h5>
@@ -6,6 +6,7 @@
     </div>
     <div class="card-body">
         <form method="POST" action="index.php?page=inpatient&action=storeAdmit">
+                            <?php echo Security::csrfField(); ?>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Bệnh nhân <span class="text-danger">*</span></label>
@@ -66,3 +67,4 @@
         </form>
     </div>
 </div>
+

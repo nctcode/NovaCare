@@ -1,8 +1,9 @@
-<!-- Form Sửa Thuốc -->
+﻿<!-- Form Sửa Thuốc -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-pencil-square me-2"></i>Sửa thông tin Thuốc</h5>
 
     <form method="POST" action="index.php?page=medicines&action=update">
+                            <?php echo Security::csrfField(); ?>
         <input type="hidden" name="id" value="<?= $medicine['id'] ?>">
 
         <div class="row">
@@ -42,3 +43,4 @@
         </div>
     </form>
 </div>
+

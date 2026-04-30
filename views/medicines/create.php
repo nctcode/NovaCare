@@ -1,8 +1,9 @@
-<!-- Form Thêm Thuốc -->
+﻿<!-- Form Thêm Thuốc -->
 <div class="form-section">
     <h5 class="mb-4"><i class="bi bi-capsule me-2"></i>Thêm Thuốc mới</h5>
 
     <form method="POST" action="index.php?page=medicines&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="name" class="form-label">Tên thuốc <span class="text-danger">*</span></label>
@@ -36,3 +37,4 @@
         </div>
     </form>
 </div>
+

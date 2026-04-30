@@ -1,8 +1,9 @@
-<!-- Form Thêm Y tá -->
+﻿<!-- Form Thêm Y tá -->
 <div class="form-section" data-aos="fade-up">
     <h5 class="mb-4"><i class="fa-solid fa-user-nurse me-2"></i>Thêm Y tá mới</h5>
 
     <form method="POST" action="index.php?page=nurses&action=store">
+                            <?php echo Security::csrfField(); ?>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="name" class="form-label">Họ tên <span class="text-danger">*</span></label>
@@ -34,3 +35,4 @@
         </div>
     </form>
 </div>
+

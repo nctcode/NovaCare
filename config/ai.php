@@ -5,11 +5,14 @@
  * Hỗ trợ: Google Gemini API + Ollama Local AI
  */
 
+// Đọc biến môi trường (API Key) từ file env.php (đã được ẩn khỏi Git)
+$env = file_exists(__DIR__ . '/../env.php') ? require __DIR__ . '/../env.php' : [];
+
 // ==========================================
 //  CẤU HÌNH BEEKNOEE API (OpenAI Compatible)
 // ==========================================
 // Cung cấp bởi platform.beeknoee
-define('BEEKNOEE_API_KEY', 'sk-bee-4951078c3f784ab88b1bb53aa3af58da');
+define('BEEKNOEE_API_KEY', $env['BEEKNOEE_API_KEY'] ?? 'YOUR_API_KEY_HERE');
 define('BEEKNOEE_MODEL', 'gpt-5'); // Sử dụng model gpt-5 của Beeknoee
 define('BEEKNOEE_API_URL', 'https://platform.beeknoee.com/api/v1/chat/completions');
 
@@ -17,7 +20,7 @@ define('BEEKNOEE_API_URL', 'https://platform.beeknoee.com/api/v1/chat/completion
 //  CẤU HÌNH GOOGLE GEMINI API (Cloud AI)
 // ==========================================
 // Lấy API Key tại: https://aistudio.google.com/apikey
-define('GEMINI_API_KEY', '');
+define('GEMINI_API_KEY', $env['GEMINI_API_KEY'] ?? '');
 define('GEMINI_MODEL', 'gemini-2.0-flash');
 define('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/models/');
 

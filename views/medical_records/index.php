@@ -43,9 +43,7 @@
                                 <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size:13px; font-weight:600;"><i class="fa-regular fa-clock me-1"></i><?= date('d/m/Y - H:i', strtotime($rec['created_at'])) ?></span>
                                 <div>
                                     <?php if (isset($rec['patient_id']) && ($user['role'] === 'admin' || $user['role'] === 'doctor')): ?>
-                                        <a href="index.php?page=records&action=summarize&patient_id=<?= $rec['patient_id'] ?>" class="btn btn-sm btn-info text-white me-1" style="border-radius:20px; font-size:12px;" title="Dùng AI tóm tắt tất cả bệnh án của bệnh nhân này">
-                                            <i class="fa-solid fa-brain"></i> AI Tóm tắt
-                                        </a>
+                                        <!-- Nút Tóm tắt AI đã được dời sang trang Danh sách Bệnh nhân -->
                                     <?php endif; ?>
                                     <a href="index.php?page=records&action=view&id=<?= $rec['id'] ?>" class="btn btn-sm btn-outline-secondary" style="border-radius:20px; font-size:12px;">Xem chi tiết</a>
                                 </div>

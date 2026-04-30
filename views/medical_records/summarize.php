@@ -59,31 +59,42 @@
             </div>
         </div>
 
-        <!-- Danh sách bệnh án gốc -->
-        <h5 class="mb-3 mt-4" style="font-weight:700; color:var(--gray-600);" data-aos="fade-up"><i class="fa-regular fa-folder-open me-2"></i>Dữ liệu gốc (<?= count($records) ?>)</h5>
-        
-        <div class="timeline medical-timeline" data-aos="fade-up" data-aos-delay="100">
-            <?php foreach ($records as $i => $rec): ?>
-            <div class="timeline-item position-relative mb-4" style="border-left:3px solid var(--gray-200); padding-left:25px; margin-left:15px;">
-                <div class="timeline-icon position-absolute" style="left:-34px; top:0; width:25px; height:25px; background:var(--white); color:var(--gray-500); border-radius:50%; display:flex; align-items:center; justify-content:center; border:4px solid var(--gray-200); font-size:10px;"><i class="fa-solid fa-notes-medical"></i></div>
-                
-                <div class="card border-0 shadow-sm" style="border-radius:12px;">
-                    <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i><?= date('d/m/Y - H:i', strtotime($rec['created_at'])) ?></span>
-                            <span class="text-muted" style="font-size:13px;"><i class="fa-solid fa-user-doctor me-1"></i>BS. <?= htmlspecialchars($rec['doctor_name'] ?? 'N/A') ?></span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <h6 style="color:var(--dark); font-weight:700; margin-bottom:8px;"><span class="text-danger">Chẩn đoán:</span> <?= htmlspecialchars($rec['diagnosis'] ?? '') ?></h6>
-                        <div style="font-size:14px; color:var(--gray-600); background:#f8fafc; padding:12px; border-radius:8px; border-left:3px solid var(--success);">
-                            <strong style="color:var(--success); display:block; margin-bottom:5px; font-size:13px;">Hướng điều trị:</strong>
-                            <?= nl2br(htmlspecialchars($rec['treatment'] ?? 'Không có ghi chú điều trị.')) ?>
+        <!-- Danh sách bệnh án gốc (Accordion) -->
+        <div class="accordion" id="originalDataAccordion" data-aos="fade-up" data-aos-delay="100">
+            <div class="accordion-item" style="border-radius:16px; border:none; box-shadow:0 4px 20px rgba(0,0,0,0.03); overflow:hidden;">
+                <h2 class="accordion-header" id="headingOriginalData">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOriginalData" aria-expanded="false" aria-controls="collapseOriginalData" style="background-color: white; font-weight:700; color:var(--gray-600); box-shadow:none;">
+                        <i class="fa-regular fa-folder-open me-2 text-warning"></i> Xem lại Dữ liệu gốc (<?= count($records) ?> bệnh án)
+                    </button>
+                </h2>
+                <div id="collapseOriginalData" class="accordion-collapse collapse" aria-labelledby="headingOriginalData" data-bs-parent="#originalDataAccordion">
+                    <div class="accordion-body p-4" style="background:#f8fafc;">
+                        <div class="timeline medical-timeline">
+                            <?php foreach ($records as $i => $rec): ?>
+                            <div class="timeline-item position-relative mb-4" style="border-left:3px solid var(--gray-300); padding-left:25px; margin-left:15px;">
+                                <div class="timeline-icon position-absolute" style="left:-34px; top:0; width:25px; height:25px; background:var(--white); color:var(--gray-500); border-radius:50%; display:flex; align-items:center; justify-content:center; border:4px solid var(--gray-300); font-size:10px;"><i class="fa-solid fa-notes-medical"></i></div>
+                                
+                                <div class="card border-0 shadow-sm" style="border-radius:12px;">
+                                    <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i><?= date('d/m/Y - H:i', strtotime($rec['created_at'])) ?></span>
+                                            <span class="text-muted" style="font-size:13px;"><i class="fa-solid fa-user-doctor me-1"></i>BS. <?= htmlspecialchars($rec['doctor_name'] ?? 'N/A') ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 style="color:var(--dark); font-weight:700; margin-bottom:8px;"><span class="text-danger">Chẩn đoán:</span> <?= htmlspecialchars($rec['diagnosis'] ?? '') ?></h6>
+                                        <div style="font-size:14px; color:var(--gray-600); background:#f8fafc; padding:12px; border-radius:8px; border-left:3px solid var(--success);">
+                                            <strong style="color:var(--success); display:block; margin-bottom:5px; font-size:13px;">Hướng điều trị:</strong>
+                                            <?= nl2br(htmlspecialchars($rec['treatment'] ?? 'Không có ghi chú điều trị.')) ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
             </div>
-            <?php endforeach; ?>
         </div>
 
     </div>

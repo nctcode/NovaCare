@@ -40,7 +40,7 @@
                         <th>Giới tính</th>
                         <th>Nhóm máu</th>
                         <th>Địa chỉ</th>
-                        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                        <?php if ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'doctor'): ?>
                         <th>Thao tác</th>
                         <?php endif; ?>
                     </tr>
@@ -66,8 +66,12 @@
                             </td>
                             <td><?= htmlspecialchars($p['blood_type'] ?? '') ?></td>
                             <td><?= htmlspecialchars($p['address'] ?? '') ?></td>
-                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                            <?php if ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'doctor'): ?>
                             <td>
+                                <a href="index.php?page=records&action=summarize&patient_id=<?= $p['id'] ?>" class="btn-action btn-edit" style="background-color:#0dcaf0; color:white; border-color:#0dcaf0;" title="AI Tóm tắt bệnh án">
+                                    <i class="fa-solid fa-brain"></i> Tóm tắt AI
+                                </a>
+                                <?php if ($_SESSION['user']['role'] === 'admin'): ?>
                                 <a href="index.php?page=patients&action=edit&id=<?= $p['id'] ?>" 
                                    class="btn-action btn-edit" title="Sửa">
                                     <i class="bi bi-pencil-square">Sửa</i>
@@ -76,6 +80,7 @@
                                         class="btn-action btn-delete" title="Xóa">
                                     <i class="bi bi-trash3">Xóa</i>
                                 </button>
+                                <?php endif; ?>
                             </td>
                             <?php endif; ?>
                         </tr>

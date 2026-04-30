@@ -189,6 +189,11 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         <?php elseif ($user['role'] === 'doctor'): ?>
         <li class="menu-label">Công việc</li>
         <li>
+            <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
+                <i class="fa-solid fa-hospital-user"></i> <span>Quản lý Bệnh nhân</span>
+            </a>
+        </li>
+        <li>
             <a href="index.php?page=appointments" class="<?= $currentPage === 'appointments' ? 'active' : '' ?>">
                 <i class="fa-solid fa-calendar-check"></i> <span>Lịch khám</span>
             </a>

@@ -71,15 +71,36 @@ class DashboardController {
             $patient = $patientModel->findByUserId($user['id']);
             if ($patient) {
                 $data['patientInfo'] = $patient;
-                $data['myAppointments'] = $appointmentModel->getByPatientId($patient['id']);
+                
+                // Tổng số (cho widget)
+                $allAppointments = $appointmentModel->getByPatientId($patient['id']);
+                $data['totalAppointments'] = count($allAppointments);
+                $data['myAppointments'] = $appointmentModel->getRecentByPatientId($patient['id'], 4);
+                
                 // Lấy tư vấn online
                 require_once __DIR__ . '/../models/OnlineConsultation.php';
                 $consultModel = new OnlineConsultation();
-                $data['myConsultations'] = $consultModel->getByPatientId($patient['id']);
+                $allConsultations = $consultModel->getByPatientId($patient['id']);
+                $data['totalConsultations'] = count($allConsultations);
+                $data['myConsultations'] = $consultModel->getRecentByPatientId($patient['id'], 2);
+                
                 // Lấy hồ sơ bệnh án
                 require_once __DIR__ . '/../models/MedicalRecord.php';
                 $recordModel = new MedicalRecord();
-                $data['myMedicalRecords'] = $recordModel->getByPatientId($patient['id']);
+                $allRecords = $recordModel->getByPatientId($patient['id']);
+                $data['totalRecords'] = count($allRecords);
+                $data['myMedicalRecords'] = $recordModel->getRecentByPatientId($patient['id'], 3);
+
+                // Lấy hóa đơn chưa thanh toán
+                require_once __DIR__ . '/../models/Invoice.php';
+                $invoiceModel = new Invoice();
+                $data['pendingInvoices'] = $invoiceModel->getPendingByPatientId($patient['id']);
+
+                // Lấy đơn thuốc mới nhất
+                require_once __DIR__ . '/../models/Prescription.php';
+                $prescriptionModel = new Prescription();
+                $prescriptions = $prescriptionModel->getByPatientId($patient['id']);
+                $data['latestPrescription'] = !empty($prescriptions) ? $prescriptions[0] : null;
             }
         }
 

@@ -131,6 +131,7 @@ class InvoiceController {
 
     // Chi tiết hóa đơn
     public function detail() {
+        $user = $_SESSION['user'];
         $id = $_GET['id'] ?? 0;
         $invoice = $this->invoiceModel->findById($id);
 
@@ -138,6 +139,16 @@ class InvoiceController {
             $_SESSION['error'] = 'Không tìm thấy hóa đơn.';
             header('Location: index.php?page=invoices');
             exit;
+        }
+
+        // IDOR check: bệnh nhân chỉ được xem hóa đơn của chính mình
+        if ($user['role'] === 'patient') {
+            $patient = $this->patientModel->findByUserId($user['id']);
+            if (!$patient || $invoice['patient_id'] != $patient['id']) {
+                $_SESSION['error'] = 'Bạn không có quyền xem hóa đơn này.';
+                header('Location: index.php?page=invoices');
+                exit;
+            }
         }
 
         $items = $this->invoiceModel->getItems($id);

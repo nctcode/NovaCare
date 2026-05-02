@@ -214,7 +214,7 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
             </a>
         </li>
         <li>
-            <a href="index.php?page=meetings" class="<?= $currentPage === 'meetings' ? 'active' : '' ?>">
+            <a href="index.php?page=consultations" class="<?= $currentPage === 'consultations' ? 'active' : '' ?>">
                 <i class="fa-solid fa-video"></i> <span>Tư vấn Online</span>
             </a>
         </li>
@@ -262,6 +262,13 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         <?php endif; ?>
 
         <li class="menu-label">Tài khoản</li>
+        <?php if ($user['role'] === 'patient'): ?>
+        <li>
+            <a href="index.php?page=patients&action=myProfile" class="<?= ($currentPage === 'patients' && ($_GET['action'] ?? '') === 'myProfile') ? 'active' : '' ?>">
+                <i class="fa-solid fa-user-pen"></i> <span>Tài khoản của tôi</span>
+            </a>
+        </li>
+        <?php endif; ?>
         <li>
             <a href="index.php?page=logout" class="logout-link">
                 <i class="fa-solid fa-right-from-bracket"></i> <span>Đăng xuất</span>

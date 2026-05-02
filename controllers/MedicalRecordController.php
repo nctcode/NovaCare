@@ -56,6 +56,28 @@ class MedicalRecordController {
             exit;
         }
 
+        $user = $_SESSION['user'];
+
+        // IDOR check: bệnh nhân chỉ xem được bệnh án của chính mình
+        if ($user['role'] === 'patient') {
+            $patient = $this->patientModel->findByUserId($user['id']);
+            if (!$patient || $record['patient_id'] != $patient['id']) {
+                $_SESSION['error'] = 'Bạn không có quyền xem hồ sơ bệnh án này.';
+                header('Location: index.php?page=records');
+                exit;
+            }
+        }
+
+        // IDOR check: bác sĩ chỉ xem được bệnh án mình phụ trách
+        if ($user['role'] === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if (!$doctor || $record['doctor_id'] != $doctor['id']) {
+                $_SESSION['error'] = 'Bạn không có quyền xem hồ sơ bệnh án này.';
+                header('Location: index.php?page=records');
+                exit;
+            }
+        }
+
         $pageTitle = 'Chi tiết Hồ sơ Bệnh án';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/medical_records/view.php';

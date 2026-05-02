@@ -129,6 +129,7 @@ class PrescriptionController {
 
     // Xem chi tiết đơn thuốc
     public function view() {
+        $user = $_SESSION['user'];
         $id = $_GET['id'] ?? 0;
         $prescription = $this->prescriptionModel->findById($id);
         $items = $this->prescriptionModel->getItems($id);
@@ -137,6 +138,26 @@ class PrescriptionController {
             $_SESSION['error'] = 'Không tìm thấy đơn thuốc.';
             header('Location: index.php?page=prescriptions');
             exit;
+        }
+
+        // IDOR check: bệnh nhân chỉ xem được đơn thuốc của chính mình
+        if ($user['role'] === 'patient') {
+            $patient = $this->patientModel->findByUserId($user['id']);
+            if (!$patient || $prescription['patient_id'] != $patient['id']) {
+                $_SESSION['error'] = 'Bạn không có quyền xem đơn thuốc này.';
+                header('Location: index.php?page=prescriptions');
+                exit;
+            }
+        }
+
+        // IDOR check: bác sĩ chỉ xem đơn thuốc mình kê
+        if ($user['role'] === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if (!$doctor || $prescription['doctor_id'] != $doctor['id']) {
+                $_SESSION['error'] = 'Bạn không có quyền xem đơn thuốc này.';
+                header('Location: index.php?page=prescriptions');
+                exit;
+            }
         }
 
         $pageTitle = 'Chi tiết Đơn thuốc';

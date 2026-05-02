@@ -1,4 +1,4 @@
-﻿<!-- Online Consultations -->
+<!-- Online Consultations -->
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-custom alert-dismissible fade show">
         <i class="fa-solid fa-check-circle"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
@@ -66,7 +66,7 @@
                         <td><span class="badge-status badge-<?= $m['status'] == 'completed' ? 'completed' : 'pending' ?>"><?= ucfirst($m['status']) ?></span></td>
                         <td>
                             <?php if ($m['status'] == 'scheduled' || $m['status'] == 'pending'): ?>
-                                <a href="<?= htmlspecialchars($m['meeting_link']) ?>" target="_blank" class="btn-action btn-add" style="border-radius:20px; padding: 4px 12px; font-size:13px; text-decoration:none;">
+                                <a href="index.php?page=consultations&action=room&id=<?= htmlspecialchars($m['meeting_id']) ?>" class="btn-action btn-add" style="border-radius:20px; padding: 4px 12px; font-size:13px; text-decoration:none;">
                                     <i class="fa-solid fa-video"></i> Tham gia
                                 </a>
                             <?php else: ?>

@@ -121,6 +121,7 @@ class InpatientController {
 
     // Chi tiết ca nhập viện
     public function detail() {
+        Security::requireRole(['admin', 'doctor']);
         $id = $_GET['id'] ?? 0;
         $admission = $this->admissionModel->findById($id);
 
@@ -128,6 +129,17 @@ class InpatientController {
             $_SESSION['error'] = 'Không tìm thấy thông tin nhập viện.';
             header('Location: index.php?page=inpatient');
             exit;
+        }
+
+        // IDOR check: bác sĩ chỉ xem bệnh nhân mình phụ trách
+        $user = $_SESSION['user'];
+        if ($user['role'] === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if (!$doctor || $admission['doctor_id'] != $doctor['id']) {
+                $_SESSION['error'] = 'Bạn không có quyền xem thông tin nhập viện này.';
+                header('Location: index.php?page=inpatient');
+                exit;
+            }
         }
 
         // Tính số ngày nằm viện

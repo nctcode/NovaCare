@@ -149,4 +149,19 @@ class Appointment {
         $row = $stmt->fetch();
         return $row['total'];
     }
+    // Lấy các lịch hẹn mới nhất của bệnh nhân
+    public function getRecentByPatientId($patientId, $limit = 4) {
+        $sql = "SELECT a.*, 
+                    du.name as doctor_name, d.specialty
+                FROM appointments a 
+                JOIN doctors d ON a.doctor_id = d.id 
+                JOIN users du ON d.user_id = du.id 
+                WHERE a.patient_id = :patient_id 
+                ORDER BY a.appointment_date DESC LIMIT :limit";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':patient_id', $patientId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

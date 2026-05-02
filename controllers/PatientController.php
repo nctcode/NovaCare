@@ -127,4 +127,65 @@ class PatientController {
         header('Location: index.php?page=patients');
         exit;
     }
+    // Bệnh nhân xem hồ sơ cá nhân của chính mình
+    public function myProfile() {
+        Security::requireRole('patient');
+        $user = $_SESSION['user'];
+        $patient = $this->patientModel->findByUserId($user['id']);
+
+        if (!$patient) {
+            $_SESSION['error'] = 'Không tìm thấy thông tin bệnh nhân.';
+            header('Location: index.php?page=dashboard');
+            exit;
+        }
+
+        $pageTitle = 'Tài khoản của tôi';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/patients/my_profile.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Bệnh nhân tự cập nhật hồ sơ
+    public function updateMyProfile() {
+        Security::requireRole('patient');
+        Security::requirePost('index.php?page=patients&action=myProfile');
+        Security::requireCsrf();
+
+        $user = $_SESSION['user'];
+        $patient = $this->patientModel->findByUserId($user['id']);
+
+        if (!$patient) {
+            header('Location: index.php?page=dashboard');
+            exit;
+        }
+
+        $data = [
+            'name'            => trim($_POST['name'] ?? $patient['name']),
+            'phone'           => trim($_POST['phone'] ?? $patient['phone']),
+            'date_of_birth'   => $_POST['date_of_birth'] ?? $patient['date_of_birth'],
+            'gender'          => $_POST['gender'] ?? $patient['gender'],
+            'address'         => trim($_POST['address'] ?? $patient['address']),
+            'blood_type'      => trim($_POST['blood_type'] ?? $patient['blood_type']),
+            'medical_history' => $patient['medical_history'], // Giữ nguyên
+        ];
+
+        try {
+            $this->patientModel->update($patient['id'], $data);
+            
+            // Đồng bộ tên và SĐT sang bảng users
+            require_once __DIR__ . '/../models/User.php';
+            $userModel = new User();
+            $userModel->updateNamePhone($user['id'], $data['name'], $data['phone']);
+            
+            // Cập nhật session
+            $_SESSION['user']['name'] = $data['name'];
+            
+            AuditLog::logUpdate('patients', $patient['id'], null, ['name' => $data['name'], 'action' => 'self_update']);
+            $_SESSION['success'] = 'Cập nhật thông tin thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+        }
+        header('Location: index.php?page=patients&action=myProfile');
+        exit;
+    }
 }

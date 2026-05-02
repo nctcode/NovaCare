@@ -179,4 +179,36 @@ class AppointmentController {
         require_once __DIR__ . '/../views/appointments/calendar.php';
         require_once __DIR__ . '/../views/layout/footer.php';
     }
+
+    // Bệnh nhân tự hủy lịch hẹn đang chờ
+    public function cancelMyAppointment() {
+        Security::requireRole('patient');
+        Security::requirePost('index.php?page=appointments');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+        $user = $_SESSION['user'];
+        $patient = $this->patientModel->findByUserId($user['id']);
+
+        if (!$patient) {
+            header('Location: index.php?page=appointments');
+            exit;
+        }
+
+        $appointment = $this->appointmentModel->findById($id);
+        
+        if ($appointment && $appointment['patient_id'] == $patient['id'] && $appointment['status'] === 'pending') {
+            try {
+                $this->appointmentModel->updateStatus($id, 'cancelled');
+                AuditLog::logUpdate('appointments', $id, null, ['status' => 'cancelled', 'action' => 'patient_self_cancel']);
+                $_SESSION['success'] = 'Hủy lịch hẹn thành công!';
+            } catch (Exception $e) {
+                $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+            }
+        } else {
+            $_SESSION['error'] = 'Bạn không có quyền hủy lịch hẹn này hoặc lịch hẹn đã được xử lý.';
+        }
+        header('Location: index.php?page=appointments');
+        exit;
+    }
 }

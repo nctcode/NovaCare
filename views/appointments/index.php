@@ -1,4 +1,4 @@
-﻿<!-- Appointment List -->
+<!-- Appointment List -->
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-custom alert-dismissible fade show">
         <i class="bi bi-check-circle-fill"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
@@ -76,6 +76,9 @@
                         <?php if ($_SESSION['user']['role'] === 'admin'): ?>
                         <th>Cập nhật</th>
                         <?php endif; ?>
+                        <?php if ($_SESSION['user']['role'] === 'patient'): ?>
+                        <th>Thao tác</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -131,6 +134,17 @@
                                             <i class="fa-solid fa-triangle-exclamation text-danger"></i> Đánh dấu khẩn cấp</a></li>
                                     </ul>
                                 </div>
+                            </td>
+                            <?php endif; ?>
+                            <?php if ($_SESSION['user']['role'] === 'patient'): ?>
+                            <td>
+                                <?php if ($statusVal === 'pending'): ?>
+                                <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:8px;" onclick="if(confirm('Bạn có chắc chắn muốn hủy lịch hẹn này?')) { postAction('index.php?page=appointments&action=cancelMyAppointment&id=<?= $a['id'] ?>'); }">
+                                    <i class="fa-solid fa-xmark"></i> Hủy
+                                </button>
+                                <?php else: ?>
+                                <span class="text-muted" style="font-size:12px;">Không thể hủy</span>
+                                <?php endif; ?>
                             </td>
                             <?php endif; ?>
                         </tr>

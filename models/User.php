@@ -73,4 +73,13 @@ class User {
         $row = $stmt->fetch();
         return $row['total'];
     }
+    // Cập nhật tên và số điện thoại
+    public function updateNamePhone($userId, $name, $phone) {
+        $sql = "UPDATE {$this->table} SET name = :name, phone = :phone WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':phone', $phone);
+        $stmt->bindParam(':id', $userId);
+        return $stmt->execute();
+    }
 }

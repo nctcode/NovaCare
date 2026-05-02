@@ -86,4 +86,17 @@ class MedicalRecord {
         $stmt->execute();
         return $this->conn->lastInsertId();
     }
+    public function getRecentByPatientId($patientId, $limit = 3) {
+        $sql = "SELECT m.*, d.user_id as doctor_user_id, ud.name as doctor_name
+                FROM medical_records m
+                JOIN doctors d ON m.doctor_id = d.id
+                JOIN users ud ON d.user_id = ud.id
+                WHERE m.patient_id = :patient_id
+                ORDER BY m.created_at DESC LIMIT :limit";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':patient_id', $patientId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -5,21 +5,21 @@
     <div class="col-xl-4 col-md-6" data-aos="fade-up">
         <div class="stat-card card-primary" style="border-radius:16px; box-shadow:0 10px 30px rgba(14,165,233,0.1);">
             <div class="stat-icon" style="width:45px;height:45px;background:rgba(255,255,255,0.25);"><i class="fa-solid fa-calendar-check"></i></div>
-            <div class="stat-value" style="font-size:24px;margin:8px 0;"><?= count($data['myAppointments'] ?? []) ?></div>
+            <div class="stat-value" style="font-size:24px;margin:8px 0;"><?= $data['totalAppointments'] ?? 0 ?></div>
             <div class="stat-label">Tổng Lịch hẹn</div>
         </div>
     </div>
     <div class="col-xl-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
         <div class="stat-card card-success" style="border-radius:16px; box-shadow:0 10px 30px rgba(34,197,94,0.1);">
             <div class="stat-icon" style="width:45px;height:45px;background:rgba(255,255,255,0.25);"><i class="fa-solid fa-video"></i></div>
-            <div class="stat-value" style="font-size:24px;margin:8px 0;"><?= count($data['myConsultations'] ?? []) ?></div>
+            <div class="stat-value" style="font-size:24px;margin:8px 0;"><?= $data['totalConsultations'] ?? 0 ?></div>
             <div class="stat-label">Tư vấn Online</div>
         </div>
     </div>
     <div class="col-xl-4 col-md-12" data-aos="fade-up" data-aos-delay="200">
         <div class="stat-card card-warning" style="border-radius:16px; box-shadow:0 10px 30px rgba(245,158,11,0.1);">
             <div class="stat-icon" style="width:45px;height:45px;background:rgba(255,255,255,0.25);"><i class="fa-solid fa-notes-medical"></i></div>
-            <div class="stat-value" style="font-size:24px;margin:8px 0;"><?= count($data['myMedicalRecords'] ?? []) ?></div>
+            <div class="stat-value" style="font-size:24px;margin:8px 0;"><?= $data['totalRecords'] ?? 0 ?></div>
             <div class="stat-label">Hồ sơ Bệnh án</div>
         </div>
     </div>
@@ -33,6 +33,35 @@
         </div>
     </div>
 </div>
+
+<?php if (!empty($data['pendingInvoices'])): ?>
+<div class="row mb-4" data-aos="fade-up">
+    <div class="col-12">
+        <div class="alert alert-danger d-flex align-items-center mb-0" style="border-radius:16px; border:none; box-shadow:0 4px 15px rgba(220,53,69,0.1);">
+            <i class="fa-solid fa-circle-exclamation fs-3 me-3"></i>
+            <div class="flex-grow-1">
+                <h6 class="mb-1" style="font-weight:700;">Bạn có <?= count($data['pendingInvoices']) ?> hóa đơn chưa thanh toán!</h6>
+                <p class="mb-0 text-muted" style="font-size:14px;">Vui lòng kiểm tra và thanh toán để hoàn tất thủ tục khám chữa bệnh.</p>
+            </div>
+            <a href="index.php?page=invoices" class="btn btn-danger" style="border-radius:20px; padding:8px 24px; font-weight:500; font-size:14px;">Xem hóa đơn</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<?php if (!empty($data['latestPrescription'])): ?>
+<div class="row mb-4" data-aos="fade-up">
+    <div class="col-12">
+        <div class="alert alert-info d-flex align-items-center mb-0" style="border-radius:16px; border:none; box-shadow:0 4px 15px rgba(13,202,240,0.1);">
+            <i class="fa-solid fa-file-prescription fs-3 me-3"></i>
+            <div class="flex-grow-1">
+                <h6 class="mb-1" style="font-weight:700;">Bạn có đơn thuốc mới! (BS. <?= htmlspecialchars($data['latestPrescription']['doctor_name']) ?>)</h6>
+                <p class="mb-0 text-muted" style="font-size:14px;">Được kê vào ngày <?= date('d/m/Y', strtotime($data['latestPrescription']['created_at'])) ?>. Vui lòng xem chi tiết để xem loại thuốc cần mua.</p>
+            </div>
+            <a href="index.php?page=prescriptions&action=view&id=<?= $data['latestPrescription']['id'] ?>" class="btn btn-info text-white" style="border-radius:20px; padding:8px 24px; font-weight:500; font-size:14px;">Xem đơn thuốc</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="row g-4 mb-4">
     <div class="col-lg-8" data-aos="fade-up" data-aos-delay="100">
@@ -53,7 +82,7 @@
                         </thead>
                         <tbody>
                             <?php 
-                            $upcoming = array_slice($data['myAppointments'] ?? [], 0, 4);
+                            $upcoming = $data['myAppointments'] ?? [];
                             if(empty($upcoming) && empty($data['myConsultations'])): ?>
                                 <tr><td colspan="4" class="text-center py-4 text-muted">Bạn chưa có lịch khám nào.</td></tr>
                             <?php else: foreach($upcoming as $apt): ?>
@@ -68,7 +97,7 @@
                             <?php endforeach; endif; ?>
                             
                             <?php 
-                            $consults = array_slice($data['myConsultations'] ?? [], 0, 2);
+                            $consults = $data['myConsultations'] ?? [];
                             foreach($consults as $c): ?>
                                 <tr>
                                     <td class="ps-4 text-success" style="font-weight:500;"><?= date('H:i - d/m/Y', strtotime($c['start_time'])) ?></td>
@@ -77,7 +106,7 @@
                                         <span class="badge bg-success bg-opacity-10 text-success border-success border-opacity-25"><i class="fa-solid fa-video me-1"></i> Tư vấn Online</span>
                                     </td>
                                     <td>
-                                        <a href="<?= htmlspecialchars($c['meeting_link']) ?>" target="_blank" class="btn btn-sm btn-success" style="border-radius:12px; font-size:11px;">Tham gia</a>
+                                        <a href="index.php?page=consultations&action=room&id=<?= htmlspecialchars($c['meeting_id']) ?>" class="btn btn-sm btn-success" style="border-radius:12px; font-size:11px;">Tham gia</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -102,7 +131,7 @@
                 <?php else: ?>
                     <div class="timeline" style="border-left:2px solid var(--primary-light); padding-left:15px; margin-left:10px;">
                         <?php 
-                        $recentRecords = array_slice($data['myMedicalRecords'], 0, 3);
+                        $recentRecords = $data['myMedicalRecords'] ?? [];
                         foreach($recentRecords as $r): ?>
                         <div class="timeline-item position-relative mb-4">
                             <span class="position-absolute" style="left:-25px; top:0; width:16px; height:16px; background:var(--primary); border-radius:50%; border:3px solid white;"></span>

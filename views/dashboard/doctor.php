@@ -71,7 +71,7 @@
                                         <span class="badge bg-success bg-opacity-10 text-success border-success border-opacity-25"><i class="fa-solid fa-video me-1"></i> Tư vấn Online</span>
                                     </td>
                                     <td>
-                                        <a href="<?= htmlspecialchars($c['meeting_link']) ?>" target="_blank" class="btn btn-sm btn-success" style="border-radius:12px; font-size:11px;">Tham gia</a>
+                                        <a href="index.php?page=consultations&action=room&id=<?= htmlspecialchars($c['meeting_id']) ?>" class="btn btn-sm btn-success" style="border-radius:12px; font-size:11px;">Tham gia</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

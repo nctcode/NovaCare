@@ -40,6 +40,18 @@ class Invoice {
         return $stmt->fetchAll();
     }
 
+    public function getPendingByPatientId($patientId) {
+        $sql = "SELECT i.*, cu.name as created_by_name 
+                FROM invoices i
+                LEFT JOIN users cu ON i.created_by = cu.id
+                WHERE i.patient_id = :patient_id AND i.status = 'pending'
+                ORDER BY i.created_at DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':patient_id', $patientId);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     // Tìm hóa đơn theo ID (kèm thông tin bệnh nhân)
     public function findById($id) {
         $sql = "SELECT i.*, 

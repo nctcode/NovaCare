@@ -1,8 +1,14 @@
 <?php
 /**
  * Patient Model - Quản lý bảng patients + users
+ * 
+ * Đã tích hợp:
+ * - Soft Delete (không xóa cứng, chỉ đánh dấu deleted_at)
+ * - Audit Log
+ * - WHERE deleted_at IS NULL trên mọi query
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/AuditLog.php';
 
 class Patient {
     private $conn;
@@ -12,11 +18,12 @@ class Patient {
         $this->conn = $db->getConnection();
     }
 
-    // Lấy tất cả bệnh nhân (JOIN users)
+    // Lấy tất cả bệnh nhân (chỉ lấy chưa bị xóa mềm)
     public function getAll() {
         $sql = "SELECT p.*, u.name, u.email, u.phone 
                 FROM patients p 
                 JOIN users u ON p.user_id = u.id 
+                WHERE p.deleted_at IS NULL AND u.deleted_at IS NULL
                 ORDER BY u.name ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -28,7 +35,7 @@ class Patient {
         $sql = "SELECT p.*, u.name, u.email, u.phone 
                 FROM patients p 
                 JOIN users u ON p.user_id = u.id 
-                WHERE p.id = :id LIMIT 1";
+                WHERE p.id = :id AND p.deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -40,7 +47,7 @@ class Patient {
         $sql = "SELECT p.*, u.name, u.email, u.phone 
                 FROM patients p 
                 JOIN users u ON p.user_id = u.id 
-                WHERE p.user_id = :user_id LIMIT 1";
+                WHERE p.user_id = :user_id AND p.deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':user_id', $userId);
         $stmt->execute();
@@ -73,8 +80,10 @@ class Patient {
         $stmt->bindParam(':blood_type', $data['blood_type']);
         $stmt->bindParam(':medical_history', $data['medical_history']);
         $stmt->execute();
+        $patientId = $this->conn->lastInsertId();
 
-        return $this->conn->lastInsertId();
+        AuditLog::logCreate('patients', $patientId, ['name' => $data['name'], 'email' => $data['email']]);
+        return $patientId;
     }
 
     // Cập nhật bệnh nhân
@@ -85,7 +94,7 @@ class Patient {
 
         // Cập nhật users
         $sql = "UPDATE users SET name = :name, email = :email, phone = :phone 
-                WHERE id = :user_id";
+                WHERE id = :user_id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':email', $data['email']);
@@ -96,7 +105,7 @@ class Patient {
         // Cập nhật patients
         $sql = "UPDATE patients SET date_of_birth = :dob, gender = :gender, 
                 address = :address, blood_type = :blood_type, medical_history = :medical_history 
-                WHERE id = :id";
+                WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':dob', $data['date_of_birth']);
         $stmt->bindParam(':gender', $data['gender']);
@@ -104,25 +113,34 @@ class Patient {
         $stmt->bindParam(':blood_type', $data['blood_type']);
         $stmt->bindParam(':medical_history', $data['medical_history']);
         $stmt->bindParam(':id', $id);
-        return $stmt->execute();
+        $result = $stmt->execute();
+
+        AuditLog::logUpdate('patients', $id,
+            ['name' => $patient['name'], 'email' => $patient['email']],
+            ['name' => $data['name'], 'email' => $data['email']]
+        );
+        return $result;
     }
 
-    // Xóa bệnh nhân
+    // Xóa mềm bệnh nhân (soft delete cả user + patient)
     public function delete($id) {
         $patient = $this->findById($id);
         if (!$patient) return false;
 
-        // Xóa patient trước
-        $sql = "DELETE FROM patients WHERE id = :id";
+        // Soft delete patient
+        $sql = "UPDATE patients SET deleted_at = NOW() WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
 
-        // Xóa user liên quan
-        $sql = "DELETE FROM users WHERE id = :user_id";
+        // Soft delete user liên quan
+        $sql = "UPDATE users SET deleted_at = NOW() WHERE id = :user_id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':user_id', $patient['user_id']);
-        return $stmt->execute();
+        $stmt->execute();
+
+        AuditLog::logDelete('patients', $id, ['name' => $patient['name'], 'email' => $patient['email']]);
+        return true;
     }
 
     // Lấy bệnh nhân mới nhất
@@ -130,6 +148,7 @@ class Patient {
         $sql = "SELECT u.name, u.created_at 
                 FROM patients p 
                 JOIN users u ON p.user_id = u.id 
+                WHERE p.deleted_at IS NULL
                 ORDER BY p.id DESC LIMIT :limit";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
@@ -137,9 +156,9 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Đếm tổng bệnh nhân
+    // Đếm tổng bệnh nhân (chỉ đếm chưa bị xóa mềm)
     public function count() {
-        $sql = "SELECT COUNT(*) as total FROM patients";
+        $sql = "SELECT COUNT(*) as total FROM patients WHERE deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         $row = $stmt->fetch();

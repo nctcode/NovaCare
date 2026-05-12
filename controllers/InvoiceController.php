@@ -1,7 +1,7 @@
 <?php
 /**
  * InvoiceController - Quản lý hóa đơn thanh toán
- * - Admin: xem tất cả, tạo, thanh toán, hủy
+ * - Receptionist: xem tất cả, tạo, thanh toán, hủy
  * - Patient: xem hóa đơn của mình
  */
 require_once __DIR__ . '/../models/Invoice.php';
@@ -22,7 +22,7 @@ class InvoiceController {
     public function index() {
         $user = $_SESSION['user'];
 
-        if ($user['role'] === 'admin') {
+        if ($user['role'] === 'admin' || $user['role'] === 'receptionist') {
             $invoices = $this->invoiceModel->getAll();
         } elseif ($user['role'] === 'patient') {
             $patient = $this->patientModel->findByUserId($user['id']);
@@ -47,7 +47,7 @@ class InvoiceController {
 
     // Form tạo hóa đơn
     public function create() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         $patients = $this->invoiceModel->getPatients();
         $services = $this->invoiceModel->getServices();
         $medicines = $this->invoiceModel->getMedicines();
@@ -60,7 +60,7 @@ class InvoiceController {
 
     // Lưu hóa đơn
     public function store() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=invoices');
         Security::requireCsrf();
 
@@ -71,19 +71,26 @@ class InvoiceController {
             // Tính tổng
             $items = [];
             $totalAmount = 0;
+
             if (isset($_POST['item_type']) && is_array($_POST['item_type'])) {
                 for ($i = 0; $i < count($_POST['item_type']); $i++) {
                     $qty = intval($_POST['quantity'][$i] ?? 1);
                     $price = floatval($_POST['unit_price'][$i] ?? 0);
                     $amount = $qty * $price;
                     $totalAmount += $amount;
-                    $items[] = [
-                        'item_type' => $_POST['item_type'][$i],
-                        'item_id' => $_POST['item_id'][$i] ?: null,
+                    
+                    $type = $_POST['item_type'][$i];
+                    $idVal = $_POST['item_id'][$i] ?: null;
+                    
+                    $item = [
+                        'service_id' => ($type === 'service') ? $idVal : null,
+                        'medicine_id' => ($type === 'medicine') ? $idVal : null,
+                        'room_id' => ($type === 'room') ? $idVal : null,
                         'description' => $_POST['description'][$i] ?? '',
                         'quantity' => $qty,
                         'unit_price' => $price,
                     ];
+                    $items[] = $item;
                 }
             }
 
@@ -149,6 +156,10 @@ class InvoiceController {
                 header('Location: index.php?page=invoices');
                 exit;
             }
+        } elseif (!Security::hasRole(['admin', 'receptionist'])) {
+            $_SESSION['error'] = 'Bạn không có quyền xem hóa đơn này.';
+            header('Location: index.php?page=invoices');
+            exit;
         }
 
         $items = $this->invoiceModel->getItems($id);
@@ -161,7 +172,7 @@ class InvoiceController {
 
     // Đánh dấu đã thanh toán
     public function markPaid() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=invoices');
         Security::requireCsrf();
 
@@ -181,7 +192,7 @@ class InvoiceController {
 
     // Hủy hóa đơn
     public function cancel() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=invoices');
         Security::requireCsrf();
 

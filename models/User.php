@@ -16,7 +16,7 @@ class User {
 
     // Tìm user theo email (dùng cho login)
     public function findByEmail($email) {
-        $sql = "SELECT * FROM {$this->table} WHERE email = :email LIMIT 1";
+        $sql = "SELECT * FROM {$this->table} WHERE email = :email AND deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':email', $email);
         $stmt->execute();
@@ -25,7 +25,7 @@ class User {
 
     // Tìm user theo ID
     public function findById($id) {
-        $sql = "SELECT * FROM {$this->table} WHERE id = :id LIMIT 1";
+        $sql = "SELECT * FROM {$this->table} WHERE id = :id AND deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -34,7 +34,7 @@ class User {
 
     // Lấy tất cả users
     public function getAll() {
-        $sql = "SELECT * FROM {$this->table} ORDER BY created_at DESC";
+        $sql = "SELECT * FROM {$this->table} WHERE deleted_at IS NULL ORDER BY created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
@@ -66,7 +66,7 @@ class User {
 
     // Đếm số user theo role
     public function countByRole($role) {
-        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE role = :role";
+        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE role = :role AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':role', $role);
         $stmt->execute();

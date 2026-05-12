@@ -1,9 +1,16 @@
 <?php
 /**
- * DeviceController - Quản lý thiết bị y tế (Admin)
+ * DeviceController - Quản lý thiết bị y tế (Admin only)
+ * 
+ * Đã hardened:
+ * - Thêm Security::requireRole cho mọi action
+ * - Chuyển updateStatus và delete sang POST
+ * - Thêm CSRF protection
  */
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Doctor.php';
+require_once __DIR__ . '/../helpers/Security.php';
+require_once __DIR__ . '/../helpers/AuditLog.php';
 
 class DeviceController {
     private $conn;
@@ -15,6 +22,7 @@ class DeviceController {
 
     // Danh sách thiết bị
     public function index() {
+        Security::requireRole('admin');
         $sql = "SELECT md.*, dep.name as department_name 
                 FROM medical_devices md 
                 LEFT JOIN departments dep ON md.department_id = dep.id 
@@ -37,6 +45,7 @@ class DeviceController {
 
     // Form thêm thiết bị
     public function create() {
+        Security::requireRole('admin');
         $sql = "SELECT * FROM departments ORDER BY name ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -50,31 +59,39 @@ class DeviceController {
 
     // Lưu thiết bị mới
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $sql = "INSERT INTO medical_devices (name, device_code, status, department_id, purchase_date) 
-                    VALUES (:name, :device_code, :status, :department_id, :purchase_date)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':name', $_POST['name']);
-            $stmt->bindParam(':device_code', $_POST['device_code']);
-            $stmt->bindParam(':status', $_POST['status']);
-            $stmt->bindParam(':department_id', $_POST['department_id']);
-            $stmt->bindParam(':purchase_date', $_POST['purchase_date']);
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=devices');
+        Security::requireCsrf();
 
-            try {
-                $stmt->execute();
-                $_SESSION['success'] = 'Thêm thiết bị thành công!';
-            } catch (Exception $e) {
-                $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
-            }
+        $sql = "INSERT INTO medical_devices (name, device_code, status, department_id, purchase_date) 
+                VALUES (:name, :device_code, :status, :department_id, :purchase_date)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':name', $_POST['name']);
+        $stmt->bindParam(':device_code', $_POST['device_code']);
+        $stmt->bindParam(':status', $_POST['status']);
+        $stmt->bindParam(':department_id', $_POST['department_id']);
+        $stmt->bindParam(':purchase_date', $_POST['purchase_date']);
+
+        try {
+            $stmt->execute();
+            $id = $this->conn->lastInsertId();
+            AuditLog::logCreate('medical_devices', $id, ['name' => $_POST['name']]);
+            $_SESSION['success'] = 'Thêm thiết bị thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }
         header('Location: index.php?page=devices');
         exit;
     }
 
-    // Cập nhật trạng thái
+    // Cập nhật trạng thái (POST only)
     public function updateStatus() {
-        $id = $_GET['id'] ?? 0;
-        $status = $_GET['status'] ?? '';
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=devices');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+        $status = $_POST['status'] ?? '';
 
         $validStatuses = ['available', 'in_use', 'maintenance'];
         if (in_array($status, $validStatuses)) {
@@ -85,24 +102,32 @@ class DeviceController {
 
             try {
                 $stmt->execute();
+                AuditLog::logUpdate('medical_devices', $id, null, ['status' => $status]);
                 $_SESSION['success'] = 'Cập nhật trạng thái thành công!';
             } catch (Exception $e) {
                 $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
             }
+        } else {
+            $_SESSION['error'] = 'Trạng thái không hợp lệ.';
         }
         header('Location: index.php?page=devices');
         exit;
     }
 
-    // Xóa thiết bị
+    // Xóa thiết bị (POST only)
     public function delete() {
-        $id = $_GET['id'] ?? 0;
+        Security::requireRole('admin');
+        Security::requirePost('index.php?page=devices');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
         $sql = "DELETE FROM medical_devices WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
 
         try {
             $stmt->execute();
+            AuditLog::logDelete('medical_devices', $id);
             $_SESSION['success'] = 'Xóa thiết bị thành công!';
         } catch (Exception $e) {
             $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();

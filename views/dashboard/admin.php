@@ -61,14 +61,14 @@
     </div>
 </div>
 
-<!-- Quick Actions -->
+<!-- Quick Actions (Admin = Quản trị hệ thống) -->
 <div class="row g-3 mb-4">
     <div class="col-12" data-aos="fade-up">
         <div class="d-flex flex-wrap gap-2">
-            <a href="index.php?page=patients&action=create" class="btn btn-outline-primary" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-user-plus me-2"></i>Thêm Bệnh nhân</a>
-            <a href="index.php?page=appointments&action=create" class="btn btn-outline-success" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-calendar-plus me-2"></i>Đăng ký Lịch hẹn</a>
-            <a href="index.php?page=shifts&action=create" class="btn btn-outline-info" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-clock me-2"></i>Tạo Ca trực</a>
-            <a href="index.php?page=medicines&action=create" class="btn btn-outline-warning" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-pills me-2"></i>Nhập Thuốc mới</a>
+            <a href="index.php?page=doctors&action=create" class="btn btn-outline-primary" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-user-doctor me-2"></i>Thêm Bác sĩ</a>
+            <a href="index.php?page=nurses&action=create" class="btn btn-outline-success" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-user-nurse me-2"></i>Thêm Y tá</a>
+            <a href="index.php?page=departments&action=create" class="btn btn-outline-info" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-building-columns me-2"></i>Tạo Khoa mới</a>
+            <a href="index.php?page=shifts&action=create" class="btn btn-outline-warning" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-clock me-2"></i>Tạo Ca trực</a>
         </div>
     </div>
 </div>

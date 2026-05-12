@@ -17,7 +17,7 @@ class ConsultationController {
     public function index() {
         $user = $_SESSION['user'];
 
-        if ($user['role'] === 'admin') {
+        if ($user['role'] === 'admin' || $user['role'] === 'receptionist') {
             $meetings = $this->model->getAll();
             $availableAppointments = $this->model->getAvailableAppointments();
         } elseif ($user['role'] === 'doctor') {
@@ -37,7 +37,7 @@ class ConsultationController {
     }
 
     public function store() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=consultations');
         Security::requireCsrf();
 

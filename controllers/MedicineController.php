@@ -1,6 +1,6 @@
 <?php
 /**
- * MedicineController - CRUD thuốc + quản lý tồn kho (Admin)
+ * MedicineController - CRUD thuốc + quản lý tồn kho (Pharmacist)
  */
 require_once __DIR__ . '/../models/Medicine.php';
 require_once __DIR__ . '/../helpers/Security.php';
@@ -14,7 +14,7 @@ class MedicineController {
 
     // Danh sách thuốc
     public function index() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole(['admin', 'pharmacist', 'doctor']);
         $medicines = $this->medicineModel->getAll();
         $pageTitle = 'Quản lý Thuốc';
         require_once __DIR__ . '/../views/layout/header.php';
@@ -24,7 +24,7 @@ class MedicineController {
 
     // Form thêm thuốc
     public function create() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'pharmacist']);
         $pageTitle = 'Thêm Thuốc';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/medicines/create.php';
@@ -33,7 +33,7 @@ class MedicineController {
 
     // Lưu thuốc mới
     public function store() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'pharmacist']);
         Security::requirePost('index.php?page=medicines');
         Security::requireCsrf();
 
@@ -57,7 +57,7 @@ class MedicineController {
 
     // Form sửa thuốc
     public function edit() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'pharmacist']);
         $id = $_GET['id'] ?? 0;
         $medicine = $this->medicineModel->findById($id);
 
@@ -75,7 +75,7 @@ class MedicineController {
 
     // Lưu cập nhật thuốc
     public function update() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'pharmacist']);
         Security::requirePost('index.php?page=medicines');
         Security::requireCsrf();
 
@@ -100,7 +100,7 @@ class MedicineController {
 
     // Xóa thuốc
     public function delete() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'pharmacist']);
         Security::requirePost('index.php?page=medicines');
         Security::requireCsrf();
 

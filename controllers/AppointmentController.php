@@ -1,7 +1,7 @@
 <?php
 /**
  * AppointmentController - Quản lý lịch hẹn
- * Quyền: Patient = đặt lịch; Admin = full; Doctor = xem lịch mình
+ * Quyền: Patient = đặt lịch; Receptionist = quản lý tổng; Doctor = xem lịch mình
  */
 require_once __DIR__ . '/../models/Appointment.php';
 require_once __DIR__ . '/../models/Doctor.php';
@@ -25,7 +25,7 @@ class AppointmentController {
         $user = $_SESSION['user'];
         $role = $user['role'];
 
-        if ($role === 'admin') {
+        if ($role === 'admin' || $role === 'receptionist') {
             $appointments = $this->appointmentModel->getAll();
         } elseif ($role === 'doctor') {
             $doctor = $this->doctorModel->findByUserId($user['id']);
@@ -45,7 +45,7 @@ class AppointmentController {
 
     // Form đặt lịch
     public function create() {
-        Security::requireRole(['admin', 'patient']);
+        Security::requireRole(['admin', 'receptionist', 'patient']);
         $doctors = $this->doctorModel->getAll();
         $pageTitle = 'Đặt lịch khám';
         require_once __DIR__ . '/../views/layout/header.php';
@@ -55,7 +55,7 @@ class AppointmentController {
 
     // Lưu lịch hẹn
     public function store() {
-        Security::requireRole(['admin', 'patient']);
+        Security::requireRole(['admin', 'receptionist', 'patient']);
         Security::requirePost('index.php?page=appointments');
         Security::requireCsrf();
 
@@ -63,14 +63,14 @@ class AppointmentController {
 
         // Tìm patient_id
         $patient = $this->patientModel->findByUserId($user['id']);
-        if (!$patient && $user['role'] !== 'admin') {
+        if (!$patient && $user['role'] !== 'receptionist') {
             $_SESSION['error'] = 'Không tìm thấy thông tin bệnh nhân.';
             header('Location: index.php?page=appointments');
             exit;
         }
 
         $data = [
-            'patient_id'       => $user['role'] === 'admin' ? ($_POST['patient_id'] ?? 0) : $patient['id'],
+            'patient_id'       => $user['role'] === 'receptionist' ? ($_POST['patient_id'] ?? 0) : $patient['id'],
             'doctor_id'        => $_POST['doctor_id'] ?? 0,
             'appointment_date' => $_POST['appointment_date'] ?? '',
             'reason'           => trim($_POST['reason'] ?? ''),
@@ -115,16 +115,28 @@ class AppointmentController {
         exit;
     }
 
-    // Cập nhật trạng thái (Admin/Doctor - POST only)
+    // Cập nhật trạng thái (Admin/Receptionist/Doctor - POST only)
     public function updateStatus() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole(['admin', 'receptionist', 'doctor']);
         Security::requirePost('index.php?page=appointments');
         Security::requireCsrf();
 
         $id = $_POST['id'] ?? 0;
         $status = $_POST['status'] ?? '';
+        $user = $_SESSION['user'];
 
-        $validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+        // IDOR check: Doctor chỉ được cập nhật lịch hẹn của chính mình
+        if ($user['role'] === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            $appointment = $this->appointmentModel->findById($id);
+            if (!$doctor || !$appointment || $appointment['doctor_id'] != $doctor['id']) {
+                $_SESSION['error'] = 'Bạn chỉ có thể cập nhật lịch hẹn của chính mình.';
+                header('Location: index.php?page=appointments');
+                exit;
+            }
+        }
+
+        $validStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'emergency'];
         if (in_array($status, $validStatuses)) {
             try {
                 $this->appointmentModel->updateStatus($id, $status);
@@ -142,11 +154,11 @@ class AppointmentController {
 
     // Xem lịch hẹn dạng Calendar (Admin/Doctor)
     public function calendar() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole(['admin', 'receptionist', 'doctor']);
         $user = $_SESSION['user'];
         $role = $user['role'];
 
-        if ($role === 'admin') {
+        if ($role === 'admin' || $role === 'receptionist') {
             $appointments = $this->appointmentModel->getAll();
         } else {
             $doctor = $this->doctorModel->findByUserId($user['id']);
@@ -164,7 +176,7 @@ class AppointmentController {
 
             $events[] = [
                 'id' => $apt['id'],
-                'title' => 'Khám ' . ($role === 'admin' ? '- BS. ' . $apt['doctor_name'] : '- Bệnh nhân ' . $apt['patient_name']),
+                'title' => 'Khám ' . (in_array($role, ['admin','receptionist']) ? '- BS. ' . $apt['doctor_name'] : '- Bệnh nhân ' . $apt['patient_name']),
                 'start' => $apt['appointment_date'],
                 'backgroundColor' => $color,
                 'borderColor' => $color,

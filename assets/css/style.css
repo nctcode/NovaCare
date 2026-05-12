@@ -1191,6 +1191,8 @@ img {
    ============================================ */
 .table-wrapper {
     overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
@@ -1201,7 +1203,7 @@ img {
 
 .data-table thead th {
     background: var(--gray-50);
-    padding: 14px 16px;
+    padding: 12px 10px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -1212,11 +1214,19 @@ img {
 }
 
 .data-table tbody td {
-    padding: 14px 16px;
-    font-size: 14px;
+    padding: 12px 10px;
+    font-size: 13px;
     color: var(--gray-700);
     border-bottom: 1px solid var(--gray-100);
     vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Allow address/long-text columns to wrap gracefully */
+.data-table tbody td.td-address {
+    white-space: normal;
+    min-width: 120px;
+    max-width: 220px;
 }
 
 .data-table tbody tr {
@@ -1407,6 +1417,38 @@ img {
 .btn-view:hover {
     background: #bae6fd;
     color: var(--primary-dark);
+}
+
+/* ============================================
+   ACTION BUTTON GROUP (table actions)
+   ============================================ */
+.td-actions {
+    white-space: nowrap;
+    width: 1%;
+    padding-right: 10px !important;
+}
+
+.action-btn-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-ai-summary {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: #fff;
+    white-space: nowrap;
+}
+
+.btn-ai-summary:hover {
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
+}
+
+.btn-ai-summary .btn-label {
+    font-size: 12px;
 }
 
 /* ============================================

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -59,11 +59,14 @@
             </form>
 
             <div class="mt-4 text-center">
-                <small style="color:var(--gray-400);">
-                    <strong>Tài khoản mẫu:</strong><br>
-                    Admin: admin@benhvien.com / 123456<br>
-                    Bác sĩ: doctor1@benhvien.com / 123456<br>
-                    Bệnh nhân: benhnhan1@gmail.com / 123456
+                <small style="color:var(--gray-400); line-height: 1.8;">
+                    <strong>Tài khoản mẫu (Mật khẩu chung: 123456):</strong><br>
+                    <span class="badge bg-danger">Admin</span> admin@benhvien.com<br>
+                    <span class="badge bg-primary">Bác sĩ</span> doctor1@benhvien.com<br>
+                    <span class="badge bg-info text-dark">Y tá</span> nurse1@benhvien.com<br>
+                    <span class="badge bg-warning text-dark">Lễ tân</span> letan@benhvien.com<br>
+                    <span class="badge bg-success">Dược sĩ</span> duocsi@benhvien.com<br>
+                    <span class="badge bg-secondary">Bệnh nhân</span> benhnhan1@gmail.com
                 </small>
             </div>
 

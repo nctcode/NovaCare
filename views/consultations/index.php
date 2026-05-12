@@ -12,8 +12,8 @@
     </div>
 <?php endif; ?>
 
-<?php if ($user['role'] === 'admin'): ?>
-<!-- Tạo phòng tư vấn mới (Admin) -->
+<?php if ($user['role'] === 'admin' || $user['role'] === 'receptionist'): ?>
+<!-- Tạo phòng tư vấn mới (Admin & Receptionist) -->
 <div class="content-card mb-4" data-aos="fade-up">
     <div class="card-header">
         <h5><i class="fa-solid fa-video me-2"></i>Tạo phòng Tư vấn trực tuyến</h5>

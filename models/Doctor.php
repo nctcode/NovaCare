@@ -19,6 +19,7 @@ class Doctor {
                 FROM doctors d 
                 JOIN users u ON d.user_id = u.id 
                 LEFT JOIN departments dep ON d.department_id = dep.id 
+                WHERE d.deleted_at IS NULL AND u.deleted_at IS NULL
                 ORDER BY u.name ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -31,7 +32,7 @@ class Doctor {
                 FROM doctors d 
                 JOIN users u ON d.user_id = u.id 
                 LEFT JOIN departments dep ON d.department_id = dep.id 
-                WHERE d.id = :id LIMIT 1";
+                WHERE d.id = :id AND d.deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -44,7 +45,7 @@ class Doctor {
                 FROM doctors d 
                 JOIN users u ON d.user_id = u.id 
                 LEFT JOIN departments dep ON d.department_id = dep.id 
-                WHERE d.user_id = :user_id LIMIT 1";
+                WHERE d.user_id = :user_id AND d.deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':user_id', $userId);
         $stmt->execute();
@@ -110,12 +111,12 @@ class Doctor {
         $doctor = $this->findById($id);
         if (!$doctor) return false;
 
-        $sql = "DELETE FROM doctors WHERE id = :id";
+        $sql = "UPDATE doctors SET deleted_at = NOW() WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
 
-        $sql = "DELETE FROM users WHERE id = :user_id";
+        $sql = "UPDATE users SET deleted_at = NOW() WHERE id = :user_id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':user_id', $doctor['user_id']);
         return $stmt->execute();
@@ -131,7 +132,7 @@ class Doctor {
 
     // Đếm tổng bác sĩ
     public function count() {
-        $sql = "SELECT COUNT(*) as total FROM doctors";
+        $sql = "SELECT COUNT(*) as total FROM doctors WHERE deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         $row = $stmt->fetch();

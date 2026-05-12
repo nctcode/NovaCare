@@ -1,8 +1,14 @@
 <?php
 /**
  * MedicalRecord Model - Quản lý hồ sơ bệnh án
+ * 
+ * Đã tích hợp:
+ * - Soft Delete (WHERE deleted_at IS NULL)
+ * - Audit Log (ghi nhật ký mỗi khi sửa bệnh án)
+ * - Ghi created_by / updated_by
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/AuditLog.php';
 
 class MedicalRecord {
     private $conn;
@@ -20,6 +26,7 @@ class MedicalRecord {
                 JOIN users up ON p.user_id = up.id
                 JOIN doctors d ON m.doctor_id = d.id
                 JOIN users ud ON d.user_id = ud.id
+                WHERE m.deleted_at IS NULL
                 ORDER BY m.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -36,7 +43,7 @@ class MedicalRecord {
                 JOIN doctors d ON m.doctor_id = d.id
                 JOIN users ud ON d.user_id = ud.id
                 LEFT JOIN appointments a ON m.appointment_id = a.id
-                WHERE m.id = :id LIMIT 1";
+                WHERE m.id = :id AND m.deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -48,7 +55,7 @@ class MedicalRecord {
                 FROM medical_records m
                 JOIN doctors d ON m.doctor_id = d.id
                 JOIN users ud ON d.user_id = ud.id
-                WHERE m.patient_id = :patient_id
+                WHERE m.patient_id = :patient_id AND m.deleted_at IS NULL
                 ORDER BY m.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $patientId);
@@ -61,7 +68,7 @@ class MedicalRecord {
                 FROM medical_records m
                 JOIN patients p ON m.patient_id = p.id
                 JOIN users up ON p.user_id = up.id
-                WHERE m.doctor_id = :doctor_id
+                WHERE m.doctor_id = :doctor_id AND m.deleted_at IS NULL
                 ORDER BY m.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':doctor_id', $doctorId);
@@ -70,8 +77,9 @@ class MedicalRecord {
     }
 
     public function create($data) {
-        $sql = "INSERT INTO medical_records (patient_id, doctor_id, appointment_id, diagnosis, treatment, notes) 
-                VALUES (:patient_id, :doctor_id, :appointment_id, :diagnosis, :treatment, :notes)";
+        $userId = $_SESSION['user']['id'] ?? null;
+        $sql = "INSERT INTO medical_records (patient_id, doctor_id, appointment_id, diagnosis, treatment, notes, created_by) 
+                VALUES (:patient_id, :doctor_id, :appointment_id, :diagnosis, :treatment, :notes, :created_by)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $data['patient_id']);
         $stmt->bindParam(':doctor_id', $data['doctor_id']);
@@ -82,16 +90,63 @@ class MedicalRecord {
         $stmt->bindParam(':diagnosis', $data['diagnosis']);
         $stmt->bindParam(':treatment', $data['treatment']);
         $stmt->bindParam(':notes', $data['notes']);
+        $stmt->bindParam(':created_by', $userId);
         
         $stmt->execute();
-        return $this->conn->lastInsertId();
+        $newId = $this->conn->lastInsertId();
+
+        AuditLog::logCreate('medical_records', $newId, [
+            'diagnosis' => $data['diagnosis'],
+            'treatment' => $data['treatment']
+        ]);
+        return $newId;
     }
+
+    // Cập nhật bệnh án (ghi audit log: trước/sau khi sửa)
+    public function update($id, $data) {
+        $old = $this->findById($id);
+        if (!$old) return false;
+
+        $userId = $_SESSION['user']['id'] ?? null;
+        $sql = "UPDATE medical_records SET 
+                    diagnosis = :diagnosis, treatment = :treatment, notes = :notes, updated_by = :updated_by
+                WHERE id = :id AND deleted_at IS NULL";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':diagnosis', $data['diagnosis']);
+        $stmt->bindParam(':treatment', $data['treatment']);
+        $stmt->bindParam(':notes', $data['notes']);
+        $stmt->bindParam(':updated_by', $userId);
+        $stmt->bindParam(':id', $id);
+        $result = $stmt->execute();
+
+        AuditLog::logUpdate('medical_records', $id, 
+            ['diagnosis' => $old['diagnosis'], 'treatment' => $old['treatment']],
+            ['diagnosis' => $data['diagnosis'], 'treatment' => $data['treatment']]
+        );
+        return $result;
+    }
+
+    // Xóa mềm bệnh án
+    public function delete($id) {
+        $old = $this->findById($id);
+        $userId = $_SESSION['user']['id'] ?? null;
+
+        $sql = "UPDATE medical_records SET deleted_at = NOW(), updated_by = :updated_by WHERE id = :id AND deleted_at IS NULL";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':updated_by', $userId);
+        $stmt->bindParam(':id', $id);
+        $result = $stmt->execute();
+
+        AuditLog::logDelete('medical_records', $id, $old ? ['diagnosis' => $old['diagnosis']] : null);
+        return $result;
+    }
+
     public function getRecentByPatientId($patientId, $limit = 3) {
         $sql = "SELECT m.*, d.user_id as doctor_user_id, ud.name as doctor_name
                 FROM medical_records m
                 JOIN doctors d ON m.doctor_id = d.id
                 JOIN users ud ON d.user_id = ud.id
-                WHERE m.patient_id = :patient_id
+                WHERE m.patient_id = :patient_id AND m.deleted_at IS NULL
                 ORDER BY m.created_at DESC LIMIT :limit";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindValue(':patient_id', $patientId, PDO::PARAM_INT);

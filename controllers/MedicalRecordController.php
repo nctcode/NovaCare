@@ -86,8 +86,8 @@ class MedicalRecordController {
 
     public function create() {
         $user = $_SESSION['user'];
-        if ($user['role'] !== 'doctor' && $user['role'] !== 'admin') {
-            $_SESSION['error'] = 'Bạn không có quyền truy cập.';
+        if ($user['role'] !== 'doctor') {
+            $_SESSION['error'] = 'Chỉ bác sĩ mới có quyền tạo hồ sơ bệnh án.';
             header('Location: index.php?page=dashboard');
             exit;
         }
@@ -107,7 +107,7 @@ class MedicalRecordController {
     }
 
     public function store() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole('doctor');
         Security::requirePost('index.php?page=records');
         Security::requireCsrf();
 
@@ -151,7 +151,7 @@ class MedicalRecordController {
      * Gọi hàm summarizeMedicalRecords() từ OllamaAI/GeminiAI
      */
     public function summarize() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole(['doctor']);
 
         $patientId = $_GET['patient_id'] ?? 0;
         if (!$patientId) {

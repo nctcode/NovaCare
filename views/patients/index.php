@@ -65,22 +65,27 @@
                                 </span>
                             </td>
                             <td><?= htmlspecialchars($p['blood_type'] ?? '') ?></td>
-                            <td><?= htmlspecialchars($p['address'] ?? '') ?></td>
+                            <td class="td-address"><?= htmlspecialchars($p['address'] ?? '') ?></td>
                             <?php if ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'doctor'): ?>
-                            <td>
-                                <a href="index.php?page=records&action=summarize&patient_id=<?= $p['id'] ?>" class="btn-action btn-edit" style="background-color:#0dcaf0; color:white; border-color:#0dcaf0;" title="AI Tóm tắt bệnh án">
-                                    <i class="fa-solid fa-brain"></i> Tóm tắt AI
-                                </a>
-                                <?php if ($_SESSION['user']['role'] === 'admin'): ?>
-                                <a href="index.php?page=patients&action=edit&id=<?= $p['id'] ?>" 
-                                   class="btn-action btn-edit" title="Sửa">
-                                    <i class="bi bi-pencil-square">Sửa</i>
-                                </a>
-                                <button onclick="confirmDelete('index.php?page=patients&action=delete&id=<?= $p['id'] ?>')" 
-                                        class="btn-action btn-delete" title="Xóa">
-                                    <i class="bi bi-trash3">Xóa</i>
-                                </button>
-                                <?php endif; ?>
+                            <td class="td-actions">
+                                <div class="action-btn-group">
+                                    <a href="index.php?page=records&action=summarize&patient_id=<?= $p['id'] ?>" 
+                                       class="btn-action btn-ai-summary" 
+                                       title="AI Tóm tắt bệnh án">
+                                        <i class="fa-solid fa-brain"></i>
+                                        <span class="btn-label">Tóm tắt AI</span>
+                                    </a>
+                                    <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                                    <a href="index.php?page=patients&action=edit&id=<?= $p['id'] ?>" 
+                                       class="btn-action btn-edit" title="Sửa">
+                                        <i class="bi bi-pencil-square"></i> Sửa
+                                    </a>
+                                    <button onclick="confirmDelete('index.php?page=patients&action=delete&id=<?= $p['id'] ?>')" 
+                                            class="btn-action btn-delete" title="Xóa">
+                                        <i class="bi bi-trash3"></i> Xóa
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <?php endif; ?>
                         </tr>

@@ -50,10 +50,12 @@ $sectionGroups = [
 ];
 
 $roleNames = [
-    'admin'   => 'Quản trị viên',
-    'doctor'  => 'Bác sĩ',
-    'nurse'   => 'Y tá',
-    'patient' => 'Bệnh nhân',
+    'admin'         => 'Quản trị viên',
+    'doctor'        => 'Bác sĩ',
+    'nurse'         => 'Y tá',
+    'patient'       => 'Bệnh nhân',
+    'receptionist'  => 'Lễ tân',
+    'pharmacist'    => 'Dược sĩ',
 ];
 
 $pageTitle   = $pageTitles[$currentPage] ?? 'NovaCare';
@@ -69,7 +71,7 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
     <title><?= $pageTitle ?> - NovaCare Hospital</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=<?= time() ?>" rel="stylesheet">
     <link href="assets/css/animations.css" rel="stylesheet">
     <link href="assets/css/ux-enhancements.css" rel="stylesheet">
     <link href="assets/css/darkmode.css" rel="stylesheet">
@@ -111,12 +113,7 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-building-columns"></i> <span>Danh sách Khoa</span>
             </a>
         </li>
-        <li class="menu-label">Quản lý Con người</li>
-        <li>
-            <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
-                <i class="fa-solid fa-hospital-user"></i> <span>Bệnh nhân</span>
-            </a>
-        </li>
+        <li class="menu-label">Quản lý Nhân sự</li>
         <li>
             <a href="index.php?page=doctors" class="<?= $currentPage === 'doctors' ? 'active' : '' ?>">
                 <i class="fa-solid fa-user-doctor"></i> <span>Bác sĩ</span>
@@ -127,38 +124,12 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-user-nurse"></i> <span>Y tá</span>
             </a>
         </li>
-        <li class="menu-label">Hoạt động Khám chữa bệnh</li>
         <li>
-            <a href="index.php?page=appointments" class="<?= $currentPage === 'appointments' ? 'active' : '' ?>">
-                <i class="fa-solid fa-calendar-check"></i> <span>Lịch hẹn</span>
+            <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
+                <i class="fa-solid fa-hospital-user"></i> <span>Bệnh nhân</span>
             </a>
         </li>
-        <li>
-            <a href="index.php?page=prescriptions" class="<?= $currentPage === 'prescriptions' ? 'active' : '' ?>">
-                <i class="fa-solid fa-file-prescription"></i> <span>Đơn thuốc</span>
-            </a>
-        </li>
-        <li>
-            <a href="index.php?page=services-admin" class="<?= $currentPage === 'services-admin' ? 'active' : '' ?>">
-                <i class="fa-solid fa-stethoscope"></i> <span>Dịch vụ Y tế</span>
-            </a>
-        </li>
-        <li>
-            <a href="index.php?page=invoices" class="<?= $currentPage === 'invoices' ? 'active' : '' ?>">
-                <i class="fa-solid fa-file-invoice-dollar"></i> <span>Hóa đơn</span>
-            </a>
-        </li>
-        <li>
-            <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
-                <i class="fa-solid fa-bed-pulse"></i> <span>Nội trú</span>
-            </a>
-        </li>
-        <li class="menu-label">Kho & Cơ sở vật chất</li>
-        <li>
-            <a href="index.php?page=medicines" class="<?= $currentPage === 'medicines' ? 'active' : '' ?>">
-                <i class="fa-solid fa-capsules"></i> <span>Kho thuốc</span>
-            </a>
-        </li>
+        <li class="menu-label">Cơ sở vật chất</li>
         <li>
             <a href="index.php?page=devices" class="<?= $currentPage === 'devices' ? 'active' : '' ?>">
                 <i class="fa-solid fa-laptop-medical"></i> <span>Thiết bị Khám</span>
@@ -169,7 +140,12 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-toolbox"></i> <span>Trang thiết bị</span>
             </a>
         </li>
-        <li class="menu-label">Khác</li>
+        <li class="menu-label">Cấu hình</li>
+        <li>
+            <a href="index.php?page=services-admin" class="<?= $currentPage === 'services-admin' ? 'active' : '' ?>">
+                <i class="fa-solid fa-stethoscope"></i> <span>Dịch vụ Y tế</span>
+            </a>
+        </li>
         <li>
             <a href="index.php?page=shifts" class="<?= $currentPage === 'shifts' ? 'active' : '' ?>">
                 <i class="fa-solid fa-clock"></i> <span>Ca trực</span>
@@ -183,6 +159,55 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         <li>
             <a href="index.php?page=ai-assistant" class="<?= $currentPage === 'ai-assistant' ? 'active' : '' ?>">
                 <i class="fa-solid fa-robot"></i> <span>Trợ lý AI</span>
+            </a>
+        </li>
+        <li class="menu-label">Bảo mật & Hệ thống</li>
+        <li>
+            <a href="index.php?page=audit_logs" class="<?= $currentPage === 'audit_logs' ? 'active' : '' ?>">
+                <i class="fa-solid fa-shield-halved"></i> <span>Audit Logs</span>
+            </a>
+        </li>
+
+        <?php elseif ($user['role'] === 'receptionist'): ?>
+        <li class="menu-label">Tiếp đón</li>
+        <li>
+            <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
+                <i class="fa-solid fa-hospital-user"></i> <span>Bệnh nhân</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=appointments" class="<?= $currentPage === 'appointments' ? 'active' : '' ?>">
+                <i class="fa-solid fa-calendar-check"></i> <span>Lịch hẹn</span>
+            </a>
+        </li>
+        <li class="menu-label">Tài chính & Nội trú</li>
+        <li>
+            <a href="index.php?page=invoices" class="<?= $currentPage === 'invoices' ? 'active' : '' ?>">
+                <i class="fa-solid fa-file-invoice-dollar"></i> <span>Hóa đơn</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
+                <i class="fa-solid fa-bed-pulse"></i> <span>Nội trú</span>
+            </a>
+        </li>
+        <li class="menu-label">Khác</li>
+        <li>
+            <a href="index.php?page=consultations" class="<?= $currentPage === 'consultations' ? 'active' : '' ?>">
+                <i class="fa-solid fa-video"></i> <span>Tư vấn Online</span>
+            </a>
+        </li>
+
+        <?php elseif ($user['role'] === 'pharmacist'): ?>
+        <li class="menu-label">Dược phẩm</li>
+        <li>
+            <a href="index.php?page=medicines" class="<?= $currentPage === 'medicines' ? 'active' : '' ?>">
+                <i class="fa-solid fa-capsules"></i> <span>Kho thuốc</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=prescriptions" class="<?= $currentPage === 'prescriptions' ? 'active' : '' ?>">
+                <i class="fa-solid fa-file-prescription"></i> <span>Đơn thuốc</span>
             </a>
         </li>
 
@@ -224,6 +249,16 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         <li>
             <a href="index.php?page=shifts" class="<?= $currentPage === 'shifts' ? 'active' : '' ?>">
                 <i class="fa-solid fa-clock"></i> <span>Ca trực</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
+                <i class="fa-solid fa-bed-pulse"></i> <span>Bệnh nhân nội trú</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=appointments" class="<?= $currentPage === 'appointments' ? 'active' : '' ?>">
+                <i class="fa-solid fa-calendar-check"></i> <span>Lịch hẹn hôm nay</span>
             </a>
         </li>
 

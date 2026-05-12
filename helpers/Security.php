@@ -171,4 +171,87 @@ class Security {
         }
         return $data;
     }
+
+    // ==========================================
+    //  IDOR PROTECTION (Data-Level Security)
+    // ==========================================
+
+    /**
+     * Lấy profile ID (patient_id hoặc doctor_id) của user đang đăng nhập.
+     * Dùng để so sánh với owner_id trên dữ liệu.
+     * 
+     * @param string|null $forceRole - Ép role cần tìm (nếu null, dùng role thực tế)
+     * @return int|null
+     */
+    public static function getUserProfileId($forceRole = null) {
+        if (!isset($_SESSION['user'])) return null;
+        $user = $_SESSION['user'];
+        $role = $forceRole ?? $user['role'];
+
+        require_once __DIR__ . '/../config/database.php';
+        $db = new Database();
+        $conn = $db->getConnection();
+
+        switch ($role) {
+            case 'patient':
+                $stmt = $conn->prepare("SELECT id FROM patients WHERE user_id = :uid");
+                $stmt->execute([':uid' => $user['id']]);
+                $row = $stmt->fetch();
+                return $row ? (int)$row['id'] : null;
+
+            case 'doctor':
+                $stmt = $conn->prepare("SELECT id FROM doctors WHERE user_id = :uid");
+                $stmt->execute([':uid' => $user['id']]);
+                $row = $stmt->fetch();
+                return $row ? (int)$row['id'] : null;
+
+            case 'nurse':
+                $stmt = $conn->prepare("SELECT id FROM nurses WHERE user_id = :uid");
+                $stmt->execute([':uid' => $user['id']]);
+                $row = $stmt->fetch();
+                return $row ? (int)$row['id'] : null;
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * IDOR Check: Kiểm tra user có quyền truy cập dữ liệu cụ thể không.
+     * So sánh owner_id trên dữ liệu với profile_id của user đang đăng nhập.
+     * 
+     * @param int $ownerId - ID chủ sở hữu trên dữ liệu (VD: invoice.patient_id)
+     * @param array $allowedRoles - Các role được quyền truy cập tất cả (VD: ['admin', 'receptionist'])
+     * @param string $ownerRole - Role sở hữu dữ liệu (default: dùng role hiện tại của user)
+     * @return bool - true nếu được phép, false nếu không
+     */
+    public static function authorizeOwnership($ownerId, $allowedRoles = ['admin'], $ownerRole = null) {
+        if (!isset($_SESSION['user'])) return false;
+        $user = $_SESSION['user'];
+
+        // Các role quản trị luôn được phép xem tất cả
+        if (in_array($user['role'], (array)$allowedRoles)) {
+            return true;
+        }
+
+        // So sánh profile ID của user hiện tại với owner_id
+        $profileId = self::getUserProfileId($ownerRole);
+        return $profileId !== null && (int)$ownerId === $profileId;
+    }
+
+    /**
+     * IDOR Check + Redirect: Kiểm tra quyền sở hữu, redirect nếu thất bại.
+     * 
+     * @param int $ownerId - ID chủ sở hữu trên dữ liệu
+     * @param array $allowedRoles - Các role quản trị được truy cập tất cả
+     * @param string $redirectUrl - URL redirect khi bị từ chối
+     * @param string|null $ownerRole - Role sở hữu
+     */
+    public static function requireOwnership($ownerId, $allowedRoles = ['admin'], $redirectUrl = 'index.php?page=dashboard', $ownerRole = null) {
+        if (!self::authorizeOwnership($ownerId, $allowedRoles, $ownerRole)) {
+            $_SESSION['error'] = 'Bạn không có quyền truy cập dữ liệu này.';
+            header('Location: ' . $redirectUrl);
+            exit;
+        }
+    }
 }

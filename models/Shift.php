@@ -133,4 +133,80 @@ class Shift {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    // ==========================================
+    //  NURSE SHIFTS (Bảng nurse_shifts)
+    // ==========================================
+
+    // Đăng ký ca trực cho y tá
+    public function registerNurseShift($nurseId, $shiftId) {
+        // Kiểm tra đã đăng ký chưa
+        $sql = "SELECT COUNT(*) as cnt FROM nurse_shifts WHERE nurse_id = :nurse_id AND shift_id = :shift_id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':nurse_id', $nurseId);
+        $stmt->bindParam(':shift_id', $shiftId);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if ($row['cnt'] > 0) return 'already_registered';
+
+        // Kiểm tra ca night tối đa 20 người (tổng cả doctor + nurse)
+        $shift = $this->findById($shiftId);
+        if ($shift['shift_type'] === 'night') {
+            $sql = "SELECT 
+                        (SELECT COUNT(*) FROM doctor_shifts WHERE shift_id = :s1) +
+                        (SELECT COUNT(*) FROM nurse_shifts WHERE shift_id = :s2) as total";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':s1', $shiftId);
+            $stmt->bindParam(':s2', $shiftId);
+            $stmt->execute();
+            $row = $stmt->fetch();
+            if ($row['total'] >= 20) return 'night_shift_full';
+        }
+
+        $sql = "INSERT INTO nurse_shifts (nurse_id, shift_id) VALUES (:nurse_id, :shift_id)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':nurse_id', $nurseId);
+        $stmt->bindParam(':shift_id', $shiftId);
+        $stmt->execute();
+        return 'success';
+    }
+
+    // Hủy đăng ký ca trực y tá
+    public function unregisterNurseShift($nurseId, $shiftId) {
+        $sql = "DELETE FROM nurse_shifts WHERE nurse_id = :nurse_id AND shift_id = :shift_id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':nurse_id', $nurseId);
+        $stmt->bindParam(':shift_id', $shiftId);
+        return $stmt->execute();
+    }
+
+    // Lấy ca trực của 1 y tá
+    public function getShiftsByNurseId($nurseId) {
+        $sql = "SELECT s.*, ns.id as registration_id
+                FROM nurse_shifts ns 
+                JOIN shifts s ON ns.shift_id = s.id 
+                WHERE ns.nurse_id = :nurse_id 
+                ORDER BY s.shift_date ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':nurse_id', $nurseId);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Đếm ca night trong tuần của 1 y tá
+    public function countNurseNightShiftsInWeek($nurseId, $weekStart) {
+        $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+        $sql = "SELECT COUNT(*) as cnt FROM nurse_shifts ns 
+                JOIN shifts s ON ns.shift_id = s.id 
+                WHERE ns.nurse_id = :nurse_id 
+                AND s.shift_type = 'night' 
+                AND s.shift_date BETWEEN :week_start AND :week_end";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':nurse_id', $nurseId);
+        $stmt->bindParam(':week_start', $weekStart);
+        $stmt->bindParam(':week_end', $weekEnd);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row['cnt'];
+    }
 }

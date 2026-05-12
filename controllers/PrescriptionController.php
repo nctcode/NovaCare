@@ -1,7 +1,8 @@
 <?php
 /**
  * PrescriptionController - Quản lý đơn thuốc
- * - Doctor: tạo đơn, xem đơn
+ * - Doctor: tạo đơn, xem đơn mình kê
+ * - Pharmacist: xem tất cả, cấp phát
  * - Patient: xem đơn thuốc của mình
  */
 require_once __DIR__ . '/../models/Prescription.php';
@@ -28,7 +29,7 @@ class PrescriptionController {
         $user = $_SESSION['user'];
         $role = $user['role'];
 
-        if ($role === 'admin') {
+        if ($role === 'admin' || $role === 'pharmacist') {
             $prescriptions = $this->prescriptionModel->getAll();
         } elseif ($role === 'doctor') {
             $doctor = $this->doctorModel->findByUserId($user['id']);
@@ -48,7 +49,7 @@ class PrescriptionController {
 
     // Form tạo đơn thuốc (Doctor)
     public function create() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole('doctor');
         $user = $_SESSION['user'];
         $doctor = $this->doctorModel->findByUserId($user['id']);
         $medicalRecords = $doctor ? $this->prescriptionModel->getMedicalRecordsByDoctorId($doctor['id']) : [];
@@ -62,7 +63,7 @@ class PrescriptionController {
 
     // Lưu đơn thuốc
     public function store() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole('doctor');
         Security::requirePost('index.php?page=prescriptions');
         Security::requireCsrf();
 
@@ -84,16 +85,26 @@ class PrescriptionController {
         try {
             // Validate thuốc trước khi tạo đơn
             $medicineIds   = $_POST['medicine_id'] ?? [];
+            $quantities    = $_POST['quantity'] ?? [];
             $dosages       = $_POST['dosage'] ?? [];
             $durations     = $_POST['duration'] ?? [];
             $instructions  = $_POST['instructions'] ?? [];
 
-            // Kiểm tra thuốc hết hạn trước khi kê
+            // Kiểm tra thuốc hết hạn + đủ tồn kho trước khi kê
             for ($i = 0; $i < count($medicineIds); $i++) {
                 if (!empty($medicineIds[$i])) {
+                    $med = $this->medicineModel->findById($medicineIds[$i]);
+                    if (!$med) continue;
+
                     if ($this->medicineModel->isExpired($medicineIds[$i])) {
-                        $med = $this->medicineModel->findById($medicineIds[$i]);
                         $_SESSION['error'] = "Thuốc '{$med['name']}' đã hết hạn (HSD: {$med['expiry_date']}). Không thể kê đơn.";
+                        header('Location: index.php?page=prescriptions&action=create');
+                        exit;
+                    }
+
+                    $qty = max(1, intval($quantities[$i] ?? 1));
+                    if ($med['quantity'] < $qty) {
+                        $_SESSION['error'] = "Thuốc '{$med['name']}' không đủ tồn kho (còn {$med['quantity']}, cần {$qty}).";
                         header('Location: index.php?page=prescriptions&action=create');
                         exit;
                     }
@@ -102,20 +113,22 @@ class PrescriptionController {
 
             $prescriptionId = $this->prescriptionModel->create($prescriptionData);
 
-            // Thêm các thuốc vào đơn + trừ tồn kho
+            // Thêm các thuốc vào đơn + trừ tồn kho theo số lượng thực tế
             for ($i = 0; $i < count($medicineIds); $i++) {
                 if (!empty($medicineIds[$i])) {
+                    $qty = max(1, intval($quantities[$i] ?? 1));
                     $itemData = [
                         'prescription_id' => $prescriptionId,
                         'medicine_id'     => $medicineIds[$i],
+                        'quantity'        => $qty,
                         'dosage'          => $dosages[$i] ?? '',
                         'duration'        => $durations[$i] ?? '',
                         'instructions'    => $instructions[$i] ?? '',
                     ];
                     $this->prescriptionModel->addItem($itemData);
 
-                    // Trừ tồn kho (1 đơn vị mỗi thuốc kê)
-                    $this->medicineModel->deductStock($medicineIds[$i], 1);
+                    // Trừ tồn kho theo số lượng kê thực tế
+                    $this->medicineModel->deductStock($medicineIds[$i], $qty);
                 }
             }
 

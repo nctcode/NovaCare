@@ -67,6 +67,51 @@ class DashboardController {
             }
         }
 
+        if ($role === 'nurse') {
+            $nurse = $nurseModel->findByUserId($user['id']);
+            if ($nurse) {
+                $data['nurseInfo'] = $nurse;
+                // Ca trực của y tá
+                require_once __DIR__ . '/../models/Shift.php';
+                $shiftModel = new Shift();
+                $data['myShifts'] = $shiftModel->getShiftsByNurseId($nurse['id']);
+                // Bệnh nhân nội trú (y tá cần xem)
+                require_once __DIR__ . '/../models/Admission.php';
+                $admissionModel = new Admission();
+                $data['activeAdmissions'] = $admissionModel->countActive();
+            }
+        }
+
+        if ($role === 'receptionist') {
+            // Lịch hẹn hôm nay
+            $allAppointments = $appointmentModel->getAll();
+            $data['todayAppointments'] = array_filter($allAppointments, function($a) {
+                return date('Y-m-d', strtotime($a['appointment_date'])) === date('Y-m-d');
+            });
+            $data['todayAppointmentsCount'] = count($data['todayAppointments']);
+            // Hóa đơn pending
+            require_once __DIR__ . '/../models/Invoice.php';
+            $invoiceModel = new Invoice();
+            $data['pendingInvoicesCount'] = $invoiceModel->countByStatus('pending');
+            $data['totalRevenue'] = $invoiceModel->getTotalRevenue();
+            $data['recentAppointments'] = $appointmentModel->getRecentAppointments(5);
+            $lowStockMedicines = $medicineModel->getLowStock();
+        }
+
+        if ($role === 'pharmacist') {
+            // Thuốc sắp hết
+            $lowStockMedicines = $medicineModel->getLowStock();
+            $data['lowStockMedicines'] = $lowStockMedicines;
+            $data['totalLowStock'] = count($lowStockMedicines);
+            // Đơn thuốc gần đây
+            require_once __DIR__ . '/../models/Prescription.php';
+            $prescriptionModel = new Prescription();
+            $data['recentPrescriptions'] = $prescriptionModel->getAll();
+            $data['totalPrescriptions'] = count($data['recentPrescriptions']);
+            // Thuốc sắp hết hạn
+            $data['expiringMedicines'] = $medicineModel->getExpiringSoon();
+        }
+
         if ($role === 'patient') {
             $patient = $patientModel->findByUserId($user['id']);
             if ($patient) {
@@ -120,6 +165,12 @@ class DashboardController {
                 break;
             case 'patient':
                 require_once __DIR__ . '/../views/dashboard/patient.php';
+                break;
+            case 'receptionist':
+                require_once __DIR__ . '/../views/dashboard/receptionist.php';
+                break;
+            case 'pharmacist':
+                require_once __DIR__ . '/../views/dashboard/pharmacist.php';
                 break;
         }
 

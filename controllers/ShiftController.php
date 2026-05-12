@@ -6,15 +6,18 @@
  */
 require_once __DIR__ . '/../models/Shift.php';
 require_once __DIR__ . '/../models/Doctor.php';
+require_once __DIR__ . '/../models/Nurse.php';
 require_once __DIR__ . '/../helpers/Security.php';
 
 class ShiftController {
     private $shiftModel;
     private $doctorModel;
+    private $nurseModel;
 
     public function __construct() {
         $this->shiftModel = new Shift();
         $this->doctorModel = new Doctor();
+        $this->nurseModel = new Nurse();
     }
 
     // Danh sách ca trực
@@ -71,32 +74,54 @@ class ShiftController {
 
     // Đăng ký ca trực (Doctor/Nurse)
     public function register() {
-        Security::requireRole('doctor');
+        Security::requireRole(['doctor', 'nurse']);
         $user = $_SESSION['user'];
         $shiftId = $_GET['shift_id'] ?? 0;
 
-        $doctor = $this->doctorModel->findByUserId($user['id']);
-        if (!$doctor) {
-            $_SESSION['error'] = 'Không tìm thấy thông tin.';
-            header('Location: index.php?page=shifts');
-            exit;
+        // Xác định staff ID theo role
+        $staffId = null;
+        $staffType = $user['role']; // 'doctor' hoặc 'nurse'
+
+        if ($staffType === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if (!$doctor) {
+                $_SESSION['error'] = 'Không tìm thấy thông tin bác sĩ.';
+                header('Location: index.php?page=shifts');
+                exit;
+            }
+            $staffId = $doctor['id'];
+        } else {
+            $nurse = $this->nurseModel->findByUserId($user['id']);
+            if (!$nurse) {
+                $_SESSION['error'] = 'Không tìm thấy thông tin y tá.';
+                header('Location: index.php?page=shifts');
+                exit;
+            }
+            $staffId = $nurse['id'];
         }
 
         // Kiểm tra rule: tối đa 2 ca night/tuần
         $shift = $this->shiftModel->findById($shiftId);
         if ($shift && $shift['shift_type'] === 'night') {
-            // Tính ngày đầu tuần (Monday) của tuần chứa ca trực này
             $shiftDate = $shift['shift_date'];
             $weekStart = date('Y-m-d', strtotime('monday this week', strtotime($shiftDate)));
-            $nightCount = $this->shiftModel->countNightShiftsInWeek($doctor['id'], $weekStart);
+            if ($staffType === 'doctor') {
+                $nightCount = $this->shiftModel->countNightShiftsInWeek($staffId, $weekStart);
+            } else {
+                $nightCount = $this->shiftModel->countNurseNightShiftsInWeek($staffId, $weekStart);
+            }
             if ($nightCount >= 2) {
-                $_SESSION['error'] = 'Bạn đã đăng ký đủ 2 ca trực đêm trong tuần này (tuần ' . $weekStart . '). Không thể đăng ký thêm.';
+                $_SESSION['error'] = 'Bạn đã đăng ký đủ 2 ca trực đêm trong tuần này. Không thể đăng ký thêm.';
                 header('Location: index.php?page=shifts');
                 exit;
             }
         }
 
-        $result = $this->shiftModel->registerShift($doctor['id'], $shiftId);
+        if ($staffType === 'doctor') {
+            $result = $this->shiftModel->registerShift($staffId, $shiftId);
+        } else {
+            $result = $this->shiftModel->registerNurseShift($staffId, $shiftId);
+        }
 
         switch ($result) {
             case 'success':
@@ -114,15 +139,27 @@ class ShiftController {
         exit;
     }
 
-    // Hủy đăng ký ca trực
+    // Hủy đăng ký ca trực (Doctor/Nurse - POST only + CSRF)
     public function unregister() {
-        $user = $_SESSION['user'];
-        $shiftId = $_GET['shift_id'] ?? 0;
+        Security::requireRole(['doctor', 'nurse']);
+        Security::requirePost('index.php?page=shifts');
+        Security::requireCsrf();
 
-        $doctor = $this->doctorModel->findByUserId($user['id']);
-        if ($doctor) {
-            $this->shiftModel->unregisterShift($doctor['id'], $shiftId);
-            $_SESSION['success'] = 'Hủy đăng ký ca trực thành công!';
+        $user = $_SESSION['user'];
+        $shiftId = $_POST['shift_id'] ?? 0;
+
+        if ($user['role'] === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if ($doctor) {
+                $this->shiftModel->unregisterShift($doctor['id'], $shiftId);
+                $_SESSION['success'] = 'Hủy đăng ký ca trực thành công!';
+            }
+        } else {
+            $nurse = $this->nurseModel->findByUserId($user['id']);
+            if ($nurse) {
+                $this->shiftModel->unregisterNurseShift($nurse['id'], $shiftId);
+                $_SESSION['success'] = 'Hủy đăng ký ca trực thành công!';
+            }
         }
 
         header('Location: index.php?page=shifts');

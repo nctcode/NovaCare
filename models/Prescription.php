@@ -24,6 +24,7 @@ class Prescription {
                 JOIN medical_records mr ON pr.medical_record_id = mr.id
                 JOIN patients p ON mr.patient_id = p.id
                 JOIN users pu ON p.user_id = pu.id
+                WHERE mr.deleted_at IS NULL
                 ORDER BY pr.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -42,7 +43,7 @@ class Prescription {
                 JOIN medical_records mr ON pr.medical_record_id = mr.id
                 JOIN patients p ON mr.patient_id = p.id
                 JOIN users pu ON p.user_id = pu.id
-                WHERE pr.doctor_id = :doctor_id
+                WHERE pr.doctor_id = :doctor_id AND mr.deleted_at IS NULL
                 ORDER BY pr.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':doctor_id', $doctorId);
@@ -59,7 +60,7 @@ class Prescription {
                 JOIN doctors d ON pr.doctor_id = d.id
                 JOIN users du ON d.user_id = du.id
                 JOIN medical_records mr ON pr.medical_record_id = mr.id
-                WHERE mr.patient_id = :patient_id
+                WHERE mr.patient_id = :patient_id AND mr.deleted_at IS NULL
                 ORDER BY pr.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $patientId);
@@ -130,6 +131,7 @@ class Prescription {
                 JOIN users pu ON p.user_id = pu.id
                 JOIN doctors d ON mr.doctor_id = d.id
                 JOIN users du ON d.user_id = du.id
+                WHERE mr.deleted_at IS NULL
                 ORDER BY mr.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -142,7 +144,7 @@ class Prescription {
                 FROM medical_records mr
                 JOIN patients p ON mr.patient_id = p.id
                 JOIN users pu ON p.user_id = pu.id
-                WHERE mr.doctor_id = :doctor_id
+                WHERE mr.doctor_id = :doctor_id AND mr.deleted_at IS NULL
                 ORDER BY mr.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':doctor_id', $doctorId);

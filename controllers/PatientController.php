@@ -1,7 +1,7 @@
 <?php
 /**
  * PatientController - CRUD bệnh nhân
- * Quyền: Admin = full CRUD, Doctor = xem, Patient = xem hồ sơ mình
+ * Quyền: Admin/Receptionist = full CRUD, Doctor = xem, Patient = xem hồ sơ mình
  */
 require_once __DIR__ . '/../models/Patient.php';
 require_once __DIR__ . '/../helpers/Security.php';
@@ -16,7 +16,7 @@ class PatientController {
 
     // Danh sách bệnh nhân
     public function index() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole(['admin', 'receptionist', 'doctor']);
         $patients = $this->patientModel->getAll();
         $pageTitle = 'Quản lý Bệnh nhân';
         require_once __DIR__ . '/../views/layout/header.php';
@@ -26,7 +26,7 @@ class PatientController {
 
     // Form thêm bệnh nhân
     public function create() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         $pageTitle = 'Thêm Bệnh nhân';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/patients/create.php';
@@ -35,7 +35,7 @@ class PatientController {
 
     // Lưu bệnh nhân mới
     public function store() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=patients');
         Security::requireCsrf();
 
@@ -64,7 +64,7 @@ class PatientController {
 
     // Form sửa bệnh nhân
     public function edit() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         $id = $_GET['id'] ?? 0;
         $patient = $this->patientModel->findById($id);
 
@@ -82,7 +82,7 @@ class PatientController {
 
     // Lưu cập nhật
     public function update() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=patients');
         Security::requireCsrf();
 
@@ -111,7 +111,7 @@ class PatientController {
 
     // Xóa bệnh nhân (POST only)
     public function delete() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=patients');
         Security::requireCsrf();
 

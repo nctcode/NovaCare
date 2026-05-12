@@ -73,7 +73,7 @@
                         <th>Ngày khám</th>
                         <th>Lý do</th>
                         <th>Trạng thái</th>
-                        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                        <?php if (in_array($_SESSION['user']['role'], ['admin', 'receptionist', 'doctor'])): ?>
                         <th>Cập nhật</th>
                         <?php endif; ?>
                         <?php if ($_SESSION['user']['role'] === 'patient'): ?>
@@ -117,7 +117,7 @@
                             <td><i class="fa-regular fa-clock me-1 text-muted"></i><?= date('d/m/Y H:i', strtotime($a['appointment_date'])) ?></td>
                             <td><?= htmlspecialchars($a['reason'] ?? '') ?></td>
                             <td><span class="badge-status badge-<?= $statusVal ?>"><?= $statusLabel ?></span></td>
-                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                            <?php if (in_array($_SESSION['user']['role'], ['admin', 'receptionist', 'doctor'])): ?>
                             <td>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">

@@ -1,7 +1,7 @@
 <?php
 /**
  * InpatientController - Quản lý nhập viện / nội trú
- * - Admin: xem tất cả, nhập viện, xuất viện, quản lý phòng
+ * - Receptionist: xem tất cả, nhập viện, xuất viện, quản lý phòng
  * - Doctor: xem bệnh nhân mình phụ trách
  */
 require_once __DIR__ . '/../models/Room.php';
@@ -25,7 +25,7 @@ class InpatientController {
 
     // Danh sách nhập viện
     public function index() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole(['admin', 'receptionist', 'doctor']);
         $user = $_SESSION['user'];
         $filter = $_GET['filter'] ?? 'active';
 
@@ -65,7 +65,7 @@ class InpatientController {
 
     // Form nhập viện
     public function admit() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         $patients = [];
         $allPatients = $this->patientModel->getAll();
         foreach ($allPatients as $p) {
@@ -83,7 +83,7 @@ class InpatientController {
 
     // Lưu nhập viện
     public function storeAdmit() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 
@@ -121,7 +121,7 @@ class InpatientController {
 
     // Chi tiết ca nhập viện
     public function detail() {
-        Security::requireRole(['admin', 'doctor']);
+        Security::requireRole(['admin', 'receptionist', 'doctor']);
         $id = $_GET['id'] ?? 0;
         $admission = $this->admissionModel->findById($id);
 
@@ -157,7 +157,7 @@ class InpatientController {
 
     // Xuất viện
     public function discharge() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'receptionist']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 

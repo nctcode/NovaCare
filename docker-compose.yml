@@ -1,0 +1,79 @@
+# ============================================
+# NovaCare - Docker Compose
+# Services: PHP App, MySQL, phpMyAdmin
+# ============================================
+
+services:
+  # ---- PHP Application ----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: novacare-app
+    ports:
+      - "8000:80"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=hospital_management
+      - DB_USER=root
+      - DB_PASS=root
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/var/www/html
+    networks:
+      - novacare-network
+    restart: unless-stopped
+
+  # ---- MySQL Database ----
+  db:
+    image: mysql:8.0
+    container_name: novacare-db
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: hospital_management
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - novacare-db-data:/var/lib/mysql
+      - ./hospital_management2.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - novacare-network
+    restart: unless-stopped
+
+  # ---- phpMyAdmin (Quản lý DB qua web) ----
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: novacare-phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - novacare-network
+    restart: unless-stopped
+
+# ---- Volumes ----
+volumes:
+  novacare-db-data:
+    driver: local
+
+# ---- Networks ----
+networks:
+  novacare-network:
+    driver: bridge

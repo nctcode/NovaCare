@@ -37,7 +37,7 @@ class DeviceController {
         $stmt->execute();
         $departments = $stmt->fetchAll();
 
-        $pageTitle = 'Quản lý Thiết bị Y tế';
+        $pageTitle = 'Quản lý Máy móc y tế';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/devices/index.php';
         require_once __DIR__ . '/../views/layout/footer.php';
@@ -51,7 +51,7 @@ class DeviceController {
         $stmt->execute();
         $departments = $stmt->fetchAll();
 
-        $pageTitle = 'Thêm Thiết bị Y tế';
+        $pageTitle = 'Thêm Máy móc y tế';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/devices/create.php';
         require_once __DIR__ . '/../views/layout/footer.php';

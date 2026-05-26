@@ -156,6 +156,28 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Lấy bệnh nhân liên kết động với một bác sĩ cụ thể
+    public function getByDoctorId($doctorId) {
+        $sql = "SELECT p.*, u.name, u.email, u.phone 
+                FROM patients p 
+                JOIN users u ON p.user_id = u.id 
+                WHERE p.deleted_at IS NULL AND u.deleted_at IS NULL
+                AND p.id IN (
+                    SELECT patient_id FROM appointments WHERE doctor_id = :doctor_id1 AND deleted_at IS NULL
+                    UNION
+                    SELECT patient_id FROM medical_records WHERE doctor_id = :doctor_id2 AND deleted_at IS NULL
+                    UNION
+                    SELECT patient_id FROM admissions WHERE doctor_id = :doctor_id3 AND deleted_at IS NULL
+                )
+                ORDER BY u.name ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':doctor_id1', $doctorId, PDO::PARAM_INT);
+        $stmt->bindParam(':doctor_id2', $doctorId, PDO::PARAM_INT);
+        $stmt->bindParam(':doctor_id3', $doctorId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // Đếm tổng bệnh nhân (chỉ đếm chưa bị xóa mềm)
     public function count() {
         $sql = "SELECT COUNT(*) as total FROM patients WHERE deleted_at IS NULL";

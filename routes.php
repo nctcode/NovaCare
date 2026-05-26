@@ -27,4 +27,6 @@ $routes = [
     'invoices'      => 'InvoiceController',
     'inpatient'     => 'InpatientController',
     'audit_logs'    => 'AuditLogController',
+    'users'         => 'UserController',
+    'ai-admin'      => 'AdminAIController',
 ];

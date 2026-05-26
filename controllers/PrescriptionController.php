@@ -103,8 +103,9 @@ class PrescriptionController {
                     }
 
                     $qty = max(1, intval($quantities[$i] ?? 1));
-                    if ($med['quantity'] < $qty) {
-                        $_SESSION['error'] = "Thuốc '{$med['name']}' không đủ tồn kho (còn {$med['quantity']}, cần {$qty}).";
+                    $available = $med['quantity'] - ($med['reserved'] ?? 0);
+                    if ($available < $qty) {
+                        $_SESSION['error'] = "Thuốc '{$med['name']}' không đủ tồn kho khả dụng (còn {$med['quantity']}, đã đặt trước {$med['reserved']}, cần {$qty}).";
                         header('Location: index.php?page=prescriptions&action=create');
                         exit;
                     }
@@ -127,8 +128,8 @@ class PrescriptionController {
                     ];
                     $this->prescriptionModel->addItem($itemData);
 
-                    // Trừ tồn kho theo số lượng kê thực tế
-                    $this->medicineModel->deductStock($medicineIds[$i], $qty);
+                    // Đặt trước tồn kho theo số lượng kê thực tế (chưa trừ kho vật lý)
+                    $this->medicineModel->reserveStock($medicineIds[$i], $qty);
                 }
             }
 
@@ -177,5 +178,55 @@ class PrescriptionController {
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/prescriptions/view.php';
         require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Xác nhận giao thuốc (Pharmacist)
+    public function dispense() {
+        Security::requireRole(['admin', 'pharmacist']);
+        Security::requirePost('index.php?page=prescriptions');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+        try {
+            $prescription = $this->prescriptionModel->findById($id);
+            if (!$prescription) {
+                throw new Exception('Không tìm thấy đơn thuốc.');
+            }
+            if ($prescription['status'] !== 'paid') {
+                throw new Exception('Đơn thuốc chưa được thanh toán hoặc đã được phát thuốc.');
+            }
+
+            $this->prescriptionModel->updateStatus($id, 'dispensed');
+            $_SESSION['success'] = 'Xác nhận giao thuốc thành công cho đơn thuốc #' . $id;
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+        }
+        header("Location: index.php?page=prescriptions&action=view&id=" . $id);
+        exit;
+    }
+
+    // Hủy đơn thuốc (Doctor hoặc Admin)
+    public function cancel() {
+        Security::requireRole(['admin', 'doctor']);
+        Security::requirePost('index.php?page=prescriptions');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+        try {
+            $prescription = $this->prescriptionModel->findById($id);
+            if (!$prescription) {
+                throw new Exception('Không tìm thấy đơn thuốc.');
+            }
+            if ($prescription['status'] === 'dispensed') {
+                throw new Exception('Không thể hủy đơn thuốc đã được giao.');
+            }
+
+            $this->prescriptionModel->updateStatus($id, 'cancelled');
+            $_SESSION['success'] = 'Hủy đơn thuốc #' . $id . ' thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+        }
+        header("Location: index.php?page=prescriptions&action=view&id=" . $id);
+        exit;
     }
 }

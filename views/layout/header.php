@@ -14,17 +14,19 @@ $pageTitles = [
     'prescriptions' => 'Đơn thuốc',
     'medicines'     => 'Kho thuốc',
     'shifts'        => 'Ca trực',
-    'devices'       => 'Thiết bị Y tế',
+    'devices'       => 'Máy móc y tế',
     'meetings'      => 'Tư vấn Online (Cũ)',
     'consultations' => 'Tư vấn Online',
     'nurses'        => 'Quản lý Y tá',
     'departments'   => 'Quản lý Khoa',
     'services-admin'=> 'Dịch vụ Y tế',
     'ai-assistant'  => 'Trợ lý AI',
-    'equipment'     => 'Trang Thiết bị',
+    'equipment'     => 'Vật tư y tế',
     'records'       => 'Hồ sơ Bệnh án',
     'invoices'      => 'Hóa đơn & Thanh toán',
     'inpatient'     => 'Quản lý Nội trú',
+    'users'         => 'Quản lý Tài khoản',
+    'ai-admin'      => 'AI Quản trị & Vận hành',
 ];
 
 // Section groups for breadcrumb
@@ -43,10 +45,13 @@ $sectionGroups = [
     'medicines'     => 'Kho & Cơ sở vật chất',
     'devices'       => 'Kho & Cơ sở vật chất',
     'equipment'     => 'Kho & Cơ sở vật chất',
+    'users'         => 'Bảo mật & Hệ thống',
+    'audit_logs'    => 'Bảo mật & Hệ thống',
     'shifts'        => 'Khác',
     'consultations' => 'Khác',
     'meetings'      => 'Khác',
     'ai-assistant'  => 'Khác',
+    'ai-admin'      => 'Bảo mật & Hệ thống',
 ];
 
 $roleNames = [
@@ -73,8 +78,8 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="assets/css/style.css?v=<?= time() ?>" rel="stylesheet">
     <link href="assets/css/animations.css" rel="stylesheet">
-    <link href="assets/css/ux-enhancements.css" rel="stylesheet">
-    <link href="assets/css/darkmode.css" rel="stylesheet">
+    <link href="assets/css/ux-enhancements.css?v=<?= time() ?>" rel="stylesheet">
+    <link href="assets/css/darkmode.css?v=<?= time() ?>" rel="stylesheet">
     <!-- Prevent dark mode flash -->
     <script>
         (function(){
@@ -113,6 +118,12 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-building-columns"></i> <span>Danh sách Khoa</span>
             </a>
         </li>
+        <li class="menu-label">Quản lý Bệnh nhân</li>
+        <li>
+            <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
+                <i class="fa-solid fa-hospital-user"></i> <span>Danh sách Bệnh nhân</span>
+            </a>
+        </li>
         <li class="menu-label">Quản lý Nhân sự</li>
         <li>
             <a href="index.php?page=doctors" class="<?= $currentPage === 'doctors' ? 'active' : '' ?>">
@@ -124,20 +135,15 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-user-nurse"></i> <span>Y tá</span>
             </a>
         </li>
-        <li>
-            <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
-                <i class="fa-solid fa-hospital-user"></i> <span>Bệnh nhân</span>
-            </a>
-        </li>
         <li class="menu-label">Cơ sở vật chất</li>
         <li>
             <a href="index.php?page=devices" class="<?= $currentPage === 'devices' ? 'active' : '' ?>">
-                <i class="fa-solid fa-laptop-medical"></i> <span>Thiết bị Khám</span>
+                <i class="fa-solid fa-laptop-medical"></i> <span>Máy móc y tế</span>
             </a>
         </li>
         <li>
             <a href="index.php?page=equipment" class="<?= $currentPage === 'equipment' ? 'active' : '' ?>">
-                <i class="fa-solid fa-toolbox"></i> <span>Trang thiết bị</span>
+                <i class="fa-solid fa-toolbox"></i> <span>Vật tư y tế</span>
             </a>
         </li>
         <li class="menu-label">Cấu hình</li>
@@ -146,18 +152,18 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-stethoscope"></i> <span>Dịch vụ Y tế</span>
             </a>
         </li>
-        <li>
-            <a href="index.php?page=shifts" class="<?= $currentPage === 'shifts' ? 'active' : '' ?>">
-                <i class="fa-solid fa-clock"></i> <span>Ca trực</span>
-            </a>
-        </li>
 
         <li>
-            <a href="index.php?page=ai-assistant" class="<?= $currentPage === 'ai-assistant' ? 'active' : '' ?>">
-                <i class="fa-solid fa-robot"></i> <span>Trợ lý AI</span>
+            <a href="index.php?page=ai-admin" class="<?= $currentPage === 'ai-admin' ? 'active' : '' ?>">
+                <i class="fa-solid fa-brain"></i> <span>AI Quản trị</span>
             </a>
         </li>
         <li class="menu-label">Bảo mật & Hệ thống</li>
+        <li>
+            <a href="index.php?page=users" class="<?= $currentPage === 'users' ? 'active' : '' ?>">
+                <i class="fa-solid fa-users-gear"></i> <span>Quản lý Tài khoản</span>
+            </a>
+        </li>
         <li>
             <a href="index.php?page=audit_logs" class="<?= $currentPage === 'audit_logs' ? 'active' : '' ?>">
                 <i class="fa-solid fa-shield-halved"></i> <span>Audit Logs</span>
@@ -420,15 +426,16 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
             </div>
 
             <!-- User info -->
+            <?php $cleanName = preg_replace('/^(Bác sĩ|BS\.|Bs\.|Bs|BS)\s+/iu', '', $user['name']); ?>
             <div class="nav-user">
                 <div class="user-info">
-                    <div class="name"><?= htmlspecialchars($user['name']) ?></div>
+                    <div class="name"><?= htmlspecialchars($cleanName) ?></div>
                     <div class="role">
                         <span class="badge-status badge-<?= $user['role'] ?>" style="padding:2px 10px;font-size:11px;"><?= $roleName ?></span>
                     </div>
                 </div>
-                <div class="user-avatar" title="<?= htmlspecialchars($user['name']) ?>">
-                    <?= strtoupper(substr($user['name'], 0, 1)) ?>
+                <div class="user-avatar" title="<?= htmlspecialchars($cleanName) ?>">
+                    <?= mb_strtoupper(mb_substr($cleanName, 0, 1, 'utf-8')) ?>
                 </div>
             </div>
         </div>

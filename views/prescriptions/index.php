@@ -37,12 +37,13 @@
                         <th>Bác sĩ</th>
                         <th>Chẩn đoán</th>
                         <th>Ngày tạo</th>
+                        <th>Trạng thái</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($prescriptions)): ?>
-                        <tr><td colspan="6"><div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-file-prescription"></i></div><h6>Chưa có đơn thuốc</h6><p>Chưa có đơn thuốc nào được tạo.</p></div></td></tr>
+                        <tr><td colspan="7"><div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-file-prescription"></i></div><h6>Chưa có đơn thuốc</h6><p>Chưa có đơn thuốc nào được tạo.</p></div></td></tr>
                     <?php else: ?>
                         <?php foreach ($prescriptions as $idx => $pr): ?>
                         <tr>
@@ -51,6 +52,20 @@
                             <td><?= htmlspecialchars($pr['doctor_name'] ?? '') ?></td>
                             <td><?= htmlspecialchars($pr['diagnosis'] ?? '') ?></td>
                             <td><?= date('d/m/Y H:i', strtotime($pr['created_at'])) ?></td>
+                            <td>
+                                <?php
+                                $status = $pr['status'] ?? 'draft';
+                                if ($status === 'draft') {
+                                    echo '<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Chưa thanh toán</span>';
+                                } elseif ($status === 'paid') {
+                                    echo '<span class="badge bg-primary"><i class="bi bi-currency-dollar me-1"></i>Chờ giao thuốc</span>';
+                                } elseif ($status === 'dispensed') {
+                                    echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã giao thuốc</span>';
+                                } elseif ($status === 'cancelled') {
+                                    echo '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>';
+                                }
+                                ?>
+                            </td>
                             <td>
                                 <a href="index.php?page=prescriptions&action=view&id=<?= $pr['id'] ?>" 
                                    class="btn-action btn-view">

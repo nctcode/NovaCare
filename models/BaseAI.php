@@ -110,7 +110,23 @@ abstract class BaseAI {
      * Prompt tóm tắt bệnh án (dùng chung)
      */
     protected function getSummaryPromptSuffix() {
-        return "\nHãy tóm tắt ngắn gọn lịch sử khám bệnh trên, nêu bật: bệnh lý nền (nếu có), xu hướng sức khỏe, và các điểm cần lưu ý cho lần khám tiếp theo. Trả lời bằng tiếng Việt, chuyên nghiệp.";
+        return "\nHãy tóm tắt lịch sử khám bệnh trên của bệnh nhân một cách chuyên nghiệp bằng tiếng Việt.
+Yêu cầu định dạng bắt buộc bằng Markdown như sau để bác sĩ dễ dàng đọc nhanh và nắm bắt trọng điểm:
+
+### 📊 1. BỆNH LÝ NỀN & TRẠNG THÁI HIỆN TẠI
+- Liệt kê các **bệnh lý nền**, **bệnh mãn tính** hoặc **dị ứng** (nếu có). Viết đậm tên bệnh.
+- Tóm tắt ngắn gọn tình trạng hiện tại của bệnh nhân (1-2 câu).
+
+### 📈 2. TIẾN TRÌNH & XU HƯỚNG SỨC KHỎE
+- Trình bày dạng các gạch đầu dòng ngắn gọn về tiến trình sức khỏe qua các lần khám (ví dụ: đang cải thiện ổn định, có chiều hướng tiến triển nặng hơn, hay tái phát liên tục, v.v.).
+- Làm nổi bật các thay đổi quan trọng về chẩn đoán hoặc đáp ứng điều trị của thuốc bằng chữ in đậm `**`.
+
+### ⚠️ 3. ĐIỂM LƯU Ý & CHỈ ĐỊNH ĐẶC BIỆT (Khuyên dùng lần khám tới)
+> **LƯU Ý QUAN TRỌNG:**
+> - Các điểm đặc biệt cần lưu ý cho lần tái khám tiếp theo (ví dụ: cần xét nghiệm gì thêm, cần theo dõi triệu chứng gì cụ thể, lưu ý tác dụng phụ của thuốc nào).
+> - Gạch đầu dòng rõ ràng, ngắn gọn, súc tích, đi thẳng vào vấn đề.
+
+Lưu ý: Không viết thành một đoạn văn dài dòng. Sử dụng cấu trúc thẻ tiêu đề Markdown (###), danh sách gạch đầu dòng (-) và khối trích dẫn (>) như trên để tạo sự thông thoáng, dễ đọc.";
     }
 
     /**

@@ -100,35 +100,7 @@
     </div>
 </div>
 
-<style>
-/* Animation cho Skeleton */
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
 
-/* Markdown Styles cho AI Summary */
-.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
-    color: var(--primary-dark);
-    font-weight: 700;
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
-}
-.markdown-body h3 { font-size: 1.2rem; }
-.markdown-body p { margin-bottom: 1rem; }
-.markdown-body ul, .markdown-body ol { margin-bottom: 1rem; padding-left: 1.5rem; }
-.markdown-body li { margin-bottom: 0.5rem; }
-.markdown-body strong { color: var(--dark); font-weight: 700; }
-.markdown-body blockquote {
-    border-left: 4px solid var(--primary-light);
-    padding-left: 1rem;
-    color: var(--gray-600);
-    background: rgba(102, 126, 234, 0.05);
-    padding: 10px 15px;
-    border-radius: 0 8px 8px 0;
-}
-</style>
 
 <!-- Thêm Marked.js để render Markdown từ AI -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

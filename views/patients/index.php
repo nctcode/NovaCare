@@ -40,9 +40,7 @@
                         <th>Giới tính</th>
                         <th>Nhóm máu</th>
                         <th>Địa chỉ</th>
-                        <?php if ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'doctor'): ?>
-                        <th>Thao tác</th>
-                        <?php endif; ?>
+                         <th>Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -66,17 +64,12 @@
                             </td>
                             <td><?= htmlspecialchars($p['blood_type'] ?? '') ?></td>
                             <td class="td-address"><?= htmlspecialchars($p['address'] ?? '') ?></td>
-                            <?php if ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'doctor'): ?>
                             <td class="td-actions">
                                 <div class="action-btn-group">
-                                    <?php if ($_SESSION['user']['role'] === 'doctor'): ?>
-                                    <a href="index.php?page=records&action=summarize&patient_id=<?= $p['id'] ?>" 
-                                       class="btn-action btn-ai-summary" 
-                                       title="AI Tóm tắt bệnh án">
-                                        <i class="fa-solid fa-brain"></i>
-                                        <span class="btn-label">Tóm tắt AI</span>
+                                    <a href="index.php?page=patients&action=view&id=<?= $p['id'] ?>" 
+                                       class="btn-action btn-view" title="Xem chi tiết">
+                                        <i class="fa-solid fa-eye"></i> Xem
                                     </a>
-                                    <?php endif; ?>
                                     <?php if ($_SESSION['user']['role'] === 'admin'): ?>
                                     <a href="index.php?page=patients&action=edit&id=<?= $p['id'] ?>" 
                                        class="btn-action btn-edit" title="Sửa">
@@ -89,7 +82,6 @@
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <?php endif; ?>
                         </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

@@ -6,16 +6,19 @@
  */
 require_once __DIR__ . '/../models/Invoice.php';
 require_once __DIR__ . '/../models/Patient.php';
+require_once __DIR__ . '/../models/Prescription.php';
 require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../helpers/AuditLog.php';
 
 class InvoiceController {
     private $invoiceModel;
     private $patientModel;
+    private $prescriptionModel;
 
     public function __construct() {
         $this->invoiceModel = new Invoice();
         $this->patientModel = new Patient();
+        $this->prescriptionModel = new Prescription();
     }
 
     // Danh sách hóa đơn
@@ -109,6 +112,7 @@ class InvoiceController {
                 'patient_id' => $_POST['patient_id'],
                 'appointment_id' => $_POST['appointment_id'] ?: null,
                 'admission_id' => $_POST['admission_id'] ?: null,
+                'prescription_id' => $_POST['prescription_id'] ?: null,
                 'total_amount' => $totalAmount,
                 'discount' => $discount,
                 'final_amount' => $finalAmount,
@@ -205,6 +209,43 @@ class InvoiceController {
             $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }
         header('Location: index.php?page=invoices');
+        exit;
+    }
+
+    // Lấy danh sách đơn thuốc chưa thanh toán (JSON)
+    public function getUnpaidPrescriptions() {
+        Security::requireRole(['admin', 'receptionist']);
+        $patientId = $_GET['patient_id'] ?? 0;
+        $prescriptions = $this->prescriptionModel->getUnpaidByPatientId($patientId);
+        
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'prescriptions' => $prescriptions
+        ]);
+        exit;
+    }
+
+    // Lấy chi tiết đơn thuốc (JSON)
+    public function getPrescriptionDetails() {
+        Security::requireRole(['admin', 'receptionist']);
+        $prescriptionId = $_GET['id'] ?? 0;
+        $prescription = $this->prescriptionModel->findById($prescriptionId);
+        
+        if (!$prescription || $prescription['status'] !== 'draft') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy đơn thuốc chưa thanh toán hợp lệ.']);
+            exit;
+        }
+        
+        $items = $this->prescriptionModel->getItems($prescriptionId);
+        
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'prescription' => $prescription,
+            'items' => $items
+        ]);
         exit;
     }
 }

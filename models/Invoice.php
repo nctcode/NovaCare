@@ -96,12 +96,13 @@ class Invoice {
 
     // Tạo hóa đơn
     public function create($data) {
-        $sql = "INSERT INTO invoices (patient_id, appointment_id, admission_id, total_amount, discount, final_amount, payment_method, status, notes, created_by) 
-                VALUES (:patient_id, :appointment_id, :admission_id, :total_amount, :discount, :final_amount, :payment_method, 'pending', :notes, :created_by)";
+        $sql = "INSERT INTO invoices (patient_id, appointment_id, admission_id, prescription_id, total_amount, discount, final_amount, payment_method, status, notes, created_by) 
+                VALUES (:patient_id, :appointment_id, :admission_id, :prescription_id, :total_amount, :discount, :final_amount, :payment_method, 'pending', :notes, :created_by)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $data['patient_id']);
-        $stmt->bindParam(':appointment_id', $data['appointment_id']);
-        $stmt->bindParam(':admission_id', $data['admission_id']);
+        $stmt->bindValue(':appointment_id', $data['appointment_id'] ?: null, $data['appointment_id'] ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        $stmt->bindValue(':admission_id', $data['admission_id'] ?: null, $data['admission_id'] ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        $stmt->bindValue(':prescription_id', $data['prescription_id'] ?: null, $data['prescription_id'] ? PDO::PARAM_INT : PDO::PARAM_NULL);
         $stmt->bindParam(':total_amount', $data['total_amount']);
         $stmt->bindParam(':discount', $data['discount']);
         $stmt->bindParam(':final_amount', $data['final_amount']);
@@ -199,6 +200,14 @@ class Invoice {
         $stmt->bindParam(':id', $id);
         $result = $stmt->execute();
 
+        // Tự động cập nhật trạng thái đơn thuốc liên kết thành 'paid'
+        $invoice = $this->findById($id);
+        if ($invoice && !empty($invoice['prescription_id'])) {
+            require_once __DIR__ . '/Prescription.php';
+            $prescriptionModel = new Prescription();
+            $prescriptionModel->updateStatus($invoice['prescription_id'], 'paid');
+        }
+
         AuditLog::logUpdate('invoices', $id, ['status' => 'pending'], ['status' => 'paid', 'method' => $method]);
         return $result;
     }
@@ -211,6 +220,14 @@ class Invoice {
         $stmt->bindParam(':updated_by', $userId);
         $stmt->bindParam(':id', $id);
         $result = $stmt->execute();
+
+        // Tự động chuyển đơn thuốc liên kết về lại 'draft'
+        $invoice = $this->findById($id);
+        if ($invoice && !empty($invoice['prescription_id'])) {
+            require_once __DIR__ . '/Prescription.php';
+            $prescriptionModel = new Prescription();
+            $prescriptionModel->updateStatus($invoice['prescription_id'], 'draft');
+        }
 
         AuditLog::logUpdate('invoices', $id, null, ['status' => 'cancelled']);
         return $result;

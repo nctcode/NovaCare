@@ -14,9 +14,9 @@
 
 <div class="content-card" data-aos="fade-up">
     <div class="card-header">
-        <h5><i class="fa-solid fa-bed-pulse me-2"></i>Trang thiết bị y tế (<?= count($equipmentList) ?>)</h5>
+        <h5><i class="fa-solid fa-bed-pulse me-2"></i>Vật tư y tế (<?= count($equipmentList) ?>)</h5>
         <a href="index.php?page=equipment&action=create" class="btn-action btn-add">
-            <i class="fa-solid fa-plus"></i> Thêm Thiết bị
+            <i class="fa-solid fa-plus"></i> Thêm vật tư
         </a>
     </div>
     <div class="card-body">

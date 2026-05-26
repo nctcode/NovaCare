@@ -15,7 +15,16 @@ class DepartmentController {
 
     public function index() {
         Security::requireRole(['admin', 'doctor']);
-        $departments = $this->deptModel->getAll();
+        
+        $filters = [
+            'search' => $_GET['search'] ?? '',
+            'sort' => $_GET['sort'] ?? 'name_asc',
+            'has_doctors' => $_GET['has_doctors'] ?? '',
+            'has_nurses' => $_GET['has_nurses'] ?? ''
+        ];
+        
+        $departments = $this->deptModel->getAll($filters);
+        
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/departments/index.php';
         require_once __DIR__ . '/../views/layout/footer.php';
@@ -23,6 +32,13 @@ class DepartmentController {
 
     public function create() {
         Security::requireRole('admin');
+        require_once __DIR__ . '/../models/Doctor.php';
+        require_once __DIR__ . '/../models/Nurse.php';
+        $doctorModel = new Doctor();
+        $nurseModel = new Nurse();
+        $doctors = $doctorModel->getAll();
+        $nurses = $nurseModel->getAll();
+        
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/departments/create.php';
         require_once __DIR__ . '/../views/layout/footer.php';
@@ -37,7 +53,26 @@ class DepartmentController {
             'name' => $_POST['name'],
             'description' => $_POST['description'] ?? '',
         ];
-        $this->deptModel->create($data);
+        $deptId = $this->deptModel->create($data);
+        
+        $doctorIds = $_POST['doctors'] ?? [];
+        $nurseIds = $_POST['nurses'] ?? [];
+        $headDoctor = $_POST['head_doctor'] ?? null;
+        $headNurse = $_POST['head_nurse'] ?? null;
+
+        if (!empty($headDoctor) && !in_array($headDoctor, $doctorIds)) {
+            $doctorIds[] = $headDoctor;
+        }
+        if (!empty($headNurse) && !in_array($headNurse, $nurseIds)) {
+            $nurseIds[] = $headNurse;
+        }
+
+        $this->deptModel->assignDoctors($deptId, $doctorIds);
+        $this->deptModel->setHeadDoctor($deptId, $headDoctor);
+
+        $this->deptModel->assignNurses($deptId, $nurseIds);
+        $this->deptModel->setHeadNurse($deptId, $headNurse);
+        
         $_SESSION['success'] = 'Thêm khoa thành công!';
         
         header('Location: index.php?page=departments');
@@ -53,6 +88,29 @@ class DepartmentController {
             header('Location: index.php?page=departments');
             exit;
         }
+        
+        require_once __DIR__ . '/../models/Doctor.php';
+        require_once __DIR__ . '/../models/Nurse.php';
+        $doctorModel = new Doctor();
+        $nurseModel = new Nurse();
+        $doctors = $doctorModel->getAll();
+        $nurses = $nurseModel->getAll();
+        
+        // Lấy danh sách ID bác sĩ/y tá thuộc khoa này
+        $deptDoctors = array_column($this->deptModel->getDoctorsByDept($id), 'id');
+        $deptNurses = array_column($this->deptModel->getNursesByDept($id), 'id');
+
+        // Tìm head_doctor và head_nurse
+        $headDoctorId = null;
+        foreach ($this->deptModel->getDoctorsByDept($id) as $d) {
+            if ($d['is_head'] == 1) $headDoctorId = $d['id'];
+        }
+
+        $headNurseId = null;
+        foreach ($this->deptModel->getNursesByDept($id) as $n) {
+            if ($n['is_head'] == 1) $headNurseId = $n['id'];
+        }
+
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/departments/edit.php';
         require_once __DIR__ . '/../views/layout/footer.php';
@@ -69,6 +127,25 @@ class DepartmentController {
             'description' => $_POST['description'] ?? '',
         ];
         $this->deptModel->update($id, $data);
+        
+        $doctorIds = $_POST['doctors'] ?? [];
+        $nurseIds = $_POST['nurses'] ?? [];
+        $headDoctor = $_POST['head_doctor'] ?? null;
+        $headNurse = $_POST['head_nurse'] ?? null;
+
+        if (!empty($headDoctor) && !in_array($headDoctor, $doctorIds)) {
+            $doctorIds[] = $headDoctor;
+        }
+        if (!empty($headNurse) && !in_array($headNurse, $nurseIds)) {
+            $nurseIds[] = $headNurse;
+        }
+
+        $this->deptModel->assignDoctors($id, $doctorIds);
+        $this->deptModel->setHeadDoctor($id, $headDoctor);
+
+        $this->deptModel->assignNurses($id, $nurseIds);
+        $this->deptModel->setHeadNurse($id, $headNurse);
+        
         $_SESSION['success'] = 'Cập nhật khoa thành công!';
         
         header('Location: index.php?page=departments');

@@ -14,7 +14,7 @@
 
 <div class="content-card">
     <div class="card-header">
-        <h5><i class="fa-solid fa-laptop-medical me-2"></i>Thiết bị Y tế</h5>
+        <h5><i class="fa-solid fa-laptop-medical me-2"></i>Máy móc y tế</h5>
         <div class="table-search-bar">
             <div class="table-search-input">
                 <i class="fa-solid fa-magnifying-glass"></i>

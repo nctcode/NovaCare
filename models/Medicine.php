@@ -119,6 +119,58 @@ class Medicine {
     }
 
     /**
+     * Đặt trước tồn kho thuốc khi Bác sĩ kê đơn (chưa trừ kho vật lý)
+     */
+    public function reserveStock($medicineId, $quantity = 1) {
+        $medicine = $this->findById($medicineId);
+        if (!$medicine) {
+            throw new Exception("Không tìm thấy thuốc ID: $medicineId");
+        }
+        $available = $medicine['quantity'] - ($medicine['reserved'] ?? 0);
+        if ($available < $quantity) {
+            throw new Exception("Thuốc '{$medicine['name']}' không đủ tồn kho khả dụng (tổng tồn {$medicine['quantity']}, đã đặt trước {$medicine['reserved']}, cần thêm $quantity).");
+        }
+        $sql = "UPDATE medicines SET reserved = COALESCE(reserved, 0) + :qty WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':qty', $quantity, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $medicineId, PDO::PARAM_INT);
+        $stmt->execute();
+        return true;
+    }
+
+    /**
+     * Giải phóng số lượng đặt trước khi Đơn thuốc bị hủy
+     */
+    public function releaseStock($medicineId, $quantity = 1) {
+        $sql = "UPDATE medicines SET reserved = GREATEST(0, COALESCE(reserved, 0) - :qty) WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':qty', $quantity, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $medicineId, PDO::PARAM_INT);
+        $stmt->execute();
+        return true;
+    }
+
+    /**
+     * Trừ tồn kho vật lý thực tế khi Dược sĩ giao thuốc (đồng thời trừ số lượng đặt trước)
+     */
+    public function dispenseStock($medicineId, $quantity = 1) {
+        $medicine = $this->findById($medicineId);
+        if (!$medicine) {
+            throw new Exception("Không tìm thấy thuốc ID: $medicineId");
+        }
+        $sql = "UPDATE medicines SET 
+                    quantity = GREATEST(0, quantity - :qty),
+                    reserved = GREATEST(0, COALESCE(reserved, 0) - :qty_res)
+                WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':qty', $quantity, PDO::PARAM_INT);
+        $stmt->bindParam(':qty_res', $quantity, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $medicineId, PDO::PARAM_INT);
+        $stmt->execute();
+        return true;
+    }
+
+    /**
      * Kiểm tra thuốc đã hết hạn chưa
      * @param int $medicineId
      * @return bool - true nếu đã hết hạn

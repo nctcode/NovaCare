@@ -1,4 +1,17 @@
 <!-- Chi tiết Đơn thuốc -->
+<?php if (isset($_SESSION['success'])): ?>
+    <div class="alert alert-success alert-custom alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+<?php if (isset($_SESSION['error'])): ?>
+    <div class="alert alert-danger alert-custom alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill"></i> <?= $_SESSION['error']; unset($_SESSION['error']); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
 <div class="content-card" style="max-width: 800px;">
     <div class="card-header">
         <h5><i class="bi bi-file-earmark-medical-fill me-2"></i>Chi tiết Đơn thuốc #<?= $prescription['id'] ?></h5>
@@ -15,6 +28,20 @@
             <div class="col-md-6">
                 <p><strong>Chẩn đoán:</strong> <?= htmlspecialchars($prescription['diagnosis'] ?? '') ?></p>
                 <p><strong>Ngày tạo:</strong> <?= date('d/m/Y H:i', strtotime($prescription['created_at'])) ?></p>
+                <p><strong>Trạng thái:</strong> 
+                    <?php
+                    $status = $prescription['status'] ?? 'draft';
+                    if ($status === 'draft') {
+                        echo '<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Chưa thanh toán</span>';
+                    } elseif ($status === 'paid') {
+                        echo '<span class="badge bg-primary"><i class="bi bi-currency-dollar me-1"></i>Chờ giao thuốc</span>';
+                    } elseif ($status === 'dispensed') {
+                        echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã giao thuốc</span>';
+                    } elseif ($status === 'cancelled') {
+                        echo '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>';
+                    }
+                    ?>
+                </p>
             </div>
         </div>
 
@@ -57,5 +84,35 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Action Buttons -->
+        <?php 
+        $user = $_SESSION['user'] ?? null;
+        if ($user): 
+        ?>
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                <!-- Nút giao thuốc cho Dược sĩ / Admin khi đơn đã thanh toán -->
+                <?php if (($user['role'] === 'pharmacist' || $user['role'] === 'admin') && $status === 'paid'): ?>
+                    <form method="POST" action="index.php?page=prescriptions&action=dispense">
+                        <?= Security::csrfField(); ?>
+                        <input type="hidden" name="id" value="<?= $prescription['id'] ?>">
+                        <button type="submit" class="btn btn-success px-4" style="border-radius: 20px;">
+                            <i class="bi bi-check-circle-fill me-2"></i>Xác nhận giao thuốc
+                        </button>
+                    </form>
+                <?php endif; ?>
+
+                <!-- Nút hủy đơn thuốc cho Bác sĩ / Admin khi đơn chưa giao (draft hoặc paid) -->
+                <?php if (($user['role'] === 'doctor' || $user['role'] === 'admin') && in_array($status, ['draft', 'paid'])): ?>
+                    <form method="POST" action="index.php?page=prescriptions&action=cancel" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn thuốc này và giải phóng tồn kho đã đặt trước?');">
+                        <?= Security::csrfField(); ?>
+                        <input type="hidden" name="id" value="<?= $prescription['id'] ?>">
+                        <button type="submit" class="btn btn-outline-danger px-4" style="border-radius: 20px;">
+                            <i class="bi bi-x-circle me-2"></i>Hủy đơn thuốc
+                        </button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
     </div>
 </div>

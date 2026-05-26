@@ -3,6 +3,7 @@
  * Prescription Model - Quản lý đơn thuốc
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/AuditLog.php';
 
 class Prescription {
     private $conn;
@@ -112,11 +113,12 @@ class Prescription {
 
     // Thêm thuốc vào đơn
     public function addItem($data) {
-        $sql = "INSERT INTO prescription_items (prescription_id, medicine_id, dosage, duration, instructions) 
-                VALUES (:prescription_id, :medicine_id, :dosage, :duration, :instructions)";
+        $sql = "INSERT INTO prescription_items (prescription_id, medicine_id, quantity, dosage, duration, instructions) 
+                VALUES (:prescription_id, :medicine_id, :quantity, :dosage, :duration, :instructions)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':prescription_id', $data['prescription_id']);
         $stmt->bindParam(':medicine_id', $data['medicine_id']);
+        $stmt->bindParam(':quantity', $data['quantity'], PDO::PARAM_INT);
         $stmt->bindParam(':dosage', $data['dosage']);
         $stmt->bindParam(':duration', $data['duration']);
         $stmt->bindParam(':instructions', $data['instructions']);
@@ -150,5 +152,68 @@ class Prescription {
         $stmt->bindParam(':doctor_id', $doctorId);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    // Lấy các đơn thuốc chưa thanh toán (status = 'draft') của bệnh nhân
+    public function getUnpaidByPatientId($patientId) {
+        $sql = "SELECT pr.*, 
+                    du.name as doctor_name,
+                    mr.diagnosis
+                FROM prescriptions pr
+                JOIN doctors d ON pr.doctor_id = d.id
+                JOIN users du ON d.user_id = du.id
+                JOIN medical_records mr ON pr.medical_record_id = mr.id
+                WHERE mr.patient_id = :patient_id 
+                  AND pr.status = 'draft' 
+                  AND mr.deleted_at IS NULL
+                ORDER BY pr.created_at DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':patient_id', $patientId);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Cập nhật trạng thái đơn thuốc và điều chỉnh kho tương ứng
+    public function updateStatus($id, $status) {
+        $prescription = $this->findById($id);
+        if (!$prescription) return false;
+        
+        $oldStatus = $prescription['status'];
+        if ($oldStatus === $status) return true;
+
+        $sql = "UPDATE prescriptions SET status = :status WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':status', $status);
+        $stmt->bindParam(':id', $id);
+        $result = $stmt->execute();
+
+        if ($result) {
+            AuditLog::logUpdate('prescriptions', $id, ['status' => $oldStatus], ['status' => $status]);
+
+            // Trừ kho thật hoặc giải phóng tùy vào trạng thái mới
+            $items = $this->getItems($id);
+            require_once __DIR__ . '/Medicine.php';
+            $medicineModel = new Medicine();
+
+            if ($status === 'dispensed') {
+                // Giao thuốc: trừ tồn kho thật, giảm reserved
+                foreach ($items as $item) {
+                    $medicineModel->dispenseStock($item['medicine_id'], $item['quantity']);
+                }
+            } elseif ($status === 'cancelled') {
+                // Hủy đơn thuốc: giải phóng lượng đặt trước
+                if (in_array($oldStatus, ['draft', 'paid'])) {
+                    foreach ($items as $item) {
+                        $medicineModel->releaseStock($item['medicine_id'], $item['quantity']);
+                    }
+                }
+            } elseif ($status === 'draft' && $oldStatus === 'cancelled') {
+                // Khôi phục: đặt trước lại
+                foreach ($items as $item) {
+                    $medicineModel->reserveStock($item['medicine_id'], $item['quantity']);
+                }
+            }
+        }
+        return $result;
     }
 }

@@ -82,4 +82,24 @@ class User {
         $stmt->bindParam(':id', $userId);
         return $stmt->execute();
     }
+
+    // Cập nhật thông tin user
+    public function update($id, $data) {
+        $sql = "UPDATE {$this->table} SET name = :name, email = :email, phone = :phone, role = :role WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':email', $data['email']);
+        $stmt->bindParam(':phone', $data['phone']);
+        $stmt->bindParam(':role', $data['role']);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+
+    // Xóa mềm user
+    public function delete($id) {
+        $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
 }

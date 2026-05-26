@@ -39,7 +39,7 @@ class EquipmentController {
             'description' => $_POST['description'] ?? '',
         ];
         $this->equipmentModel->create($data);
-        $_SESSION['success'] = 'Thêm trang thiết bị thành công!';
+        $_SESSION['success'] = 'Thêm vật tư y tế thành công!';
         
         header('Location: index.php?page=equipment');
         exit;
@@ -50,7 +50,7 @@ class EquipmentController {
         $id = $_GET['id'] ?? null;
         $equipment = $this->equipmentModel->findById($id);
         if (!$equipment) {
-            $_SESSION['error'] = 'Không tìm thấy trang thiết bị.';
+            $_SESSION['error'] = 'Không tìm thấy vật tư y tế.';
             header('Location: index.php?page=equipment');
             exit;
         }
@@ -72,7 +72,7 @@ class EquipmentController {
             'description' => $_POST['description'] ?? '',
         ];
         $this->equipmentModel->update($id, $data);
-        $_SESSION['success'] = 'Cập nhật trang thiết bị thành công!';
+        $_SESSION['success'] = 'Cập nhật vật tư y tế thành công!';
         
         header('Location: index.php?page=equipment');
         exit;
@@ -86,7 +86,7 @@ class EquipmentController {
         $id = $_POST['id'] ?? null;
         if ($id) {
             $this->equipmentModel->delete($id);
-            $_SESSION['success'] = 'Đã xóa trang thiết bị.';
+            $_SESSION['success'] = 'Đã xóa vật tư y tế.';
         }
         header('Location: index.php?page=equipment');
         exit;

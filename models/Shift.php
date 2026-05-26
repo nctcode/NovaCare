@@ -14,20 +14,73 @@ class Shift {
     public function __construct() {
         $db = new Database();
         $this->conn = $db->getConnection();
+        $this->checkAndMigrate();
     }
 
-    // Lấy tất cả ca trực (dùng LEFT JOIN thay correlated subquery cho performance)
-    public function getAll() {
-        $sql = "SELECT s.*, COALESCE(ds_count.registered_count, 0) as registered_count
+    private function checkAndMigrate() {
+        // Check shifts table
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM shifts LIKE 'department_id'");
+            $stmt->execute();
+            if (!$stmt->fetch()) {
+                $this->conn->exec("ALTER TABLE shifts 
+                    ADD COLUMN department_id int DEFAULT NULL,
+                    ADD COLUMN name varchar(150) DEFAULT NULL,
+                    ADD COLUMN start_time time DEFAULT NULL,
+                    ADD COLUMN end_time time DEFAULT NULL,
+                    ADD COLUMN required_doctors int DEFAULT 0,
+                    ADD COLUMN required_nurses int DEFAULT 0,
+                    ADD COLUMN notes text,
+                    ADD INDEX (department_id),
+                    ADD CONSTRAINT fk_shifts_dept FOREIGN KEY (department_id) REFERENCES departments (id) ON DELETE SET NULL ON UPDATE CASCADE
+                ");
+            }
+        } catch (Exception $e) {
+            error_log("Migration error for shifts: " . $e->getMessage());
+        }
+
+        // Check doctor_shifts table
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM doctor_shifts LIKE 'status'");
+            $stmt->execute();
+            if (!$stmt->fetch()) {
+                $this->conn->exec("ALTER TABLE doctor_shifts ADD COLUMN status enum('pending','approved','rejected') DEFAULT 'pending'");
+            }
+        } catch (Exception $e) {
+            error_log("Migration error for doctor_shifts: " . $e->getMessage());
+        }
+
+        // Check nurse_shifts table
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM nurse_shifts LIKE 'status'");
+            $stmt->execute();
+            if (!$stmt->fetch()) {
+                $this->conn->exec("ALTER TABLE nurse_shifts ADD COLUMN status enum('pending','approved','rejected') DEFAULT 'pending'");
+            }
+        } catch (Exception $e) {
+            error_log("Migration error for nurse_shifts: " . $e->getMessage());
+        }
+    }
+
+    // Lấy tất cả ca trực (hỗ trợ filter khoa và đếm số lượng đã duyệt/chờ duyệt)
+    public function getAll($departmentId = null) {
+        $sql = "SELECT s.*, dep.name as department_name,
+                       (SELECT COUNT(*) FROM doctor_shifts ds WHERE ds.shift_id = s.id AND ds.status = 'approved') as approved_doctors,
+                       (SELECT COUNT(*) FROM nurse_shifts ns WHERE ns.shift_id = s.id AND ns.status = 'approved') as approved_nurses,
+                       (SELECT COUNT(*) FROM doctor_shifts ds WHERE ds.shift_id = s.id) as total_registered_doctors,
+                       (SELECT COUNT(*) FROM nurse_shifts ns WHERE ns.shift_id = s.id) as total_registered_nurses
                 FROM shifts s
-                LEFT JOIN (
-                    SELECT shift_id, COUNT(*) as registered_count 
-                    FROM doctor_shifts 
-                    GROUP BY shift_id
-                ) ds_count ON ds_count.shift_id = s.id
-                ORDER BY s.shift_date ASC, s.shift_type ASC";
+                LEFT JOIN departments dep ON s.department_id = dep.id";
+        
+        $params = [];
+        if ($departmentId !== null) {
+            $sql .= " WHERE s.department_id = :department_id";
+            $params[':department_id'] = $departmentId;
+        }
+        
+        $sql .= " ORDER BY s.shift_date ASC, s.start_time ASC";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -40,12 +93,20 @@ class Shift {
         return $stmt->fetch();
     }
 
-    // Tạo ca trực mới
+    // Tạo ca trực mới với đầy đủ thông tin
     public function create($data) {
-        $sql = "INSERT INTO shifts (shift_date, shift_type) VALUES (:shift_date, :shift_type)";
+        $sql = "INSERT INTO shifts (department_id, name, shift_date, start_time, end_time, required_doctors, required_nurses, shift_type, notes) 
+                VALUES (:department_id, :name, :shift_date, :start_time, :end_time, :required_doctors, :required_nurses, :shift_type, :notes)";
         $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':department_id', $data['department_id']);
+        $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':shift_date', $data['shift_date']);
+        $stmt->bindParam(':start_time', $data['start_time']);
+        $stmt->bindParam(':end_time', $data['end_time']);
+        $stmt->bindParam(':required_doctors', $data['required_doctors']);
+        $stmt->bindParam(':required_nurses', $data['required_nurses']);
         $stmt->bindParam(':shift_type', $data['shift_type']);
+        $stmt->bindParam(':notes', $data['notes']);
         $stmt->execute();
         return $this->conn->lastInsertId();
     }
@@ -92,9 +153,10 @@ class Shift {
 
     // Lấy ca trực của 1 bác sĩ
     public function getShiftsByDoctorId($doctorId) {
-        $sql = "SELECT s.*, ds.id as registration_id
+        $sql = "SELECT s.*, ds.id as registration_id, ds.status as registration_status, dep.name as department_name
                 FROM doctor_shifts ds 
                 JOIN shifts s ON ds.shift_id = s.id 
+                LEFT JOIN departments dep ON s.department_id = dep.id
                 WHERE ds.doctor_id = :doctor_id 
                 ORDER BY s.shift_date ASC";
         $stmt = $this->conn->prepare($sql);
@@ -182,15 +244,63 @@ class Shift {
 
     // Lấy ca trực của 1 y tá
     public function getShiftsByNurseId($nurseId) {
-        $sql = "SELECT s.*, ns.id as registration_id
+        $sql = "SELECT s.*, ns.id as registration_id, ns.status as registration_status, dep.name as department_name
                 FROM nurse_shifts ns 
                 JOIN shifts s ON ns.shift_id = s.id 
+                LEFT JOIN departments dep ON s.department_id = dep.id
                 WHERE ns.nurse_id = :nurse_id 
                 ORDER BY s.shift_date ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':nurse_id', $nurseId);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    // Lấy danh sách đăng ký chờ duyệt cho một ca trực (Trưởng khoa dùng)
+    public function getPendingRegistrations($shiftId) {
+        // Lấy danh sách bác sĩ
+        $sqlDoc = "SELECT ds.id as registration_id, 'doctor' as role, u.name, u.phone, d.specialty, ds.status
+                   FROM doctor_shifts ds
+                   JOIN doctors d ON ds.doctor_id = d.id
+                   JOIN users u ON d.user_id = u.id
+                   WHERE ds.shift_id = :shift_id";
+        $stmtDoc = $this->conn->prepare($sqlDoc);
+        $stmtDoc->execute([':shift_id' => $shiftId]);
+        $docs = $stmtDoc->fetchAll();
+
+        // Lấy danh sách y tá
+        $sqlNurse = "SELECT ns.id as registration_id, 'nurse' as role, u.name, u.phone, 'Điều dưỡng' as specialty, ns.status
+                     FROM nurse_shifts ns
+                     JOIN nurses n ON ns.nurse_id = n.id
+                     JOIN users u ON n.user_id = u.id
+                     WHERE ns.shift_id = :shift_id";
+        $stmtNurse = $this->conn->prepare($sqlNurse);
+        $stmtNurse->execute([':shift_id' => $shiftId]);
+        $nurses = $stmtNurse->fetchAll();
+
+        // Gộp hai danh sách
+        $all = array_merge($docs, $nurses);
+        // Sắp xếp theo ngày tạo (đăng ký trước hiện trước) hoặc theo trạng thái
+        usort($all, function($a, $b) {
+            return strcmp($a['name'], $b['name']);
+        });
+        return $all;
+    }
+
+    // Duyệt đăng ký
+    public function approveRegistration($role, $registrationId) {
+        $table = ($role === 'doctor') ? 'doctor_shifts' : 'nurse_shifts';
+        $sql = "UPDATE {$table} SET status = 'approved' WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([':id' => $registrationId]);
+    }
+
+    // Từ chối đăng ký
+    public function rejectRegistration($role, $registrationId) {
+        $table = ($role === 'doctor') ? 'doctor_shifts' : 'nurse_shifts';
+        $sql = "UPDATE {$table} SET status = 'rejected' WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([':id' => $registrationId]);
     }
 
     // Đếm ca night trong tuần của 1 y tá

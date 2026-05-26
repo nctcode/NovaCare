@@ -14,7 +14,17 @@
                     <form method="GET" action="index.php" class="row g-3 align-items-end">
                         <input type="hidden" name="page" value="audit_logs">
                         
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <label class="form-label text-xs font-weight-bolder text-secondary">Loại log</label>
+                            <select name="log_type" class="form-select form-select-sm shadow-none border-radius-md">
+                                <option value="">-- Tất cả --</option>
+                                <?php foreach ($availableLogTypes as $key => $label): ?>
+                                    <option value="<?= $key ?>" <?= (isset($_GET['log_type']) && $_GET['log_type'] == $key) ? 'selected' : '' ?>><?= $label ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
                             <label class="form-label text-xs font-weight-bolder text-secondary">Hành động</label>
                             <select name="action" class="form-select form-select-sm shadow-none border-radius-md">
                                 <option value="">-- Tất cả --</option>
@@ -24,8 +34,8 @@
                             </select>
                         </div>
                         
-                        <div class="col-md-3">
-                            <label class="form-label text-xs font-weight-bolder text-secondary">Bảng dữ liệu</label>
+                        <div class="col-md-2">
+                            <label class="form-label text-xs font-weight-bolder text-secondary">Module (Bảng)</label>
                             <select name="table_name" class="form-select form-select-sm shadow-none border-radius-md">
                                 <option value="">-- Tất cả --</option>
                                 <?php foreach ($availableTables as $tbl): ?>
@@ -72,29 +82,23 @@
                         <table class="table align-items-center mb-0 table-hover table-striped">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thời gian</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Người thao tác</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">ID</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">User (Người thao tác)</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Hành động</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Bảng</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">ID Record</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Module</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">IP</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thời gian</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Chi tiết</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if(empty($logs)): ?>
-                                    <tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3 text-light"></i><br>Không tìm thấy nhật ký nào phù hợp.</td></tr>
+                                    <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3 text-light"></i><br>Không tìm thấy nhật ký nào phù hợp.</td></tr>
                                 <?php else: ?>
                                     <?php foreach ($logs as $log): ?>
                                         <tr>
                                             <td class="align-middle px-4">
-                                                <div class="d-flex flex-column justify-content-center">
-                                                    <span class="text-secondary text-xs font-weight-bold">
-                                                        <i class="far fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($log['created_at'])) ?>
-                                                    </span>
-                                                    <span class="text-secondary text-xs">
-                                                        <i class="far fa-clock me-1"></i><?= date('H:i:s', strtotime($log['created_at'])) ?>
-                                                    </span>
-                                                </div>
+                                                <span class="text-secondary text-xs font-weight-bold">#<?= $log['id'] ?></span>
                                             </td>
                                             <td class="px-4">
                                                 <div class="d-flex px-2 py-1">
@@ -114,13 +118,30 @@
                                                     if ($log['action'] == 'DELETE') $badgeClass = 'bg-gradient-danger';
                                                     if ($log['action'] == 'LOGIN') $badgeClass = 'bg-gradient-info';
                                                 ?>
-                                                <span class="badge badge-sm <?= $badgeClass ?> px-3 py-2 shadow-sm rounded-pill"><i class="fas fa-circle me-1" style="font-size: 8px;"></i> <?= $log['action'] ?></span>
+                                                <span class="badge badge-sm <?= $badgeClass ?> px-3 py-1 shadow-sm rounded-pill mb-1 d-inline-block"><i class="fas fa-circle me-1" style="font-size: 8px;"></i> <?= $log['action'] ?></span>
+                                                <br>
+                                                <?php if(!empty($log['log_type'])): ?>
+                                                    <small class="text-xs text-muted"><?= htmlspecialchars(ucfirst($log['log_type'])) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="align-middle px-4">
                                                 <span class="text-secondary text-xs font-weight-bold border px-2 py-1 rounded bg-light"><?= $log['table_name'] ?></span>
+                                                <?php if($log['record_id']): ?>
+                                                    <div class="text-xs text-muted mt-1">ID: #<?= $log['record_id'] ?></div>
+                                                <?php endif; ?>
                                             </td>
-                                            <td class="align-middle text-center">
-                                                <span class="text-secondary text-xs font-weight-bold">#<?= $log['record_id'] ?></span>
+                                            <td class="align-middle px-4">
+                                                <span class="text-secondary text-xs"><?= htmlspecialchars($log['ip_address'] ?? 'N/A') ?></span>
+                                            </td>
+                                            <td class="align-middle px-4">
+                                                <div class="d-flex flex-column justify-content-center">
+                                                    <span class="text-secondary text-xs font-weight-bold">
+                                                        <i class="far fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($log['created_at'])) ?>
+                                                    </span>
+                                                    <span class="text-secondary text-xs">
+                                                        <i class="far fa-clock me-1"></i><?= date('H:i:s', strtotime($log['created_at'])) ?>
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td class="align-middle text-center">
                                                 <button type="button" class="btn btn-outline-primary btn-sm mb-0 rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#logModal<?= $log['id'] ?>">

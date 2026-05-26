@@ -1,12 +1,12 @@
-﻿<!-- Form Sửa Trang thiết bị -->
+<!-- Form Sửa Vật tư y tế -->
 <div class="form-section" data-aos="fade-up">
-    <h5 class="mb-4"><i class="fa-solid fa-pen-to-square me-2"></i>Sửa Thiết bị</h5>
+    <h5 class="mb-4"><i class="fa-solid fa-pen-to-square me-2"></i>Sửa Vật tư y tế</h5>
     <form method="POST" action="index.php?page=equipment&action=update">
                             <?php echo Security::csrfField(); ?>
         <input type="hidden" name="id" value="<?= $equipment['id'] ?>">
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label for="equipment_name" class="form-label">Tên thiết bị <span class="text-danger">*</span></label>
+                <label for="equipment_name" class="form-label">Tên vật tư <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="equipment_name" name="equipment_name" required value="<?= htmlspecialchars($equipment['equipment_name']) ?>">
             </div>
             <div class="col-md-6 mb-3">

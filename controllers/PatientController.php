@@ -17,10 +17,44 @@ class PatientController {
     // Danh sách bệnh nhân
     public function index() {
         Security::requireRole(['admin', 'receptionist', 'doctor']);
-        $patients = $this->patientModel->getAll();
+        
+        $user = $_SESSION['user'];
+        if ($user['role'] === 'doctor') {
+            require_once __DIR__ . '/../models/Doctor.php';
+            $doctorModel = new Doctor();
+            $doctorInfo = $doctorModel->findByUserId($user['id']);
+            $doctorId = $doctorInfo ? $doctorInfo['id'] : 0;
+            $patients = $this->patientModel->getByDoctorId($doctorId);
+        } else {
+            $patients = $this->patientModel->getAll();
+        }
+
         $pageTitle = 'Quản lý Bệnh nhân';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/patients/index.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Xem chi tiết bệnh nhân (gồm thông tin chung, lịch sử bệnh án, và AI support)
+    public function view() {
+        Security::requireRole(['admin', 'receptionist', 'doctor']);
+        $id = $_GET['id'] ?? 0;
+        $patient = $this->patientModel->findById($id);
+
+        if (!$patient) {
+            $_SESSION['error'] = 'Không tìm thấy bệnh nhân.';
+            header('Location: index.php?page=patients');
+            exit;
+        }
+
+        // Lấy lịch sử khám bệnh (medical records) của bệnh nhân này
+        require_once __DIR__ . '/../models/MedicalRecord.php';
+        $recordModel = new MedicalRecord();
+        $records = $recordModel->getByPatientId($id);
+
+        $pageTitle = 'Chi tiết Bệnh nhân';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/patients/view.php';
         require_once __DIR__ . '/../views/layout/footer.php';
     }
 

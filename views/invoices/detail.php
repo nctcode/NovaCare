@@ -121,7 +121,7 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
             <button onclick="window.print()" class="btn btn-outline-primary" style="border-radius:20px; font-weight:500;">
                 <i class="fa-solid fa-print me-2"></i>In hóa đơn
             </button>
-            <?php if ($invoice['status'] === 'pending' && $_SESSION['user']['role'] === 'admin'): ?>
+            <?php if ($invoice['status'] === 'pending' && in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
                 <div class="dropdown">
                     <button class="btn btn-success dropdown-toggle" style="border-radius:20px; font-weight:500;" data-bs-toggle="dropdown">
                         <i class="fa-solid fa-check me-2"></i>Thanh toán

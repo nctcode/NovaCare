@@ -20,20 +20,34 @@ class AuditLog {
      * @param int|null $recordId - ID record bị tác động
      * @param array|null $oldData - Dữ liệu cũ (cho update/delete)
      * @param array|null $newData - Dữ liệu mới (cho create/update)
+     * @param string|null $logType - Loại log: auth, data_change, system
      */
-    public static function log($action, $tableName = null, $recordId = null, $oldData = null, $newData = null) {
+    public static function log($action, $tableName = null, $recordId = null, $oldData = null, $newData = null, $logType = null) {
         try {
             $db = new Database();
             $conn = $db->getConnection();
 
             // Lấy thông tin user từ session
             $userId = $_SESSION['user']['id'] ?? null;
+            
+            // Lấy IP
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-            $sql = "INSERT INTO audit_logs (user_id, action, table_name, record_id, old_values, new_values) 
-                    VALUES (:user_id, :action, :table_name, :record_id, :old_values, :new_values)";
+            // Xác định log type nếu không truyền vào
+            if (!$logType) {
+                if (in_array($action, ['LOGIN', 'LOGOUT'])) {
+                    $logType = 'auth';
+                } else {
+                    $logType = 'data_change';
+                }
+            }
+
+            $sql = "INSERT INTO audit_logs (user_id, log_type, action, table_name, record_id, old_values, new_values, ip_address) 
+                    VALUES (:user_id, :log_type, :action, :table_name, :record_id, :old_values, :new_values, :ip_address)";
             
             $stmt = $conn->prepare($sql);
             $stmt->bindParam(':user_id', $userId);
+            $stmt->bindParam(':log_type', $logType);
             $stmt->bindParam(':action', $action);
             $stmt->bindParam(':table_name', $tableName);
             $stmt->bindParam(':record_id', $recordId);
@@ -42,6 +56,7 @@ class AuditLog {
             $newJson = $newData ? json_encode($newData, JSON_UNESCAPED_UNICODE) : null;
             $stmt->bindParam(':old_values', $oldJson);
             $stmt->bindParam(':new_values', $newJson);
+            $stmt->bindParam(':ip_address', $ipAddress);
             
             $stmt->execute();
         } catch (Exception $e) {
@@ -99,6 +114,10 @@ class AuditLog {
         $where = [];
         $params = [];
 
+        if (!empty($filters['log_type'])) {
+            $where[] = "al.log_type = :log_type";
+            $params[':log_type'] = $filters['log_type'];
+        }
         if (!empty($filters['action'])) {
             $where[] = "al.action = :action";
             $params[':action'] = $filters['action'];
@@ -149,6 +168,10 @@ class AuditLog {
         $where = [];
         $params = [];
 
+        if (!empty($filters['log_type'])) {
+            $where[] = "al.log_type = :log_type";
+            $params[':log_type'] = $filters['log_type'];
+        }
         if (!empty($filters['action'])) {
             $where[] = "al.action = :action";
             $params[':action'] = $filters['action'];

@@ -254,4 +254,58 @@ class Security {
             exit;
         }
     }
+
+    // ==========================================
+    //  TRƯỞNG KHOA / ĐIỀU DƯỠNG TRƯỞNG
+    // ==========================================
+
+    /**
+     * Kiểm tra user hiện tại có phải Trưởng khoa (is_head) không.
+     * Trả về mảng thông tin nếu đúng, false nếu không.
+     * 
+     * @return array|false - Thông tin doctor/nurse row (bao gồm department_id) hoặc false
+     */
+    public static function isHeadOfDepartment() {
+        if (!isset($_SESSION['user'])) return false;
+        $user = $_SESSION['user'];
+
+        require_once __DIR__ . '/../config/database.php';
+        $db = new Database();
+        $conn = $db->getConnection();
+
+        if ($user['role'] === 'doctor') {
+            $stmt = $conn->prepare("SELECT d.*, dep.name as department_name FROM doctors d LEFT JOIN departments dep ON d.department_id = dep.id WHERE d.user_id = :uid AND d.is_head = 1 AND d.deleted_at IS NULL LIMIT 1");
+            $stmt->execute([':uid' => $user['id']]);
+            return $stmt->fetch() ?: false;
+        }
+
+        if ($user['role'] === 'nurse') {
+            $stmt = $conn->prepare("SELECT n.*, dep.name as department_name FROM nurses n LEFT JOIN departments dep ON n.department_id = dep.id WHERE n.user_id = :uid AND n.is_head = 1 LIMIT 1");
+            $stmt->execute([':uid' => $user['id']]);
+            return $stmt->fetch() ?: false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Yêu cầu user phải là Trưởng khoa / Điều dưỡng trưởng.
+     * Redirect nếu không đủ quyền.
+     * 
+     * @param string $redirectUrl
+     */
+    public static function requireHeadRole($redirectUrl = 'index.php?page=shifts') {
+        if (!isset($_SESSION['user'])) {
+            header('Location: index.php?page=login');
+            exit;
+        }
+
+        $headInfo = self::isHeadOfDepartment();
+        if (!$headInfo) {
+            $_SESSION['error'] = 'Chỉ Trưởng khoa hoặc Điều dưỡng trưởng mới có quyền thực hiện hành động này.';
+            header('Location: ' . $redirectUrl);
+            exit;
+        }
+        return $headInfo;
+    }
 }

@@ -21,6 +21,7 @@ class AuditLogController {
 
         // Thu thập bộ lọc từ GET params
         $filters = [
+            'log_type'   => trim($_GET['log_type'] ?? ''),
             'action'     => trim($_GET['action'] ?? ''),
             'table_name' => trim($_GET['table_name'] ?? ''),
             'user_name'  => trim($_GET['user_name'] ?? ''),
@@ -38,6 +39,7 @@ class AuditLogController {
         $logs       = AuditLog::getLogs($limit, $offset, $filters);
 
         // Dữ liệu cho các dropdown bộ lọc
+        $availableLogTypes = ['auth' => 'Xác thực (Auth)', 'data_change' => 'Thay đổi dữ liệu (Data)', 'system' => 'Hệ thống (System)'];
         $availableActions = ['LOGIN', 'INSERT', 'UPDATE', 'DELETE', 'LOGOUT'];
         $availableTables  = AuditLog::getDistinctTables();
 

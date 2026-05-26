@@ -1,4 +1,4 @@
-﻿<!-- Create Invoice -->
+<!-- Create Invoice -->
 <div class="content-card" data-aos="fade-up" style="border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.03);">
     <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
         <h5 class="m-0" style="font-weight:700;"><i class="fa-solid fa-file-circle-plus me-2 text-primary"></i>Tạo hóa đơn mới</h5>
@@ -6,17 +6,25 @@
     </div>
     <div class="card-body">
         <form method="POST" action="index.php?page=invoices&action=store" id="invoiceForm">
-                            <?php echo Security::csrfField(); ?>
-            <!-- Thông tin chung -->
+            <?php echo Security::csrfField(); ?>
+            
+            <!-- 1. Thông tin chung (3 cột bằng nhau) -->
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Bệnh nhân <span class="text-danger">*</span></label>
-                    <select name="patient_id" class="form-select" required>
+                    <select name="patient_id" id="patientSelect" class="form-select" required>
                         <option value="">-- Chọn bệnh nhân --</option>
                         <?php foreach ($patients as $p): ?>
                             <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?> (<?= $p['phone'] ?>)</option>
                         <?php endforeach; ?>
                     </select>
+                    <!-- Đơn thuốc tự động xếp gọn bên dưới select bệnh nhân khi xuất hiện -->
+                    <div id="prescriptionContainer" class="mt-2" style="display: none;">
+                        <label class="form-label fw-bold text-primary" style="font-size:13px; margin-bottom: 4px;">Đơn thuốc chưa thanh toán</label>
+                        <select name="prescription_id" id="prescriptionSelect" class="form-select">
+                            <option value="">-- Không chọn --</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Phương thức thanh toán</label>
@@ -37,63 +45,66 @@
             <input type="hidden" name="appointment_id" value="">
             <input type="hidden" name="admission_id" value="">
 
-            <!-- Items Table -->
+            <!-- 2. Chi tiết hóa đơn (Bảng dữ liệu) -->
             <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="fw-bold m-0"><i class="fa-solid fa-list me-1"></i> Chi tiết hóa đơn</h6>
-                    <button type="button" class="btn btn-sm btn-outline-primary" style="border-radius:20px;" onclick="addRow()">
-                        <i class="fa-solid fa-plus me-1"></i>Thêm dòng
-                    </button>
-                </div>
+                <h6 class="fw-bold mb-3"><i class="fa-solid fa-list me-1"></i> Chi tiết hóa đơn</h6>
                 <div class="table-wrapper">
                     <table class="data-table" id="itemsTable">
                         <thead>
                             <tr>
-                                <th style="width:140px;">Loại</th>
-                                <th>Mô tả</th>
-                                <th style="width:80px;">SL</th>
-                                <th style="width:140px;">Đơn giá</th>
-                                <th style="width:140px;">Thành tiền</th>
-                                <th style="width:50px;"></th>
+                                <th style="width: 15%;">Loại</th>
+                                <th style="width: 38%;">Mô tả</th>
+                                <th style="width: 10%; text-align: center;">SL</th>
+                                <th style="width: 15%; text-align: right;">Đơn giá</th>
+                                <th style="width: 16%; text-align: right;">Thành tiền</th>
+                                <th style="width: 6%; text-align: center;"></th>
                             </tr>
                         </thead>
                         <tbody id="itemsBody">
-                            <!-- Dynamic rows -->
+                            <!-- Dynamic rows loaded here -->
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="4" class="text-end fw-bold">Tổng cộng:</td>
-                                <td class="fw-bold" id="totalDisplay">0đ</td>
-                                <td></td>
+                                <td colspan="4" class="text-end fw-bold" style="padding: 12px 16px; border-top: 1px solid #dee2e6;">Tổng cộng:</td>
+                                <td class="fw-bold text-end" style="padding: 12px 16px; border-top: 1px solid #dee2e6;" id="totalDisplay">0đ</td>
+                                <td style="border-top: 1px solid #dee2e6;"></td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="text-end fw-bold text-danger">Giảm giá:</td>
-                                <td class="fw-bold text-danger" id="discountDisplay">-0đ</td>
+                                <td colspan="4" class="text-end fw-bold text-danger" style="padding: 12px 16px;">Giảm giá:</td>
+                                <td class="fw-bold text-danger text-end" style="padding: 12px 16px;" id="discountDisplay">-0đ</td>
                                 <td></td>
                             </tr>
-                            <tr style="background:var(--primary-light);">
-                                <td colspan="4" class="text-end fw-bold" style="font-size:16px;">THÀNH TIỀN:</td>
-                                <td class="fw-bold text-primary" style="font-size:16px;" id="finalDisplay">0đ</td>
+                            <tr class="final-row">
+                                <td colspan="4" class="text-end fw-bold">THÀNH TIỀN:</td>
+                                <td class="fw-bold text-end" id="finalDisplay">0đ</td>
                                 <td></td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
+                
+                <!-- Nút "+ Thêm dòng" chuyển xuống dưới bảng bên trái -->
+                <div class="mt-2 text-start">
+                    <button type="button" class="btn btn-sm btn-outline-primary" style="border-radius:20px; font-weight:500; padding: 6px 18px;" onclick="addRow()">
+                        <i class="fa-solid fa-plus me-1"></i>Thêm dòng
+                    </button>
+                </div>
             </div>
 
-            <!-- Ghi chú -->
+            <!-- 3. Ghi chú -->
             <div class="mb-4">
                 <label class="form-label fw-bold">Ghi chú</label>
                 <textarea name="notes" class="form-control" rows="2" placeholder="Ghi chú thêm (nếu có)..."></textarea>
             </div>
 
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary" style="border-radius:20px; font-weight:500; padding:10px 30px;">
-                    <i class="fa-solid fa-save me-2"></i>Lưu hóa đơn
-                </button>
+            <!-- 4. Nút hành động (Xếp góc dưới bên phải và phân cấp rõ ràng) -->
+            <div class="d-flex justify-content-end gap-2 mt-4">
                 <a href="index.php?page=invoices" class="btn btn-outline-secondary" style="border-radius:20px; font-weight:500; padding:10px 30px;">
                     <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
                 </a>
+                <button type="submit" class="btn btn-primary" style="border-radius:20px; font-weight:500; padding:10px 30px;">
+                    <i class="fa-solid fa-save me-2"></i>Lưu hóa đơn
+                </button>
             </div>
         </form>
     </div>
@@ -112,7 +123,7 @@ function addRow() {
     const tr = document.createElement('tr');
     tr.id = 'row_' + rowCount;
     tr.innerHTML = `
-        <td>
+        <td style="vertical-align: middle;">
             <select name="item_type[]" class="form-select form-select-sm" onchange="onTypeChange(${rowCount}, this.value)">
                 <option value="service">Dịch vụ</option>
                 <option value="medicine">Thuốc</option>
@@ -120,16 +131,20 @@ function addRow() {
             </select>
             <input type="hidden" name="item_id[]" id="item_id_${rowCount}" value="">
         </td>
-        <td>
+        <td style="vertical-align: middle;">
             <select class="form-select form-select-sm" id="select_${rowCount}" onchange="onItemSelect(${rowCount}, this.value)">
                 <option value="">-- Chọn --</option>
             </select>
-            <input type="text" name="description[]" class="form-control form-control-sm mt-1" id="desc_${rowCount}" placeholder="Mô tả" required>
+            <input type="text" name="description[]" class="form-control form-control-sm" id="desc_${rowCount}" placeholder="Mô tả" required style="display:none;">
         </td>
-        <td><input type="number" name="quantity[]" class="form-control form-control-sm" value="1" min="1" onchange="recalc()" id="qty_${rowCount}"></td>
-        <td><input type="number" name="unit_price[]" class="form-control form-control-sm" value="0" min="0" onchange="recalc()" id="price_${rowCount}"></td>
-        <td id="amount_${rowCount}" style="font-weight:600;">0đ</td>
-        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(${rowCount})"><i class="fa-solid fa-trash"></i></button></td>
+        <td style="vertical-align: middle;"><input type="number" name="quantity[]" class="form-control form-control-sm text-center" value="1" min="1" onchange="recalc()" id="qty_${rowCount}"></td>
+        <td style="vertical-align: middle;"><input type="number" name="unit_price[]" class="form-control form-control-sm text-end" value="0" min="0" onchange="recalc()" id="price_${rowCount}"></td>
+        <td id="amount_${rowCount}" style="font-weight:600; text-align: right; vertical-align: middle;">0đ</td>
+        <td class="text-center" style="vertical-align: middle;">
+            <button type="button" class="btn btn-sm btn-trash-subtle" onclick="removeRow(${rowCount})">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </td>
     `;
     tbody.appendChild(tr);
     onTypeChange(rowCount, 'service');
@@ -137,6 +152,7 @@ function addRow() {
 
 function onTypeChange(idx, type) {
     const sel = document.getElementById('select_' + idx);
+    const desc = document.getElementById('desc_' + idx);
     sel.innerHTML = '<option value="">-- Chọn --</option>';
     let items = type === 'service' ? servicesData : (type === 'medicine' ? medicinesData : []);
     items.forEach(item => {
@@ -146,8 +162,12 @@ function onTypeChange(idx, type) {
     });
     if (type === 'other') {
         sel.style.display = 'none';
+        desc.style.display = '';
+        desc.value = '';
+        document.getElementById('item_id_' + idx).value = '';
     } else {
         sel.style.display = '';
+        desc.style.display = 'none';
     }
 }
 
@@ -191,7 +211,101 @@ function recalc() {
 // Auto recalc when discount changes
 document.getElementById('discountInput').addEventListener('input', recalc);
 
+// Patient selection change handler (AJAX load unpaid prescriptions)
+document.getElementById('patientSelect').addEventListener('change', function() {
+    const patientId = this.value;
+    const container = document.getElementById('prescriptionContainer');
+    const select = document.getElementById('prescriptionSelect');
+    
+    // Reset and hide
+    container.style.display = 'none';
+    select.innerHTML = '<option value="">-- Không chọn --</option>';
+    document.getElementById('itemsBody').innerHTML = '';
+    addRow();
+    
+    if (!patientId) return;
+    
+    fetch(`index.php?page=invoices&action=getUnpaidPrescriptions&patient_id=${patientId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.prescriptions && data.prescriptions.length > 0) {
+                data.prescriptions.forEach(p => {
+                    const date = new Date(p.created_at).toLocaleDateString('vi-VN');
+                    select.innerHTML += `<option value="${p.id}">Đơn thuốc #${p.id} - Bác sĩ ${p.doctor_name} (${date})</option>`;
+                });
+                container.style.display = 'block';
+            }
+        })
+        .catch(err => console.error('Lỗi khi tải đơn thuốc:', err));
+});
+
+// Prescription selection change handler
+document.getElementById('prescriptionSelect').addEventListener('change', function() {
+    const prescriptionId = this.value;
+    const tbody = document.getElementById('itemsBody');
+    
+    // Clear all existing rows
+    tbody.innerHTML = '';
+    
+    if (!prescriptionId) {
+        addRow();
+        return;
+    }
+    
+    fetch(`index.php?page=invoices&action=getPrescriptionDetails&id=${prescriptionId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    addPrescriptionItemRow(item);
+                });
+                recalc();
+            } else {
+                addRow();
+            }
+        })
+        .catch(err => {
+            console.error('Lỗi tải chi tiết đơn thuốc:', err);
+            addRow();
+        });
+});
+
+function addPrescriptionItemRow(item) {
+    rowCount++;
+    const tbody = document.getElementById('itemsBody');
+    const tr = document.createElement('tr');
+    tr.id = 'row_' + rowCount;
+    tr.innerHTML = `
+        <td style="vertical-align: middle;">
+            <select name="item_type[]" class="form-select form-select-sm" onchange="onTypeChange(${rowCount}, this.value)">
+                <option value="service">Dịch vụ</option>
+                <option value="medicine" selected>Thuốc</option>
+                <option value="other">Khác</option>
+            </select>
+            <input type="hidden" name="item_id[]" id="item_id_${rowCount}" value="${item.medicine_id}">
+        </td>
+        <td style="vertical-align: middle;">
+            <select class="form-select form-select-sm" id="select_${rowCount}" onchange="onItemSelect(${rowCount}, this.value)">
+                <option value="">-- Chọn --</option>
+            </select>
+            <input type="text" name="description[]" class="form-control form-control-sm" id="desc_${rowCount}" value="${item.medicine_name}" placeholder="Mô tả" required style="display:none;">
+        </td>
+        <td style="vertical-align: middle;"><input type="number" name="quantity[]" class="form-control form-control-sm text-center" value="${item.quantity}" min="1" onchange="recalc()" id="qty_${rowCount}"></td>
+        <td style="vertical-align: middle;"><input type="number" name="unit_price[]" class="form-control form-control-sm text-end" value="${item.price}" min="0" onchange="recalc()" id="price_${rowCount}"></td>
+        <td id="amount_${rowCount}" style="font-weight:600; text-align: right; vertical-align: middle;">0đ</td>
+        <td class="text-center" style="vertical-align: middle;">
+            <button type="button" class="btn btn-sm btn-trash-subtle" onclick="removeRow(${rowCount})">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    
+    // Set selection
+    onTypeChange(rowCount, 'medicine');
+    document.getElementById('select_' + rowCount).value = item.medicine_id;
+}
+
 // Add first row by default
 addRow();
 </script>
-

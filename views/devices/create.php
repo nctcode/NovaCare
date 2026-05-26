@@ -1,6 +1,6 @@
-﻿<!-- Form Thêm Thiết bị Y tế -->
+<!-- Form Thêm Thiết bị Y tế -->
 <div class="form-section">
-    <h5 class="mb-4"><i class="bi bi-cpu me-2"></i>Thêm Thiết bị Y tế</h5>
+    <h5 class="mb-4"><i class="bi bi-cpu me-2"></i>Thêm Máy móc y tế</h5>
 
     <form method="POST" action="index.php?page=devices&action=store">
                             <?php echo Security::csrfField(); ?>

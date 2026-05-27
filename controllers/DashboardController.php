@@ -22,7 +22,23 @@ class DashboardController {
         $medicineModel = new Medicine();
         $equipmentModel = new Equipment();
 
-        // Dữ liệu cho dashboard
+        // Dữ liệu thực tế từ cơ sở dữ liệu cho dashboard
+        $db = new Database();
+        $conn = $db->getConnection();
+        
+        $stmtDep = $conn->query("SELECT COUNT(*) as total FROM departments");
+        $totalDeps = $stmtDep->fetch()['total'];
+
+        $stmtDev = $conn->query("SELECT COUNT(*) as total FROM medical_devices");
+        $totalDevs = $stmtDev->fetch()['total'];
+
+        $stmtDevAvail = $conn->query("SELECT COUNT(*) as total FROM medical_devices WHERE status = 'available'");
+        $availDevs = $stmtDevAvail->fetch()['total'];
+
+        require_once __DIR__ . '/../models/Admission.php';
+        $admissionModel = new Admission();
+        $activeInpatients = $admissionModel->countActive();
+
         $data = [
             'totalPatients'    => $patientModel->count(),
             'totalDoctors'     => $doctorModel->count(),
@@ -34,6 +50,10 @@ class DashboardController {
             'cancelledAppointments' => $appointmentModel->countByStatus('cancelled'),
             'totalMedicines'   => $medicineModel->count(),
             'totalEquipment'   => $equipmentModel->count(),
+            'totalDepartments' => $totalDeps,
+            'totalDevices'     => $totalDevs,
+            'availableDevices' => $availDevs,
+            'totalInpatients'  => $activeInpatients,
         ];
 
         // Lấy 5 bệnh nhân mới nhất

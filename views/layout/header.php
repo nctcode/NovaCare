@@ -137,7 +137,32 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         </li>
         <li>
             <a href="index.php?page=nurses" class="<?= $currentPage === 'nurses' ? 'active' : '' ?>">
-                <i class="fa-solid fa-user-nurse"></i> <span>Y tá</span>
+                <i class="fa-solid fa-user-nurse"></i> <span>Y tá / Điều dưỡng</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=technicians" class="<?= $currentPage === 'technicians' ? 'active' : '' ?>">
+                <i class="fa-solid fa-flask-vial"></i> <span>Kỹ thuật viên</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=receptionists" class="<?= $currentPage === 'receptionists' ? 'active' : '' ?>">
+                <i class="fa-solid fa-address-book"></i> <span>Lễ tân</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=pharmacists" class="<?= $currentPage === 'pharmacists' ? 'active' : '' ?>">
+                <i class="fa-solid fa-pills"></i> <span>Dược sĩ</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=cashiers" class="<?= $currentPage === 'cashiers' ? 'active' : '' ?>">
+                <i class="fa-solid fa-coins"></i> <span>Thu ngân</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=directors" class="<?= $currentPage === 'directors' ? 'active' : '' ?>">
+                <i class="fa-solid fa-user-tie"></i> <span>Ban giám đốc</span>
             </a>
         </li>
         <li class="menu-label">Cơ sở vật chất</li>

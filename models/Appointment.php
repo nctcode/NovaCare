@@ -211,4 +211,13 @@ class Appointment {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    // Đếm lịch hẹn theo ngày
+    public function countByDate($date) {
+        $sql = "SELECT COUNT(*) as total FROM appointments WHERE DATE(appointment_date) = :date AND deleted_at IS NULL";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':date', $date);
+        $stmt->execute();
+        return $stmt->fetch()['total'];
+    }
 }

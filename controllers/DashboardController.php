@@ -89,13 +89,19 @@ class DashboardController {
                 return date('Y-m-d', strtotime($a['appointment_date'])) === date('Y-m-d');
             });
             $data['todayAppointmentsCount'] = count($data['todayAppointments']);
-            // Hóa đơn pending
+            $data['recentAppointments'] = $appointmentModel->getRecentAppointments(5);
+            // Nội trú
+            require_once __DIR__ . '/../models/Admission.php';
+            $admissionModel = new Admission();
+            $data['activeAdmissions'] = $admissionModel->countActive();
+        }
+
+        if ($role === 'cashier') {
             require_once __DIR__ . '/../models/Invoice.php';
             $invoiceModel = new Invoice();
             $data['pendingInvoicesCount'] = $invoiceModel->countByStatus('pending');
             $data['totalRevenue'] = $invoiceModel->getTotalRevenue();
-            $data['recentAppointments'] = $appointmentModel->getRecentAppointments(5);
-            $lowStockMedicines = $medicineModel->getLowStock();
+            $data['recentInvoices'] = $invoiceModel->getAll();
         }
 
         if ($role === 'pharmacist') {
@@ -149,6 +155,74 @@ class DashboardController {
             }
         }
 
+        // Technician dashboard data
+        if ($role === 'technician') {
+            try {
+                require_once __DIR__ . '/../models/LabOrder.php';
+                $labModel = new LabOrder();
+                $pendingLabOrders = $labModel->countByStatus('pending');
+                $inProgressLabOrders = $labModel->countByStatus('in_progress');
+                $completedLabOrders = $labModel->countByStatus('completed');
+                $totalLabOrders = $labModel->count();
+                $pendingOrders = $labModel->getPending();
+            } catch (Exception $e) {
+                $pendingLabOrders = $inProgressLabOrders = $completedLabOrders = $totalLabOrders = 0;
+                $pendingOrders = [];
+            }
+        }
+
+        // Director dashboard data
+        if ($role === 'director') {
+            require_once __DIR__ . '/../models/Invoice.php';
+            $invoiceModel = new Invoice();
+            
+            $directorStats = [
+                'total_patients' => $patientModel->count(),
+                'total_doctors' => $doctorModel->count(),
+                'total_nurses' => $nurseModel->count(),
+                'today_appointments' => $appointmentModel->countByDate(date('Y-m-d')),
+                'month_revenue' => 0,
+                'total_revenue' => $invoiceModel->getTotalRevenue(),
+                'current_inpatients' => 0,
+                'low_stock_medicines' => count($medicineModel->getLowStock()),
+                'pending_lab_orders' => 0,
+            ];
+
+            try {
+                require_once __DIR__ . '/../models/Admission.php';
+                $admissionModel = new Admission();
+                $directorStats['current_inpatients'] = $admissionModel->countActive();
+            } catch (Exception $e) {}
+
+            try {
+                require_once __DIR__ . '/../models/LabOrder.php';
+                $labModel = new LabOrder();
+                $directorStats['pending_lab_orders'] = $labModel->countByStatus('pending') + $labModel->countByStatus('in_progress');
+            } catch (Exception $e) {}
+
+            // Doanh thu theo tháng (loaded from ReportController for detail page)
+            $revenueByMonth = [];
+            
+            // Thống kê lịch hẹn
+            $appointmentsByStatus = [];
+            
+            // Top bác sĩ
+            $topDoctors = [];
+            
+            // Công suất giường
+            $bedOccupancy = ['total_beds' => 0, 'occupied_beds' => 0, 'occupancy_rate' => 0];
+            try {
+                $db = new Database();
+                $conn = $db->getConnection();
+                $stmt = $conn->query("SELECT COUNT(*) as total FROM beds");
+                $bedOccupancy['total_beds'] = $stmt->fetch()['total'];
+                $stmt = $conn->query("SELECT COUNT(*) as total FROM beds WHERE status = 'occupied'");
+                $bedOccupancy['occupied_beds'] = $stmt->fetch()['total'];
+                $bedOccupancy['occupancy_rate'] = $bedOccupancy['total_beds'] > 0 
+                    ? round(($bedOccupancy['occupied_beds'] / $bedOccupancy['total_beds']) * 100, 1) : 0;
+            } catch (Exception $e) {}
+        }
+
         $pageTitle = 'Dashboard';
         require_once __DIR__ . '/../views/layout/header.php';
 
@@ -171,6 +245,15 @@ class DashboardController {
                 break;
             case 'pharmacist':
                 require_once __DIR__ . '/../views/dashboard/pharmacist.php';
+                break;
+            case 'technician':
+                require_once __DIR__ . '/../views/dashboard/technician.php';
+                break;
+            case 'director':
+                require_once __DIR__ . '/../views/dashboard/director.php';
+                break;
+            case 'cashier':
+                require_once __DIR__ . '/../views/dashboard/cashier.php';
                 break;
         }
 

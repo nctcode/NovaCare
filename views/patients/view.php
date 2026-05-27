@@ -1,147 +1,231 @@
-<!-- Patient Detail View with AI Support Right-Drawer & Clinical History -->
-<div class="row g-4">
-    <!-- Left Column: Patient Profile -->
-    <div class="col-lg-4" data-aos="fade-right">
-        <!-- Profile Card -->
-        <div class="content-card mb-4 text-center p-4">
-            <!-- Circular Avatar Container with soft border and background -->
-            <div class="d-flex align-items-center justify-content-center mx-auto mb-3" 
-                 style="width: 80px; height: 80px; font-size: 32px; border-radius: 50%; background: #e0f2fe; color: #0284c7; border: 3px solid #bae6fd; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);">
-                <?= mb_substr($patient['name'], 0, 1, 'utf-8') ?>
-            </div>
-            
-            <h5 class="fw-bold mb-1" style="color: var(--dark);"><?= htmlspecialchars($patient['name']) ?></h5>
-            <span class="badge-status badge-<?= $patient['gender'] ?? '' ?> mb-3">
-                <?php
-                    $genderMap = ['male' => 'Nam', 'female' => 'Nữ', 'other' => 'Khác'];
-                    echo $genderMap[$patient['gender']] ?? 'N/A';
-                ?>
-            </span>
+<?php
+// Calculate patient's age
+$age = 'Chưa rõ tuổi';
+if (!empty($patient['date_of_birth'])) {
+    $birthDate = new DateTime($patient['date_of_birth']);
+    $today = new DateTime();
+    $age = $today->diff($birthDate)->y . ' tuổi';
+}
 
-            <hr class="my-3">
+$genderMap = ['male' => 'Nam', 'female' => 'Nữ', 'other' => 'Khác'];
+$isDoctor = ($_SESSION['user']['role'] === 'doctor');
+$leftColClass = $isDoctor ? 'col-lg-4' : 'col-md-6';
+$rightColClass = $isDoctor ? 'col-lg-8' : 'col-md-6';
+?>
 
-            <div class="text-start">
-                <div class="mb-3">
-                    <span class="text-muted d-block" style="font-size: 12px; font-weight: 500;">EMAIL</span>
-                    <strong style="color: var(--dark); word-break: break-all;"><?= htmlspecialchars($patient['email']) ?></strong>
+<!-- Patient Header Card (Full Width) -->
+<div class="row mb-4">
+    <div class="col-12" data-aos="fade-down">
+        <div class="content-card p-4 border-0 shadow-sm" style="border-radius: 16px; background: linear-gradient(135deg, #ffffff, #f8fafc);">
+            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-4">
+                <div class="d-flex flex-column flex-md-row align-items-center gap-4">
+                    <!-- Avatar -->
+                    <div class="d-flex align-items-center justify-content-center text-white" 
+                         style="width: 80px; height: 80px; font-size: 32px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0ea5e9); font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.2); flex-shrink: 0; border: 3px solid white;">
+                        <?= mb_substr($patient['name'], 0, 1, 'utf-8') ?>
+                    </div>
+                    <!-- Identity Info -->
+                    <div class="text-center text-md-start">
+                        <div class="d-flex align-items-center justify-content-center justify-content-md-start flex-wrap gap-2 mb-2">
+                            <h3 class="fw-bold m-0" style="color: var(--dark);"><?= htmlspecialchars($patient['name']) ?></h3>
+                            <span class="badge bg-primary-light text-primary px-2.5 py-1" style="font-size: 11px; font-weight: 600; border-radius: 6px;">
+                                BN<?= str_pad($patient['id'], 5, '0', STR_PAD_LEFT) ?>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-center justify-content-md-start flex-wrap gap-2">
+                            <span class="badge bg-light text-secondary border px-2.5 py-1.5" style="font-size: 12px; border-radius: 6px;">
+                                <i class="fa-solid fa-venus-mars me-1 text-primary"></i>
+                                <?= $genderMap[$patient['gender']] ?? 'N/A' ?>
+                            </span>
+                            <span class="badge bg-light text-secondary border px-2.5 py-1.5" style="font-size: 12px; border-radius: 6px;">
+                                <i class="fa-solid fa-hourglass-half me-1 text-warning"></i>
+                                <?= $age ?>
+                            </span>
+                            <span class="badge bg-light text-secondary border px-2.5 py-1.5" style="font-size: 12px; border-radius: 6px;">
+                                <i class="fa-solid fa-droplet me-1 text-danger"></i>
+                                <?= htmlspecialchars($patient['blood_type'] ?? 'N/A') ?>
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <span class="text-muted d-block" style="font-size: 12px; font-weight: 500;">SỐ ĐIỆN THOẠI</span>
-                    <strong style="color: var(--dark);"><?= htmlspecialchars($patient['phone'] ?? 'Chưa cập nhật') ?></strong>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted d-block" style="font-size: 12px; font-weight: 500;">NGÀY SINH</span>
-                    <strong style="color: var(--dark);">
-                        <?= $patient['date_of_birth'] ? date('d/m/Y', strtotime($patient['date_of_birth'])) : 'N/A' ?>
+                <!-- Registration Date -->
+                <?php if (!empty($patient['registered_at'])): ?>
+                <div class="text-center text-md-end">
+                    <span class="text-muted d-block mb-1" style="font-size: 10px; font-weight: 600; letter-spacing: 0.5px;">NGÀY ĐĂNG KÝ HỆ THỐNG</span>
+                    <strong class="text-dark" style="font-size: 14px;">
+                        <?= date('d/m/Y - H:i', strtotime($patient['registered_at'])) ?>
                     </strong>
                 </div>
-                <div class="mb-3">
-                    <span class="text-muted d-block" style="font-size: 12px; font-weight: 500;">NHÓM MÁU</span>
-                    <strong style="color: var(--dark);"><i class="fa-solid fa-droplet text-danger me-1"></i><?= htmlspecialchars($patient['blood_type'] ?? 'N/A') ?></strong>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Details Section -->
+<div class="row g-4">
+    <!-- Cột trái: Thông tin liên hệ & hành chính -->
+    <div class="<?= $leftColClass ?>" data-aos="fade-right">
+        <div class="content-card p-4 border-0 shadow-sm mb-4" style="border-radius: 16px; min-height: 350px;">
+            <h6 class="fw-bold mb-4" style="color: var(--dark); font-size: 14px;"><i class="fa-solid fa-id-card text-primary me-2"></i>Thông tin hành chính</h6>
+            <div class="row g-3">
+                <div class="col-12 col-sm-6 <?= $isDoctor ? 'col-sm-12' : '' ?>">
+                    <div class="p-3" style="background: var(--gray-50); border-radius: 12px; border: 1px solid var(--gray-100);">
+                        <small class="text-muted d-block mb-1" style="font-size: 10px; font-weight: 500; letter-spacing: 0.3px;">SỐ ĐIỆN THOẠI</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-phone text-primary" style="font-size: 13px;"></i>
+                            <strong class="text-dark" style="font-size: 14px;"><?= htmlspecialchars($patient['phone'] ?? 'Chưa cập nhật') ?></strong>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-2">
-                    <span class="text-muted d-block" style="font-size: 12px; font-weight: 500;">ĐỊA CHỈ</span>
-                    <strong style="color: var(--dark);"><?= htmlspecialchars($patient['address'] ?? 'N/A') ?></strong>
+                <div class="col-12 col-sm-6 <?= $isDoctor ? 'col-sm-12' : '' ?>">
+                    <div class="p-3" style="background: var(--gray-50); border-radius: 12px; border: 1px solid var(--gray-100);">
+                        <small class="text-muted d-block mb-1" style="font-size: 10px; font-weight: 500; letter-spacing: 0.3px;">EMAIL</small>
+                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                            <i class="fa-solid fa-envelope text-primary" style="font-size: 13px;"></i>
+                            <strong class="text-dark d-block text-truncate" style="font-size: 14px;" title="<?= htmlspecialchars($patient['email']) ?>"><?= htmlspecialchars($patient['email']) ?></strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 <?= $isDoctor ? 'col-sm-12' : '' ?>">
+                    <div class="p-3" style="background: var(--gray-50); border-radius: 12px; border: 1px solid var(--gray-100);">
+                        <small class="text-muted d-block mb-1" style="font-size: 10px; font-weight: 500; letter-spacing: 0.3px;">NGÀY SINH</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-calendar-days text-primary" style="font-size: 13px;"></i>
+                            <strong class="text-dark" style="font-size: 14px;">
+                                <?= $patient['date_of_birth'] ? date('d/m/Y', strtotime($patient['date_of_birth'])) : 'N/A' ?>
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 <?= $isDoctor ? 'col-sm-12' : '' ?>">
+                    <div class="p-3" style="background: var(--gray-50); border-radius: 12px; border: 1px solid var(--gray-100);">
+                        <small class="text-muted d-block mb-1" style="font-size: 10px; font-weight: 500; letter-spacing: 0.3px;">NHÓM MÁU</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-droplet text-danger" style="font-size: 13px;"></i>
+                            <strong class="text-dark" style="font-size: 14px;"><?= htmlspecialchars($patient['blood_type'] ?? 'N/A') ?></strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="p-3" style="background: var(--gray-50); border-radius: 12px; border: 1px solid var(--gray-100);">
+                        <small class="text-muted d-block mb-1" style="font-size: 10px; font-weight: 500; letter-spacing: 0.3px;">ĐỊA CHỈ</small>
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="fa-solid fa-location-dot text-primary mt-1" style="font-size: 13px;"></i>
+                            <strong class="text-dark" style="font-size: 14px; word-break: break-word;"><?= htmlspecialchars($patient['address'] ?? 'N/A') ?></strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Medical History -->
-        <div class="content-card p-4">
-            <h6 class="fw-bold mb-3" style="color: var(--dark);"><i class="fa-solid fa-notes-medical text-primary me-2"></i>Tiền sử bệnh lý</h6>
-            <div class="p-3 bg-light rounded" style="font-size: 14px; color: var(--gray-700); line-height: 1.6;">
-                <?= !empty($patient['medical_history']) ? nl2br(htmlspecialchars($patient['medical_history'])) : 'Không ghi nhận tiền sử bệnh đặc biệt nào khi đăng ký.' ?>
+        <?php if ($isDoctor): ?>
+            <!-- Tiền sử bệnh lý (Nằm ở cột trái đối với bác sĩ) -->
+            <div class="content-card p-4 border-0 shadow-sm" style="border-radius: 16px;">
+                <h6 class="fw-bold mb-3" style="color: var(--dark); font-size: 14px;"><i class="fa-solid fa-notes-medical text-primary me-2"></i>Tiền sử bệnh lý</h6>
+                <div class="p-3 rounded-3" style="font-size: 14px; color: var(--gray-700); line-height: 1.6; border-left: 4px solid var(--primary); background-color: var(--gray-50) !important;">
+                    <?= !empty($patient['medical_history']) ? nl2br(htmlspecialchars($patient['medical_history'])) : 'Không ghi nhận tiền sử bệnh đặc biệt nào khi đăng ký.' ?>
+                </div>
             </div>
-        </div>
+        <?php endif; ?>
 
-        <!-- Back Button -->
+        <!-- Quay lại danh sách -->
         <div class="mt-4">
-            <a href="index.php?page=patients" class="btn btn-outline-secondary w-100 py-2" style="border-radius: 10px; font-weight: 600;">
+            <a href="index.php?page=patients" class="btn btn-outline-secondary w-100 py-2.5" style="border-radius: 12px; font-weight: 600; transition: all 0.2s;">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
             </a>
         </div>
     </div>
 
-    <!-- Right Column: Medical History & AI Trigger Banner -->
-    <div class="col-lg-8" data-aos="fade-left">
-        
-        <!-- 1. Sleek AI Trigger Banner (Space-saving, height limit 150px) -->
-        <?php if (count($records) > 0 && in_array($_SESSION['user']['role'], ['admin', 'doctor'])): ?>
-        <div class="d-flex align-items-center justify-content-between p-3 mb-4 rounded-4 shadow-sm" 
-             style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(99, 102, 241, 0.08)); border: 1px solid rgba(14, 165, 233, 0.15); max-height: 150px;">
-            <div class="d-flex align-items-center">
-                <div class="d-flex align-items-center justify-content-center bg-white text-primary rounded-3 shadow-sm" style="width: 42px; height: 42px; font-size: 18px;">
-                    <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
-                </div>
-                <div class="ms-3">
-                    <h6 class="m-0 fw-bold" style="color: var(--dark); font-size: 14px;">Trợ lý Y khoa AI & Phân tích Lâm sàng</h6>
-                    <p class="m-0 text-muted d-none d-sm-block" style="font-size: 12px; margin-top: 2px !important;">Tóm tắt nhanh bệnh án, phân tích xu hướng và cảnh báo tái khám.</p>
+    <!-- Cột phải: Bệnh án chi tiết (Doctor) hoặc Tiền sử bệnh lý (Admin) -->
+    <div class="<?= $rightColClass ?>" data-aos="fade-left">
+        <?php if (!$isDoctor): ?>
+            <!-- Tiền sử bệnh lý (Nằm ở cột phải đối với Admin/Lễ tân để cân đối bố cục) -->
+            <div class="content-card p-4 border-0 shadow-sm" style="border-radius: 16px; min-height: 350px;">
+                <h6 class="fw-bold mb-3" style="color: var(--dark); font-size: 15px;"><i class="fa-solid fa-notes-medical text-primary me-2"></i>Tiền sử bệnh lý của bệnh nhân</h6>
+                <div class="p-3 rounded-3" style="font-size: 14px; color: var(--gray-700); line-height: 1.7; border-left: 4px solid var(--primary); background-color: var(--gray-50) !important;">
+                    <?= !empty($patient['medical_history']) ? nl2br(htmlspecialchars($patient['medical_history'])) : 'Không ghi nhận tiền sử bệnh đặc biệt nào khi đăng ký.' ?>
                 </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm px-3 py-2 fw-semibold" id="btnTriggerAI" style="border-radius: 8px; font-size: 13px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);">
-                <i class="fa-solid fa-brain me-1"></i> Xem Tóm tắt AI
-            </button>
-        </div>
-        <?php endif; ?>
-
-        <!-- 2. Medical Records Timeline -->
-        <div class="content-card">
-            <div class="card-header bg-white">
-                <h5 class="fw-bold m-0" style="color: var(--dark);"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i>Lịch sử khám bệnh & Điều trị</h5>
-            </div>
-            <div class="card-body">
-                <?php if (empty($records)): ?>
-                    <div class="text-center py-5 text-muted">
-                        <i class="fa-solid fa-file-medical-flag mb-3" style="font-size: 40px; color: var(--gray-300);"></i>
-                        <h6>Chưa có lịch sử bệnh án</h6>
-                        <p class="m-0" style="font-size:14px;">Bệnh nhân này chưa thực hiện lượt khám bệnh nào tại bệnh viện.</p>
+        <?php else: ?>
+            <!-- Bác sĩ: AI + Timeline -->
+            
+            <!-- 1. Sleek AI Trigger Banner (Space-saving, height limit 150px) -->
+            <?php if (count($records) > 0): ?>
+            <div class="d-flex align-items-center justify-content-between p-3 mb-4 rounded-4 shadow-sm" 
+                 style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(99, 102, 241, 0.08)); border: 1px solid rgba(14, 165, 233, 0.15); max-height: 150px;">
+                <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center justify-content-center bg-white text-primary rounded-3 shadow-sm" style="width: 42px; height: 42px; font-size: 18px;">
+                        <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
                     </div>
-                <?php else: ?>
-                    <div class="timeline medical-timeline">
-                        <?php foreach ($records as $i => $rec): ?>
-                        <div class="timeline-item">
-                            <!-- Circular timeline icon centered on line -->
-                            <div class="timeline-icon">
-                                <i class="fa-solid fa-notes-medical"></i>
-                            </div>
-                            
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i><?= date('d/m/Y - H:i', strtotime($rec['created_at'])) ?></span>
-                                    <!-- Stripped duplicates like "BS. Bác sĩ" to "BS." -->
-                                    <span class="text-muted" style="font-size: 13px;">
-                                        <i class="fa-solid fa-user-doctor me-1"></i>BS. <?= htmlspecialchars(preg_replace('/^(Bác sĩ|BS\.|Bs\.|Bs|BS)\s+/iu', '', $rec['doctor_name'] ?? 'N/A')) ?>
-                                    </span>
-                                </div>
-                                <div class="card-body">
-                                    <h6 class="fw-bold mb-2" style="color: var(--dark);"><span class="text-danger">Chẩn đoán:</span> <?= htmlspecialchars($rec['diagnosis'] ?? '') ?></h6>
-                                    
-                                    <?php if (!empty($rec['treatment'])): ?>
-                                    <div class="mt-2" style="font-size: 14px; color: var(--gray-600); background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 3px solid var(--success);">
-                                        <strong style="color: var(--success); display: block; margin-bottom: 5px; font-size: 13px;">Hướng điều trị / Đơn thuốc:</strong>
-                                        <?= nl2br(htmlspecialchars($rec['treatment'])) ?>
-                                    </div>
-                                    <?php endif; ?>
+                    <div class="ms-3">
+                        <h6 class="m-0 fw-bold" style="color: var(--dark); font-size: 14px;">Trợ lý Y khoa AI & Phân tích Lâm sàng</h6>
+                        <p class="m-0 text-muted d-none d-sm-block" style="font-size: 12px; margin-top: 2px !important;">Tóm tắt nhanh bệnh án, phân tích xu hướng và cảnh báo tái khám.</p>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm px-3 py-2 fw-semibold" id="btnTriggerAI" style="border-radius: 8px; font-size: 13px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);">
+                    <i class="fa-solid fa-brain me-1"></i> Xem Tóm tắt AI
+                </button>
+            </div>
+            <?php endif; ?>
 
-                                    <?php if (!empty($rec['notes'])): ?>
-                                    <div class="mt-2" style="font-size: 13px; color: var(--gray-500);">
-                                        <i class="fa-solid fa-comment-medical me-1"></i><strong>Ghi chú thêm:</strong> <?= htmlspecialchars($rec['notes']) ?>
-                                    </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
+            <!-- 2. Medical Records Timeline -->
+            <div class="content-card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-header bg-white border-0 pt-4 pb-2">
+                    <h5 class="fw-bold m-0" style="color: var(--dark);"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i>Lịch sử khám bệnh & Điều trị</h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($records)): ?>
+                        <div class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-file-medical-flag mb-3" style="font-size: 40px; color: var(--gray-300);"></i>
+                            <h6>Chưa có lịch sử bệnh án</h6>
+                            <p class="m-0" style="font-size:14px;">Bệnh nhân này chưa thực hiện lượt khám bệnh nào tại bệnh viện.</p>
                         </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+                    <?php else: ?>
+                        <div class="timeline medical-timeline">
+                            <?php foreach ($records as $i => $rec): ?>
+                            <div class="timeline-item">
+                                <!-- Circular timeline icon centered on line -->
+                                <div class="timeline-icon">
+                                    <i class="fa-solid fa-notes-medical"></i>
+                                </div>
+                                
+                                <div class="card border-0 shadow-sm" style="border-radius: 12px; background: var(--gray-50);">
+                                    <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-white text-dark border px-2.5 py-1.5" style="border-radius: 6px;"><i class="fa-regular fa-calendar me-1 text-primary"></i><?= date('d/m/Y - H:i', strtotime($rec['created_at'])) ?></span>
+                                        <span class="text-muted" style="font-size: 13px;">
+                                            <i class="fa-solid fa-user-doctor me-1 text-secondary"></i>BS. <?= htmlspecialchars(preg_replace('/^(Bác sĩ|BS\.|Bs\.|Bs|BS)\s+/iu', '', $rec['doctor_name'] ?? 'N/A')) ?>
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="fw-bold mb-2" style="color: var(--dark);"><span class="text-danger">Chẩn đoán:</span> <?= htmlspecialchars($rec['diagnosis'] ?? '') ?></h6>
+                                        
+                                        <?php if (!empty($rec['treatment'])): ?>
+                                        <div class="mt-2" style="font-size: 14px; color: var(--gray-600); background: white; padding: 12px; border-radius: 8px; border-left: 3px solid var(--success); border: 1px solid var(--gray-200); border-left-width: 4px; border-left-color: var(--success);">
+                                            <strong style="color: var(--success); display: block; margin-bottom: 5px; font-size: 13px;">Hướng điều trị / Đơn thuốc:</strong>
+                                            <?= nl2br(htmlspecialchars($rec['treatment'])) ?>
+                                        </div>
+                                        <?php endif; ?>
 
+                                        <?php if (!empty($rec['notes'])): ?>
+                                        <div class="mt-2" style="font-size: 13px; color: var(--gray-500);">
+                                            <i class="fa-solid fa-comment-medical me-1"></i><strong>Ghi chú thêm:</strong> <?= htmlspecialchars($rec['notes']) ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
-<!-- 3. AI Assistant Right-Drawer & Overlay (Rendered at layout bottom) -->
-<?php if (count($records) > 0 && in_array($_SESSION['user']['role'], ['admin', 'doctor'])): ?>
+<!-- 3. AI Assistant Right-Drawer & Overlay (Doctor-only) -->
+<?php if ($isDoctor && count($records) > 0): ?>
 <div class="ai-drawer-overlay" id="aiDrawerOverlay"></div>
 <div class="ai-drawer" id="aiDrawer">
     <div class="ai-drawer-header">

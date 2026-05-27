@@ -15,7 +15,7 @@ class DoctorController {
     }
 
     public function index() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'doctor', 'nurse', 'receptionist']);
         $doctors = $this->doctorModel->getAll();
         $pageTitle = 'Quản lý Bác sĩ';
         require_once __DIR__ . '/../views/layout/header.php';
@@ -42,7 +42,7 @@ class DoctorController {
             'email'            => trim($_POST['email'] ?? ''),
             'phone'            => trim($_POST['phone'] ?? ''),
             'password'         => '123456',
-            'department_id'    => $_POST['department_id'] ?? null,
+            'department_ids'   => $_POST['department_ids'] ?? [],
             'specialty'        => trim($_POST['specialty'] ?? ''),
             'experience_years' => $_POST['experience_years'] ?? 0,
         ];
@@ -86,7 +86,7 @@ class DoctorController {
             'name'             => trim($_POST['name'] ?? ''),
             'email'            => trim($_POST['email'] ?? ''),
             'phone'            => trim($_POST['phone'] ?? ''),
-            'department_id'    => $_POST['department_id'] ?? null,
+            'department_ids'   => $_POST['department_ids'] ?? [],
             'specialty'        => trim($_POST['specialty'] ?? ''),
             'experience_years' => $_POST['experience_years'] ?? 0,
         ];
@@ -118,6 +118,23 @@ class DoctorController {
         }
         header('Location: index.php?page=doctors');
         exit;
+    }
+
+    public function view() {
+        Security::requireRole(['admin', 'doctor', 'nurse', 'receptionist']);
+        $id = $_GET['id'] ?? 0;
+        $doctor = $this->doctorModel->findById($id);
+
+        if (!$doctor) {
+            $_SESSION['error'] = 'Không tìm thấy bác sĩ.';
+            header('Location: index.php?page=doctors');
+            exit;
+        }
+
+        $pageTitle = 'Chi tiết Bác sĩ';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/doctors/view.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
     }
 }
 

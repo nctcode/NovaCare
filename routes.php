@@ -29,4 +29,6 @@ $routes = [
     'audit_logs'    => 'AuditLogController',
     'users'         => 'UserController',
     'ai-admin'      => 'AdminAIController',
+    'lab-orders'    => 'LabOrderController',
+    'reports'       => 'ReportController',
 ];

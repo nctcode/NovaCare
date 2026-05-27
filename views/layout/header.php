@@ -15,7 +15,6 @@ $pageTitles = [
     'medicines'     => 'Kho thuốc',
     'shifts'        => 'Ca trực',
     'devices'       => 'Máy móc y tế',
-    'meetings'      => 'Tư vấn Online (Cũ)',
     'consultations' => 'Tư vấn Online',
     'nurses'        => 'Quản lý Y tá',
     'departments'   => 'Quản lý Khoa',
@@ -27,6 +26,8 @@ $pageTitles = [
     'inpatient'     => 'Quản lý Nội trú',
     'users'         => 'Quản lý Tài khoản',
     'ai-admin'      => 'AI Quản trị & Vận hành',
+    'lab-orders'    => 'Chỉ định CLS',
+    'reports'       => 'Báo cáo & Thống kê',
 ];
 
 // Section groups for breadcrumb
@@ -42,6 +43,7 @@ $sectionGroups = [
     'invoices'      => 'Hoạt động Khám chữa bệnh',
     'inpatient'     => 'Hoạt động Khám chữa bệnh',
     'records'       => 'Hoạt động Khám chữa bệnh',
+    'lab-orders'    => 'Hoạt động Khám chữa bệnh',
     'medicines'     => 'Kho & Cơ sở vật chất',
     'devices'       => 'Kho & Cơ sở vật chất',
     'equipment'     => 'Kho & Cơ sở vật chất',
@@ -49,18 +51,21 @@ $sectionGroups = [
     'audit_logs'    => 'Bảo mật & Hệ thống',
     'shifts'        => 'Khác',
     'consultations' => 'Khác',
-    'meetings'      => 'Khác',
     'ai-assistant'  => 'Khác',
+    'reports'       => 'Báo cáo',
     'ai-admin'      => 'Bảo mật & Hệ thống',
 ];
 
 $roleNames = [
     'admin'         => 'Quản trị viên',
     'doctor'        => 'Bác sĩ',
-    'nurse'         => 'Y tá',
+    'nurse'         => 'Điều dưỡng',
     'patient'       => 'Bệnh nhân',
     'receptionist'  => 'Lễ tân',
     'pharmacist'    => 'Dược sĩ',
+    'technician'    => 'Kỹ thuật viên',
+    'director'      => 'Ban giám đốc',
+    'cashier'       => 'Thu ngân',
 ];
 
 $pageTitle   = $pageTitles[$currentPage] ?? 'NovaCare';
@@ -182,15 +187,29 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-calendar-check"></i> <span>Lịch hẹn</span>
             </a>
         </li>
-        <li class="menu-label">Tài chính & Nội trú</li>
+        <li class="menu-label">Nội trú</li>
         <li>
-            <a href="index.php?page=invoices" class="<?= $currentPage === 'invoices' ? 'active' : '' ?>">
-                <i class="fa-solid fa-file-invoice-dollar"></i> <span>Hóa đơn</span>
+            <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
+                <i class="fa-solid fa-bed-pulse"></i> <span>Quản lý Nội trú</span>
+            </a>
+        </li>
+        <li class="menu-label">Nhân sự</li>
+        <li>
+            <a href="index.php?page=doctors" class="<?= $currentPage === 'doctors' ? 'active' : '' ?>">
+                <i class="fa-solid fa-user-doctor"></i> <span>Bác sĩ</span>
             </a>
         </li>
         <li>
-            <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
-                <i class="fa-solid fa-bed-pulse"></i> <span>Nội trú</span>
+            <a href="index.php?page=nurses" class="<?= $currentPage === 'nurses' ? 'active' : '' ?>">
+                <i class="fa-solid fa-user-nurse"></i> <span>Y tá</span>
+            </a>
+        </li>
+
+        <?php elseif ($user['role'] === 'cashier'): ?>
+        <li class="menu-label">Tài chính</li>
+        <li>
+            <a href="index.php?page=invoices" class="<?= $currentPage === 'invoices' ? 'active' : '' ?>">
+                <i class="fa-solid fa-file-invoice-dollar"></i> <span>Hóa đơn & Thanh toán</span>
             </a>
         </li>
 
@@ -231,6 +250,11 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
             </a>
         </li>
         <li>
+            <a href="index.php?page=lab-orders" class="<?= $currentPage === 'lab-orders' ? 'active' : '' ?>">
+                <i class="fa-solid fa-flask-vial"></i> <span>Chỉ định CLS</span>
+            </a>
+        </li>
+        <li>
             <a href="index.php?page=shifts" class="<?= $currentPage === 'shifts' ? 'active' : '' ?>">
                 <i class="fa-solid fa-clock"></i> <span>Ca trực</span>
             </a>
@@ -244,18 +268,35 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         <?php elseif ($user['role'] === 'nurse'): ?>
         <li class="menu-label">Công việc</li>
         <li>
-            <a href="index.php?page=shifts" class="<?= $currentPage === 'shifts' ? 'active' : '' ?>">
-                <i class="fa-solid fa-clock"></i> <span>Ca trực</span>
-            </a>
-        </li>
-        <li>
             <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
                 <i class="fa-solid fa-bed-pulse"></i> <span>Bệnh nhân nội trú</span>
             </a>
         </li>
         <li>
+            <a href="index.php?page=shifts" class="<?= $currentPage === 'shifts' ? 'active' : '' ?>">
+                <i class="fa-solid fa-clock"></i> <span>Ca trực</span>
+            </a>
+        </li>
+        <li>
             <a href="index.php?page=appointments" class="<?= $currentPage === 'appointments' ? 'active' : '' ?>">
                 <i class="fa-solid fa-calendar-check"></i> <span>Lịch hẹn hôm nay</span>
+            </a>
+        </li>
+
+
+        <?php elseif ($user['role'] === 'technician'): ?>
+        <li class="menu-label">Cận lâm sàng</li>
+        <li>
+            <a href="index.php?page=lab-orders" class="<?= $currentPage === 'lab-orders' ? 'active' : '' ?>">
+                <i class="fa-solid fa-flask-vial"></i> <span>Chỉ định CLS</span>
+            </a>
+        </li>
+
+        <?php elseif ($user['role'] === 'director'): ?>
+        <li class="menu-label">Quản lý</li>
+        <li>
+            <a href="index.php?page=reports" class="<?= $currentPage === 'reports' ? 'active' : '' ?>">
+                <i class="fa-solid fa-chart-bar"></i> <span>Báo cáo & Thống kê</span>
             </a>
         </li>
 

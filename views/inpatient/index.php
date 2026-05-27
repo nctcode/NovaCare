@@ -58,7 +58,7 @@
             <a href="index.php?page=inpatient&filter=<?= $filter === 'active' ? 'all' : 'active' ?>" class="btn btn-outline-secondary" style="border-radius:20px; font-weight:500;">
                 <i class="fa-solid fa-filter me-1"></i><?= $filter === 'active' ? 'Xem tất cả' : 'Chỉ đang nằm viện' ?>
             </a>
-            <?php if (in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
+            <?php if (in_array($_SESSION['user']['role'], ['admin', 'receptionist', 'nurse'])): ?>
             <a href="index.php?page=inpatient&action=admit" class="btn btn-primary" style="border-radius:20px; font-weight:500;">
                 <i class="fa-solid fa-plus me-1"></i>Nhập viện
             </a>
@@ -108,7 +108,7 @@
                             <td>
                                 <div class="d-flex gap-1">
                                     <a href="index.php?page=inpatient&action=detail&id=<?= $a['id'] ?>" class="btn btn-sm btn-outline-primary" style="border-radius:8px;"><i class="fa-solid fa-eye"></i></a>
-                                    <?php if ($a['status'] === 'active' && in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
+                                    <?php if ($a['status'] === 'active' && in_array($_SESSION['user']['role'], ['admin', 'receptionist', 'nurse'])): ?>
                                     <a href="javascript:void(0)" onclick="if(confirm('Xác nhận xuất viện?')) postAction('index.php?page=inpatient&action=discharge&id=<?= $a['id'] ?>')" class="btn btn-sm btn-outline-success" style="border-radius:8px;">
                                         <i class="fa-solid fa-right-from-bracket"></i>
                                     </a>

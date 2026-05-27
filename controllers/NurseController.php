@@ -16,10 +16,27 @@ class NurseController {
     }
 
     public function index() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'doctor', 'nurse', 'receptionist']);
         $nurses = $this->nurseModel->getAll();
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/nurses/index.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    public function view() {
+        Security::requireRole(['admin', 'doctor', 'nurse', 'receptionist']);
+        $id = $_GET['id'] ?? 0;
+        $nurse = $this->nurseModel->findById($id);
+
+        if (!$nurse) {
+            $_SESSION['error'] = 'Không tìm thấy y tá.';
+            header('Location: index.php?page=nurses');
+            exit;
+        }
+
+        $pageTitle = 'Chi tiết Y tá';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/nurses/view.php';
         require_once __DIR__ . '/../views/layout/footer.php';
     }
 

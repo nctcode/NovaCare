@@ -22,13 +22,12 @@ class MedicalRecordController {
     }
 
     public function index() {
+        Security::requireRole(['doctor', 'patient']);
         $user = $_SESSION['user'];
         $role = $user['role'];
         $records = [];
 
-        if ($role === 'admin') {
-            $records = $this->recordModel->getAll();
-        } elseif ($role === 'doctor') {
+        if ($role === 'doctor') {
             $doctor = $this->doctorModel->findByUserId($user['id']);
             if ($doctor) $records = $this->recordModel->getByDoctorId($doctor['id']);
         } elseif ($role === 'patient') {
@@ -43,6 +42,7 @@ class MedicalRecordController {
     }
 
     public function view() {
+        Security::requireRole(['doctor', 'patient']);
         $id = $_GET['id'] ?? null;
         if (!$id) {
             header('Location: index.php?page=records');

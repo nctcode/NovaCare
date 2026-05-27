@@ -66,7 +66,10 @@
                     <span class="badge bg-info text-dark">Y tá</span> nurse1@benhvien.com<br>
                     <span class="badge bg-warning text-dark">Lễ tân</span> letan@benhvien.com<br>
                     <span class="badge bg-success">Dược sĩ</span> duocsi@benhvien.com<br>
-                    <span class="badge bg-secondary">Bệnh nhân</span> benhnhan1@gmail.com
+                    <span class="badge bg-secondary">Bệnh nhân</span> benhnhan1@gmail.com<br>
+                    <span class="badge text-white" style="background-color: #6f42c1;">Kỹ thuật viên</span> ktv@benhvien.com<br>
+                    <span class="badge text-white" style="background-color: #e83e8c;">Thu ngân</span> thungan@benhvien.com<br>
+                    <span class="badge text-white" style="background-color: #fd7e14;">Ban giám đốc</span> giamdoc@benhvien.com
                 </small>
             </div>
 

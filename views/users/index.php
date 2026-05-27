@@ -1,9 +1,4 @@
-<?php
-/**
- * Danh sách người dùng
- */
-require_once 'views/layout/header.php';
-?>
+
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -68,10 +63,13 @@ require_once 'views/layout/header.php';
                                     switch ($u['role']) {
                                         case 'admin': $roleClass = 'bg-danger'; $roleName = 'Quản trị viên'; break;
                                         case 'doctor': $roleClass = 'bg-primary'; $roleName = 'Bác sĩ'; break;
-                                        case 'nurse': $roleClass = 'bg-info text-dark'; $roleName = 'Y tá'; break;
+                                        case 'nurse': $roleClass = 'bg-info text-dark'; $roleName = 'Điều dưỡng'; break;
                                         case 'patient': $roleClass = 'bg-success'; $roleName = 'Bệnh nhân'; break;
                                         case 'receptionist': $roleClass = 'bg-warning text-dark'; $roleName = 'Lễ tân'; break;
                                         case 'pharmacist': $roleClass = 'bg-primary'; $roleName = 'Dược sĩ'; break;
+                                        case 'technician': $roleClass = 'bg-secondary'; $roleName = 'Kỹ thuật viên'; break;
+                                        case 'director': $roleClass = 'bg-dark'; $roleName = 'Ban giám đốc'; break;
+                                        case 'cashier': $roleClass = 'bg-success'; $roleName = 'Thu ngân'; break;
                                     }
                                     ?>
                                     <span class="badge <?= $roleClass ?>"><?= htmlspecialchars($roleName) ?></span>
@@ -126,4 +124,3 @@ function confirmDelete(id, name) {
 }
 </script>
 
-<?php require_once 'views/layout/footer.php'; ?>

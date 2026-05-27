@@ -1,15 +1,11 @@
 <?php
-/**
- * Form cập nhật tài khoản
- */
-require_once 'views/layout/header.php';
-
 // Kiểm tra xem có $editUser được truyền từ controller không
 if (!isset($editUser)) {
     echo "Lỗi: Không tìm thấy dữ liệu tài khoản.";
     exit;
 }
 ?>
+
 
 <div class="row">
     <div class="col-md-8 mx-auto">
@@ -62,9 +58,12 @@ if (!isset($editUser)) {
                                 $roles = [
                                     'admin' => 'Quản trị viên (Admin)',
                                     'receptionist' => 'Lễ tân (Receptionist)',
+                                    'cashier' => 'Thu ngân (Cashier)',
                                     'pharmacist' => 'Dược sĩ (Pharmacist)',
+                                    'technician' => 'Kỹ thuật viên (Technician)',
+                                    'director' => 'Ban giám đốc (Director)',
                                     'doctor' => 'Bác sĩ (Doctor)',
-                                    'nurse' => 'Y tá (Nurse)',
+                                    'nurse' => 'Điều dưỡng (Nurse)',
                                     'patient' => 'Bệnh nhân (Patient)',
                                 ];
                                 foreach ($roles as $val => $label) {
@@ -88,4 +87,3 @@ if (!isset($editUser)) {
     </div>
 </div>
 
-<?php require_once 'views/layout/footer.php'; ?>

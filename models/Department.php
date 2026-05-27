@@ -14,7 +14,7 @@ class Department {
 
     public function getAll($filters = []) {
         $sql = "SELECT d.*, 
-                    (SELECT COUNT(*) FROM doctors doc WHERE doc.department_id = d.id) as doctor_count,
+                    (SELECT COUNT(*) FROM doctor_departments dd WHERE dd.department_id = d.id) as doctor_count,
                     (SELECT COUNT(*) FROM nurses n WHERE n.department_id = d.id) as nurse_count
                 FROM departments d";
         
@@ -28,7 +28,7 @@ class Department {
         }
 
         if (!empty($filters['has_doctors'])) {
-            $conditions[] = "(SELECT COUNT(*) FROM doctors doc WHERE doc.department_id = d.id) > 0";
+            $conditions[] = "(SELECT COUNT(*) FROM doctor_departments dd WHERE dd.department_id = d.id) > 0";
         }
         
         if (!empty($filters['has_nurses'])) {
@@ -100,7 +100,11 @@ class Department {
 
     // Lấy bác sĩ theo khoa
     public function getDoctorsByDept($deptId) {
-        $sql = "SELECT d.*, u.name, u.email FROM doctors d JOIN users u ON d.user_id = u.id WHERE d.department_id = :dept_id";
+        $sql = "SELECT d.*, u.name, u.email 
+                FROM doctor_departments dd 
+                JOIN doctors d ON dd.doctor_id = d.id 
+                JOIN users u ON d.user_id = u.id 
+                WHERE dd.department_id = :dept_id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':dept_id', $deptId);
         $stmt->execute();
@@ -118,33 +122,65 @@ class Department {
 
     // Cập nhật danh sách bác sĩ cho khoa
     public function assignDoctors($deptId, $doctorIds) {
-        $sql = "UPDATE doctors SET department_id = NULL, is_head = 0 WHERE department_id = :dept_id";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':dept_id', $deptId);
-        $stmt->execute();
+        // Lấy danh sách ID bác sĩ hiện tại thuộc khoa này trước khi xóa
+        $sqlCurrent = "SELECT doctor_id FROM doctor_departments WHERE department_id = :dept_id";
+        $stmtCurrent = $this->conn->prepare($sqlCurrent);
+        $stmtCurrent->bindParam(':dept_id', $deptId);
+        $stmtCurrent->execute();
+        $currentDoctorIds = $stmtCurrent->fetchAll(PDO::FETCH_COLUMN);
 
+        // Xóa tất cả bác sĩ hiện tại khỏi khoa này trong bảng liên kết doctor_departments
+        $sqlDelete = "DELETE FROM doctor_departments WHERE department_id = :dept_id";
+        $stmtDelete = $this->conn->prepare($sqlDelete);
+        $stmtDelete->bindParam(':dept_id', $deptId);
+        $stmtDelete->execute();
+
+        // Thêm liên kết mới
         if (!empty($doctorIds)) {
-            $inQuery = implode(',', array_fill(0, count($doctorIds), '?'));
-            $sql = "UPDATE doctors SET department_id = ? WHERE id IN ($inQuery)";
-            $stmt = $this->conn->prepare($sql);
-            $params = array_merge([$deptId], $doctorIds);
-            $stmt->execute($params);
+            $sqlInsert = "INSERT INTO doctor_departments (doctor_id, department_id) VALUES (:doctor_id, :dept_id)";
+            $stmtInsert = $this->conn->prepare($sqlInsert);
+            foreach ($doctorIds as $doctorId) {
+                $stmtInsert->bindValue(':doctor_id', $doctorId, PDO::PARAM_INT);
+                $stmtInsert->bindValue(':dept_id', $deptId, PDO::PARAM_INT);
+                $stmtInsert->execute();
+            }
         }
+
+        // Reset is_head = 0 cho các bác sĩ bị loại khỏi khoa này
+        $removedDoctorIds = array_diff($currentDoctorIds, $doctorIds);
+        if (!empty($removedDoctorIds)) {
+            $inQuery = implode(',', array_fill(0, count($removedDoctorIds), '?'));
+            $sqlResetHead = "UPDATE doctors SET is_head = 0 WHERE id IN ($inQuery)";
+            $stmtResetHead = $this->conn->prepare($sqlResetHead);
+            $stmtResetHead->execute(array_values($removedDoctorIds));
+        }
+
+        // Đồng bộ cột legacy department_id trong bảng doctors
+        $sqlSync = "UPDATE doctors d 
+                    SET d.department_id = (
+                        SELECT dd.department_id 
+                        FROM doctor_departments dd 
+                        WHERE dd.doctor_id = d.id 
+                        LIMIT 1
+                    )";
+        $this->conn->exec($sqlSync);
     }
 
     // Đặt trưởng khoa
     public function setHeadDoctor($deptId, $doctorId) {
-        // Hủy head cũ
-        $sql = "UPDATE doctors SET is_head = 0 WHERE department_id = :dept_id";
+        // Hủy head cũ của các bác sĩ đang trong khoa này
+        $sql = "UPDATE doctors d 
+                JOIN doctor_departments dd ON d.id = dd.doctor_id
+                SET d.is_head = 0 
+                WHERE dd.department_id = :dept_id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':dept_id', $deptId);
         $stmt->execute();
 
         if ($doctorId) {
-            $sql = "UPDATE doctors SET is_head = 1 WHERE id = :id AND department_id = :dept_id";
+            $sql = "UPDATE doctors SET is_head = 1 WHERE id = :id";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id', $doctorId);
-            $stmt->bindParam(':dept_id', $deptId);
             $stmt->execute();
         }
     }

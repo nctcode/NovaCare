@@ -114,12 +114,99 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
         </div>
         <?php endif; ?>
 
+        <!-- Hồ sơ chăm sóc Điều dưỡng -->
+        <?php
+        require_once __DIR__ . '/../../models/NursingRecord.php';
+        $nrModel = new NursingRecord();
+        $nursingRecords = $nrModel->getByAdmissionId($admission['id']);
+        $vitalData = $nrModel->getVitalChartData($admission['id'], 10);
+        ?>
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0"><i class="fa-solid fa-heart-pulse me-2 text-danger"></i>Hồ sơ Chăm sóc Điều dưỡng</h6>
+                <?php if ($admission['status'] === 'active' && in_array($_SESSION['user']['role'], ['admin', 'nurse'])): ?>
+                <a href="index.php?page=inpatient&action=addNursingRecord&id=<?= $admission['id'] ?>" class="btn btn-sm btn-primary" style="border-radius:12px;">
+                    <i class="fa-solid fa-plus me-1"></i>Ghi nhận mới
+                </a>
+                <?php endif; ?>
+            </div>
+
+            <?php if (!empty($vitalData)): ?>
+            <!-- Biểu đồ sinh hiệu -->
+            <div class="p-3 mb-3 rounded" style="background:var(--bg-secondary, #f8f9fa); border-radius:12px;">
+                <canvas id="vitalSignsChart" height="180"></canvas>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const vd = <?= json_encode($vitalData) ?>;
+                const labels = vd.map(r => {
+                    const d = new Date(r.record_time);
+                    return d.getDate()+'/'+d.getMonth() + ' ' + d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+                });
+                new Chart(document.getElementById('vitalSignsChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Nhiệt độ (°C)', data: vd.map(r => r.temperature), borderColor: '#ef4444', borderWidth: 2, tension: 0.3, fill: false, pointRadius: 3 },
+                            { label: 'Nhịp tim (bpm)', data: vd.map(r => r.heart_rate), borderColor: '#3b82f6', borderWidth: 2, tension: 0.3, fill: false, pointRadius: 3 },
+                            { label: 'SpO2 (%)', data: vd.map(r => r.spo2), borderColor: '#22c55e', borderWidth: 2, tension: 0.3, fill: false, pointRadius: 3 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+                        scales: { y: { beginAtZero: false }, x: { grid: { display: false } } }
+                    }
+                });
+            });
+            </script>
+            <?php endif; ?>
+
+            <?php if (!empty($nursingRecords)): ?>
+            <div class="table-wrapper">
+                <table class="data-table" style="font-size:13px;">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Điều dưỡng</th>
+                            <th>Nhiệt độ</th>
+                            <th>HA</th>
+                            <th>Nhịp tim</th>
+                            <th>SpO2</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($nursingRecords as $nr): ?>
+                        <tr>
+                            <td><small><?= date('d/m H:i', strtotime($nr['record_time'])) ?></small></td>
+                            <td><small><?= htmlspecialchars($nr['nurse_name']) ?></small></td>
+                            <td><?= $nr['temperature'] ? $nr['temperature'].'°C' : '-' ?></td>
+                            <td><?= ($nr['blood_pressure_sys'] && $nr['blood_pressure_dia']) ? $nr['blood_pressure_sys'].'/'.$nr['blood_pressure_dia'] : '-' ?></td>
+                            <td><?= $nr['heart_rate'] ?? '-' ?></td>
+                            <td><?= $nr['spo2'] ? $nr['spo2'].'%' : '-' ?></td>
+                            <td><small><?= htmlspecialchars(mb_strimwidth($nr['care_notes'] ?? '', 0, 50, '...')) ?></small></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="text-center text-muted py-3">
+                <i class="fa-solid fa-clipboard-list fa-2x mb-2" style="opacity:.3"></i>
+                <p>Chưa có hồ sơ chăm sóc nào</p>
+            </div>
+            <?php endif; ?>
+        </div>
+
         <!-- Actions -->
         <div class="d-flex gap-2 flex-wrap">
             <a href="index.php?page=inpatient" class="btn btn-outline-secondary" style="border-radius:20px; font-weight:500;">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
             </a>
-            <?php if ($admission['status'] === 'active' && in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
+            <?php if ($admission['status'] === 'active' && in_array($_SESSION['user']['role'], ['admin', 'nurse', 'receptionist'])): ?>
             <a href="javascript:void(0)" class="btn btn-success" style="border-radius:20px; font-weight:500;" onclick="if(confirm('Xác nhận xuất viện bệnh nhân?')) postAction('index.php?page=inpatient&action=discharge&id=<?= $admission['id'] ?>')">
                 <i class="fa-solid fa-right-from-bracket me-2"></i>Xuất viện
             </a>

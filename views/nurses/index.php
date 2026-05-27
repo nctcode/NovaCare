@@ -15,9 +15,11 @@
 <div class="content-card" data-aos="fade-up">
     <div class="card-header">
         <h5><i class="fa-solid fa-user-nurse me-2"></i>Danh sách Y tá (<?= count($nurses) ?>)</h5>
+        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
         <a href="index.php?page=nurses&action=create" class="btn-action btn-add">
             <i class="fa-solid fa-plus"></i> Thêm Y tá
         </a>
+        <?php endif; ?>
     </div>
     <div class="card-body">
         <div class="table-wrapper">
@@ -47,12 +49,17 @@
                             <?php endif; ?>
                         </td>
                         <td>
-                            <a href="index.php?page=nurses&action=edit&id=<?= $nurse['id'] ?>" class="btn-action btn-edit">
+                            <a href="index.php?page=nurses&action=view&id=<?= $nurse['id'] ?>" class="btn-action btn-view text-primary me-2" title="Xem chi tiết" style="font-size: 14px; text-decoration: none;">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                            <a href="index.php?page=nurses&action=edit&id=<?= $nurse['id'] ?>" class="btn-action btn-edit me-2" title="Sửa">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </a>
-                            <button onclick="confirmDelete('index.php?page=nurses&action=delete&id=<?= $nurse['id'] ?>')" class="btn-action btn-delete">
+                            <button onclick="confirmDelete('index.php?page=nurses&action=delete&id=<?= $nurse['id'] ?>')" class="btn-action btn-delete" title="Xóa">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

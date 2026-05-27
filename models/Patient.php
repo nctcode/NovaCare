@@ -32,7 +32,7 @@ class Patient {
 
     // Tìm bệnh nhân theo ID
     public function findById($id) {
-        $sql = "SELECT p.*, u.name, u.email, u.phone 
+        $sql = "SELECT p.*, u.name, u.email, u.phone, u.created_at as registered_at
                 FROM patients p 
                 JOIN users u ON p.user_id = u.id 
                 WHERE p.id = :id AND p.deleted_at IS NULL LIMIT 1";
@@ -44,7 +44,7 @@ class Patient {
 
     // Tìm bệnh nhân theo user_id
     public function findByUserId($userId) {
-        $sql = "SELECT p.*, u.name, u.email, u.phone 
+        $sql = "SELECT p.*, u.name, u.email, u.phone, u.created_at as registered_at
                 FROM patients p 
                 JOIN users u ON p.user_id = u.id 
                 WHERE p.user_id = :user_id AND p.deleted_at IS NULL LIMIT 1";

@@ -47,10 +47,13 @@ class PatientController {
             exit;
         }
 
-        // Lấy lịch sử khám bệnh (medical records) của bệnh nhân này
-        require_once __DIR__ . '/../models/MedicalRecord.php';
-        $recordModel = new MedicalRecord();
-        $records = $recordModel->getByPatientId($id);
+        // Lấy lịch sử khám bệnh (medical records) của bệnh nhân này (chỉ dành cho bác sĩ)
+        $records = [];
+        if ($_SESSION['user']['role'] === 'doctor') {
+            require_once __DIR__ . '/../models/MedicalRecord.php';
+            $recordModel = new MedicalRecord();
+            $records = $recordModel->getByPatientId($id);
+        }
 
         $pageTitle = 'Chi tiết Bệnh nhân';
         require_once __DIR__ . '/../views/layout/header.php';

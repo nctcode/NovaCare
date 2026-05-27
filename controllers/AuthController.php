@@ -29,7 +29,7 @@ class AuthController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Validate CSRF
             if (!Security::validateCsrf()) {
-                $error = 'Yêu cầu không hợp lệ. Vui lòng thử lại.';
+                $error = 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang (F5) và thử lại.';
             } else {
                 $email = trim($_POST['email'] ?? '');
                 $password = trim($_POST['password'] ?? '');

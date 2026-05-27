@@ -1,7 +1,7 @@
 <?php
 /**
  * InvoiceController - Quản lý hóa đơn thanh toán
- * - Receptionist: xem tất cả, tạo, thanh toán, hủy
+ * - Cashier: xem tất cả, tạo, thanh toán, hủy
  * - Patient: xem hóa đơn của mình
  */
 require_once __DIR__ . '/../models/Invoice.php';
@@ -25,7 +25,7 @@ class InvoiceController {
     public function index() {
         $user = $_SESSION['user'];
 
-        if ($user['role'] === 'admin' || $user['role'] === 'receptionist') {
+        if ($user['role'] === 'admin' || $user['role'] === 'cashier') {
             $invoices = $this->invoiceModel->getAll();
         } elseif ($user['role'] === 'patient') {
             $patient = $this->patientModel->findByUserId($user['id']);
@@ -50,7 +50,7 @@ class InvoiceController {
 
     // Form tạo hóa đơn
     public function create() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'cashier']);
         $patients = $this->invoiceModel->getPatients();
         $services = $this->invoiceModel->getServices();
         $medicines = $this->invoiceModel->getMedicines();
@@ -63,7 +63,7 @@ class InvoiceController {
 
     // Lưu hóa đơn
     public function store() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'cashier']);
         Security::requirePost('index.php?page=invoices');
         Security::requireCsrf();
 
@@ -160,7 +160,7 @@ class InvoiceController {
                 header('Location: index.php?page=invoices');
                 exit;
             }
-        } elseif (!Security::hasRole(['admin', 'receptionist'])) {
+        } elseif (!Security::hasRole(['admin', 'cashier'])) {
             $_SESSION['error'] = 'Bạn không có quyền xem hóa đơn này.';
             header('Location: index.php?page=invoices');
             exit;
@@ -176,7 +176,7 @@ class InvoiceController {
 
     // Đánh dấu đã thanh toán
     public function markPaid() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'cashier']);
         Security::requirePost('index.php?page=invoices');
         Security::requireCsrf();
 
@@ -196,7 +196,7 @@ class InvoiceController {
 
     // Hủy hóa đơn
     public function cancel() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'cashier']);
         Security::requirePost('index.php?page=invoices');
         Security::requireCsrf();
 
@@ -214,7 +214,7 @@ class InvoiceController {
 
     // Lấy danh sách đơn thuốc chưa thanh toán (JSON)
     public function getUnpaidPrescriptions() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'cashier']);
         $patientId = $_GET['patient_id'] ?? 0;
         $prescriptions = $this->prescriptionModel->getUnpaidByPatientId($patientId);
         
@@ -228,7 +228,7 @@ class InvoiceController {
 
     // Lấy chi tiết đơn thuốc (JSON)
     public function getPrescriptionDetails() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'cashier']);
         $prescriptionId = $_GET['id'] ?? 0;
         $prescription = $this->prescriptionModel->findById($prescriptionId);
         

@@ -1,9 +1,3 @@
-<?php
-/**
- * Form thêm tài khoản mới
- */
-require_once 'views/layout/header.php';
-?>
 
 <div class="row">
     <div class="col-md-8 mx-auto">
@@ -54,9 +48,12 @@ require_once 'views/layout/header.php';
                                 <option value="">-- Chọn vai trò --</option>
                                 <option value="admin">Quản trị viên (Admin)</option>
                                 <option value="receptionist">Lễ tân (Receptionist)</option>
+                                <option value="cashier">Thu ngân (Cashier)</option>
                                 <option value="pharmacist">Dược sĩ (Pharmacist)</option>
+                                <option value="technician">Kỹ thuật viên (Technician)</option>
+                                <option value="director">Ban giám đốc (Director)</option>
                                 <option value="doctor" disabled>Bác sĩ (Thêm ở trang Quản lý Bác sĩ)</option>
-                                <option value="nurse" disabled>Y tá (Thêm ở trang Quản lý Y tá)</option>
+                                <option value="nurse" disabled>Điều dưỡng (Thêm ở trang Quản lý Điều dưỡng)</option>
                                 <option value="patient" disabled>Bệnh nhân (Thêm ở trang Quản lý Bệnh nhân)</option>
                             </select>
                         </div>
@@ -73,4 +70,3 @@ require_once 'views/layout/header.php';
     </div>
 </div>
 
-<?php require_once 'views/layout/footer.php'; ?>

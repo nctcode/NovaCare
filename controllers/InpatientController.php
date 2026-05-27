@@ -66,7 +66,7 @@ class InpatientController {
 
     // Form nhập viện
     public function admit() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'receptionist', 'nurse']);
         $patients = [];
         $allPatients = $this->patientModel->getAll();
         foreach ($allPatients as $p) {
@@ -84,7 +84,7 @@ class InpatientController {
 
     // Lưu nhập viện
     public function storeAdmit() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'receptionist', 'nurse']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 
@@ -158,7 +158,7 @@ class InpatientController {
 
     // Xuất viện
     public function discharge() {
-        Security::requireRole(['admin', 'receptionist']);
+        Security::requireRole(['admin', 'receptionist', 'nurse']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 
@@ -209,6 +209,88 @@ class InpatientController {
         }
 
         header("Location: index.php?page=inpatient&action=detail&id=$id");
+        exit;
+    }
+
+    // Form ghi nhận chăm sóc điều dưỡng
+    public function addNursingRecord() {
+        Security::requireRole(['admin', 'nurse']);
+        $id = $_GET['id'] ?? 0;
+        $admission = $this->admissionModel->findById($id);
+
+        if (!$admission) {
+            $_SESSION['error'] = 'Không tìm thấy ca nhập viện.';
+            header('Location: index.php?page=inpatient');
+            exit;
+        }
+
+        $pageTitle = 'Ghi nhận Chăm sóc';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/inpatient/nursing_record.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Lưu hồ sơ chăm sóc điều dưỡng
+    public function saveNursingRecord() {
+        Security::requireRole(['admin', 'nurse']);
+        Security::requirePost('index.php?page=inpatient');
+        Security::requireCsrf();
+
+        $admissionId = $_POST['admission_id'] ?? 0;
+        $user = $_SESSION['user'];
+
+        // Lấy nurse_id
+        require_once __DIR__ . '/../models/Nurse.php';
+        $nurseModel = new Nurse();
+        $nurse = $nurseModel->findByUserId($user['id']);
+        
+        if (!$nurse && $user['role'] !== 'admin') {
+            $_SESSION['error'] = 'Không tìm thấy thông tin y tá.';
+            header("Location: index.php?page=inpatient&action=detail&id=$admissionId");
+            exit;
+        }
+
+        $nurseId = $nurse ? $nurse['id'] : 1; // fallback for admin
+
+        require_once __DIR__ . '/../models/NursingRecord.php';
+        $nrModel = new NursingRecord();
+
+        $data = [
+            'admission_id'       => $admissionId,
+            'nurse_id'           => $nurseId,
+            'temperature'        => $_POST['temperature'] ?? null,
+            'blood_pressure_sys' => $_POST['blood_pressure_sys'] ?? null,
+            'blood_pressure_dia' => $_POST['blood_pressure_dia'] ?? null,
+            'heart_rate'         => $_POST['heart_rate'] ?? null,
+            'respiratory_rate'   => $_POST['respiratory_rate'] ?? null,
+            'spo2'               => $_POST['spo2'] ?? null,
+            'care_notes'         => trim($_POST['care_notes'] ?? ''),
+            'medication_given'   => trim($_POST['medication_given'] ?? ''),
+            'diet_notes'         => trim($_POST['diet_notes'] ?? ''),
+        ];
+
+        try {
+            $nrModel->create($data);
+            $_SESSION['success'] = 'Ghi nhận chăm sóc thành công!';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+        }
+
+        header("Location: index.php?page=inpatient&action=detail&id=$admissionId");
+        exit;
+    }
+
+    // Lịch sử chăm sóc điều dưỡng (JSON cho AJAX)
+    public function nursingHistory() {
+        Security::requireRole(['admin', 'doctor', 'nurse']);
+        $id = $_GET['id'] ?? 0;
+
+        require_once __DIR__ . '/../models/NursingRecord.php';
+        $nrModel = new NursingRecord();
+        $records = $nrModel->getByAdmissionId($id);
+
+        header('Content-Type: application/json');
+        echo json_encode($records, JSON_UNESCAPED_UNICODE);
         exit;
     }
 }

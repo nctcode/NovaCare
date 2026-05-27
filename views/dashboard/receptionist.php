@@ -42,8 +42,6 @@
         <div class="d-flex flex-wrap gap-2">
             <a href="index.php?page=patients&action=create" class="btn btn-outline-primary" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-user-plus me-2"></i>Thêm Bệnh nhân</a>
             <a href="index.php?page=appointments&action=create" class="btn btn-outline-success" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-calendar-plus me-2"></i>Đặt lịch hẹn</a>
-            <a href="index.php?page=invoices&action=create" class="btn btn-outline-warning" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Tạo hóa đơn</a>
-            <a href="index.php?page=inpatient&action=admit" class="btn btn-outline-info" style="border-radius:20px; padding:8px 20px; font-weight:500; font-size:14px;"><i class="fa-solid fa-bed-pulse me-2"></i>Nhập viện</a>
         </div>
     </div>
 </div>
@@ -57,7 +55,7 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <a href="index.php?page=patients" class="text-decoration-none">
                             <div class="p-3 text-center" style="background:var(--primary-light); border-radius:12px;">
                                 <i class="fa-solid fa-hospital-user fa-2x mb-2" style="color:var(--primary);"></i>
@@ -66,7 +64,7 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <a href="index.php?page=appointments" class="text-decoration-none">
                             <div class="p-3 text-center" style="background:rgba(16,185,129,0.1); border-radius:12px;">
                                 <i class="fa-solid fa-calendar-check fa-2x mb-2" style="color:#10b981;"></i>
@@ -75,21 +73,12 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-3">
-                        <a href="index.php?page=invoices" class="text-decoration-none">
-                            <div class="p-3 text-center" style="background:rgba(245,158,11,0.1); border-radius:12px;">
-                                <i class="fa-solid fa-file-invoice-dollar fa-2x mb-2" style="color:#f59e0b;"></i>
-                                <div style="font-weight:600; color:var(--gray-700);">Hóa đơn</div>
-                                <small class="text-muted">Tạo, thanh toán</small>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <a href="index.php?page=inpatient" class="text-decoration-none">
                             <div class="p-3 text-center" style="background:rgba(99,102,241,0.1); border-radius:12px;">
                                 <i class="fa-solid fa-bed-pulse fa-2x mb-2" style="color:#6366f1;"></i>
-                                <div style="font-weight:600; color:var(--gray-700);">Nội trú</div>
-                                <small class="text-muted">Nhập/xuất viện</small>
+                                <div style="font-weight:600; color:var(--gray-700);">Xem Nội trú</div>
+                                <small class="text-muted">Xem buồng bệnh & sơ đồ giường</small>
                             </div>
                         </a>
                     </div>

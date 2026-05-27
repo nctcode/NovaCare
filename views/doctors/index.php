@@ -39,9 +39,7 @@
                         <th>Khoa</th>
                         <th>Chuyên khoa</th>
                         <th>Kinh nghiệm</th>
-                        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
                         <th>Thao tác</th>
-                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,21 +52,36 @@
                             <td><strong><?= htmlspecialchars($d['name']) ?></strong></td>
                             <td><?= htmlspecialchars($d['email']) ?></td>
                             <td><?= htmlspecialchars($d['phone'] ?? '') ?></td>
-                            <td><span class="badge bg-primary"><?= htmlspecialchars($d['department_name'] ?? 'N/A') ?></span></td>
+                            <td>
+                                <?php
+                                $depts = !empty($d['department_name']) ? explode(', ', $d['department_name']) : [];
+                                if (empty($depts)):
+                                ?>
+                                    <span class="badge bg-secondary">N/A</span>
+                                <?php else: ?>
+                                    <?php foreach ($depts as $deptName): ?>
+                                        <span class="badge bg-primary-light text-primary me-1 mb-1" style="font-size: 11px; font-weight: 500; border-radius: 6px;"><?= htmlspecialchars($deptName) ?></span>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </td>
                             <td><?= htmlspecialchars($d['specialty'] ?? '') ?></td>
                             <td><?= $d['experience_years'] ?? 0 ?> năm</td>
-                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
                             <td>
+                                <a href="index.php?page=doctors&action=view&id=<?= $d['id'] ?>" 
+                                   class="btn-action btn-view text-primary me-2" title="Xem chi tiết" style="background-color: var(--primary-light); color: var(--primary); padding: 5px 10px; border-radius: 8px; font-size: 13px; text-decoration: none;">
+                                    <i class="bi bi-eye-fill"></i> Xem
+                                </a>
+                                <?php if ($_SESSION['user']['role'] === 'admin'): ?>
                                 <a href="index.php?page=doctors&action=edit&id=<?= $d['id'] ?>" 
-                                   class="btn-action btn-edit" title="Sửa">
-                                    <i class="bi bi-pencil-square">Sửa</i>
+                                   class="btn-action btn-edit text-warning me-2" title="Sửa" style="background-color: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 5px 10px; border-radius: 8px; font-size: 13px; text-decoration: none;">
+                                    <i class="bi bi-pencil-square"></i> Sửa
                                 </a>
                                 <button onclick="confirmDelete('index.php?page=doctors&action=delete&id=<?= $d['id'] ?>')" 
-                                        class="btn-action btn-delete" title="Xóa">
-                                    <i class="bi bi-trash3">Xóa</i>
+                                        class="btn-action btn-delete text-danger" title="Xóa" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 5px 10px; border-radius: 8px; font-size: 13px; border: none;">
+                                    <i class="bi bi-trash3"></i> Xóa
                                 </button>
+                                <?php endif; ?>
                             </td>
-                            <?php endif; ?>
                         </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

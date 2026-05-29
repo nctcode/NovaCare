@@ -74,18 +74,48 @@ class Prescription {
         $sql = "SELECT pr.*, 
                     du.name as doctor_name,
                     pu.name as patient_name,
-                    mr.diagnosis, mr.notes
+                    mr.diagnosis, mr.notes,
+                    au.name as approved_by_name
                 FROM prescriptions pr
                 JOIN doctors d ON pr.doctor_id = d.id
                 JOIN users du ON d.user_id = du.id
                 JOIN medical_records mr ON pr.medical_record_id = mr.id
                 JOIN patients p ON mr.patient_id = p.id
                 JOIN users pu ON p.user_id = pu.id
+                LEFT JOIN users au ON pr.approved_by = au.id
                 WHERE pr.id = :id LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
         return $stmt->fetch();
+    }
+
+    // Dược sĩ duyệt đơn thuốc
+    public function approve($id, $pharmacistId, $notes = '') {
+        $prescription = $this->findById($id);
+        if (!$prescription) return false;
+        
+        // Chỉ duyệt đơn thuốc đã được thanh toán (paid)
+        if ($prescription['status'] !== 'paid') {
+            return false;
+        }
+
+        $sql = "UPDATE prescriptions 
+                SET status = 'approved', 
+                    approved_by = :approved_by, 
+                    approved_at = NOW(), 
+                    pharmacist_notes = :pharmacist_notes 
+                WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':approved_by', $pharmacistId);
+        $stmt->bindParam(':pharmacist_notes', $notes);
+        $stmt->bindParam(':id', $id);
+        $result = $stmt->execute();
+
+        if ($result) {
+            AuditLog::logUpdate('prescriptions', $id, ['status' => 'paid'], ['status' => 'approved', 'notes' => $notes]);
+        }
+        return $result;
     }
 
     // Lấy items trong đơn thuốc
@@ -202,7 +232,7 @@ class Prescription {
                 }
             } elseif ($status === 'cancelled') {
                 // Hủy đơn thuốc: giải phóng lượng đặt trước
-                if (in_array($oldStatus, ['draft', 'paid'])) {
+                if (in_array($oldStatus, ['draft', 'paid', 'approved'])) {
                     foreach ($items as $item) {
                         $medicineModel->releaseStock($item['medicine_id'], $item['quantity']);
                     }

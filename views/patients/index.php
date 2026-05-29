@@ -20,7 +20,7 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" class="table-search-js" data-table="patientTable" placeholder="Tìm kiếm...">
             </div>
-            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+            <?php if (in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
             <a href="index.php?page=patients&action=create" class="btn-action btn-add" id="btnAddPatient">
                 <i class="fa-solid fa-plus"></i> Thêm bệnh nhân
             </a>
@@ -66,7 +66,7 @@
                                        class="btn-action btn-view" title="Xem chi tiết">
                                         <i class="fa-solid fa-eye"></i> Xem
                                     </a>
-                                    <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                                    <?php if (in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
                                     <a href="index.php?page=patients&action=edit&id=<?= $p['id'] ?>" 
                                        class="btn-action btn-edit" title="Sửa">
                                         <i class="bi bi-pencil-square"></i> Sửa

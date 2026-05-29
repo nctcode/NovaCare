@@ -81,11 +81,18 @@
                         <?php foreach ($invoices as $inv): ?>
                         <tr>
                             <td><strong>#<?= $inv['id'] ?></strong></td>
-                            <td><?= htmlspecialchars($inv['patient_name'] ?? '') ?></td>
+                            <td>
+                                <?= htmlspecialchars($inv['patient_name'] ?? '') ?>
+                                <?php if (!empty($inv['insurance_rate']) && $inv['insurance_rate'] > 0): ?>
+                                    <br><span class="badge bg-light text-success border border-success" style="font-size: 9px; padding: 2px 6px; font-weight: 600;">BHYT <?= number_format($inv['insurance_rate'], 0) ?>%</span>
+                                <?php endif; ?>
+                            </td>
                             <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
                             <td style="text-align:right;"><?= number_format($inv['total_amount'], 0, ',', '.') ?>đ</td>
                             <td style="text-align:right;"><?= $inv['discount'] > 0 ? '-' . number_format($inv['discount'], 0, ',', '.') . 'đ' : '-' ?></td>
-                            <td style="text-align:right; font-weight:700;"><?= number_format($inv['final_amount'], 0, ',', '.') ?>đ</td>
+                            <td style="text-align:right; font-weight:700; color: #1e3c72;">
+                                <?= number_format($inv['patient_payment'] > 0 ? $inv['patient_payment'] : $inv['final_amount'], 0, ',', '.') ?>đ
+                            </td>
                             <td>
                                 <?php 
                                 $methodLabels = ['cash'=>'Tiền mặt','card'=>'Thẻ','momo'=>'MoMo','vnpay'=>'VNPay','transfer'=>'Chuyển khoản'];

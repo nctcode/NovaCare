@@ -36,4 +36,5 @@ $routes = [
     'ai-admin'      => 'AdminAIController',
     'lab-orders'    => 'LabOrderController',
     'reports'       => 'ReportController',
+    'queue'         => 'QueueController',
 ];

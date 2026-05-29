@@ -35,6 +35,9 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
                     <table class="table table-borderless mb-0" style="font-size:14px;">
                         <tr><td class="text-muted" style="width:120px;">Họ tên:</td><td class="fw-bold"><?= htmlspecialchars($invoice['patient_name']) ?></td></tr>
                         <tr><td class="text-muted">SĐT:</td><td><?= htmlspecialchars($invoice['patient_phone'] ?? '-') ?></td></tr>
+                        <?php if (!empty($invoice['insurance_number'])): ?>
+                        <tr><td class="text-muted">Mã số BHYT:</td><td class="fw-bold text-primary"><?= htmlspecialchars($invoice['insurance_number']) ?></td></tr>
+                        <?php endif; ?>
                         <tr><td class="text-muted">Email:</td><td><?= htmlspecialchars($invoice['patient_email'] ?? '-') ?></td></tr>
                         <tr><td class="text-muted">Địa chỉ:</td><td><?= htmlspecialchars($invoice['patient_address'] ?? '-') ?></td></tr>
                     </table>
@@ -101,13 +104,19 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
                     </tr>
                     <?php if ($invoice['discount'] > 0): ?>
                     <tr>
-                        <td colspan="5" class="text-end fw-bold text-danger">Giảm giá:</td>
+                        <td colspan="5" class="text-end fw-bold text-danger">Giảm giá khác:</td>
                         <td style="text-align:right; font-weight:600; color:var(--danger);">-<?= number_format($invoice['discount'], 0, ',', '.') ?>đ</td>
                     </tr>
                     <?php endif; ?>
+                    <?php if (!empty($invoice['insurance_rate']) && $invoice['insurance_rate'] > 0): ?>
+                    <tr>
+                        <td colspan="5" class="text-end fw-bold text-success">BHYT chi trả (<?= number_format($invoice['insurance_rate'], 0) ?>%):</td>
+                        <td style="text-align:right; font-weight:600; color:var(--success);">-<?= number_format($invoice['insurance_coverage'], 0, ',', '.') ?>đ</td>
+                    </tr>
+                    <?php endif; ?>
                     <tr style="background:var(--primary-light);">
-                        <td colspan="5" class="text-end fw-bold" style="font-size:17px;">THÀNH TIỀN:</td>
-                        <td style="text-align:right; font-weight:700; font-size:17px; color:var(--primary);"><?= number_format($invoice['final_amount'], 0, ',', '.') ?>đ</td>
+                        <td colspan="5" class="text-end fw-bold" style="font-size:16px;">BỆNH NHÂN CẦN TRẢ:</td>
+                        <td style="text-align:right; font-weight:700; font-size:18px; color:var(--primary);"><?= number_format($invoice['patient_payment'] > 0 ? $invoice['patient_payment'] : $invoice['final_amount'], 0, ',', '.') ?>đ</td>
                     </tr>
                 </tfoot>
             </table>

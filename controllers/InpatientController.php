@@ -66,7 +66,7 @@ class InpatientController {
 
     // Form nhập viện
     public function admit() {
-        Security::requireRole(['admin', 'receptionist', 'nurse']);
+        Security::requireRole(['admin', 'receptionist', 'nurse', 'doctor']);
         $patients = [];
         $allPatients = $this->patientModel->getAll();
         foreach ($allPatients as $p) {
@@ -84,7 +84,7 @@ class InpatientController {
 
     // Lưu nhập viện
     public function storeAdmit() {
-        Security::requireRole(['admin', 'receptionist', 'nurse']);
+        Security::requireRole(['admin', 'receptionist', 'nurse', 'doctor']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 
@@ -158,7 +158,7 @@ class InpatientController {
 
     // Xuất viện
     public function discharge() {
-        Security::requireRole(['admin', 'receptionist', 'nurse']);
+        Security::requireRole(['admin', 'receptionist', 'nurse', 'doctor']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 

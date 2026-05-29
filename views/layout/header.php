@@ -128,7 +128,6 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
             <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
                 <i class="fa-solid fa-hospital-user"></i> <span>Danh sách Bệnh nhân</span>
             </a>
-        </li>
         <li class="menu-label">Quản lý Nhân sự</li>
         <li>
             <a href="index.php?page=doctors" class="<?= $currentPage === 'doctors' ? 'active' : '' ?>">
@@ -203,6 +202,11 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         <?php elseif ($user['role'] === 'receptionist'): ?>
         <li class="menu-label">Tiếp đón</li>
         <li>
+            <a href="index.php?page=queue" class="<?= $currentPage === 'queue' ? 'active' : '' ?>">
+                <i class="fa-solid fa-list-ol"></i> <span>Hàng chờ khám</span>
+            </a>
+        </li>
+        <li>
             <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
                 <i class="fa-solid fa-hospital-user"></i> <span>Bệnh nhân</span>
             </a>
@@ -254,6 +258,11 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
 
         <?php elseif ($user['role'] === 'doctor'): ?>
         <li class="menu-label">Công việc</li>
+        <li>
+            <a href="index.php?page=queue" class="<?= $currentPage === 'queue' ? 'active' : '' ?>">
+                <i class="fa-solid fa-list-ol"></i> <span>Hàng chờ khám</span>
+            </a>
+        </li>
         <li>
             <a href="index.php?page=patients" class="<?= $currentPage === 'patients' ? 'active' : '' ?>">
                 <i class="fa-solid fa-hospital-user"></i> <span>Quản lý Bệnh nhân</span>

@@ -1,6 +1,6 @@
 <!-- Dashboard Admin - NovaCare Smart Hospital 4.0 -->
 
-<!-- Welcome and AI Operational Health Header -->
+<!-- Welcome Header -->
 <div class="row g-4 mb-4" data-aos="fade-down">
     <div class="col-12">
         <div class="p-4 shadow-sm border-0 position-relative overflow-hidden" 
@@ -13,7 +13,7 @@
                 <div class="col-lg-8">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1" style="font-size: 11px; border-radius: 8px; background: rgba(59, 130, 246, 0.2) !important; color: #60a5fa !important;">
-                            <i class="fa-solid fa-microchip me-1"></i> NOVACARE SMART CORE v4.0
+                            <i class="fa-solid fa-server me-1"></i> NOVACARE CORE
                         </span>
                         <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1" style="font-size: 11px; border-radius: 8px; background: rgba(34, 197, 94, 0.2) !important; color: #4ade80 !important;">
                             <i class="fa-solid fa-shield-halved me-1"></i> SSL SECURE
@@ -21,21 +21,21 @@
                     </div>
                     <h3 class="fw-bold mb-2">Xin chào trở lại, Quản trị viên!</h3>
                     <p class="text-white-50 mb-0" style="font-size: 14px; max-width: 650px;">
-                        Chào mừng bạn đến với bảng điều khiển trung tâm NovaCare. Hệ thống quản trị y tế tích hợp AI và mạng lưới cổng kết nối IoT của bệnh viện đang vận hành ổn định.
+                        Chào mừng bạn đến với bảng điều khiển trung tâm NovaCare. Hệ thống quản trị y tế và cơ sở dữ liệu bệnh viện đang vận hành an toàn và ổn định.
                     </p>
                 </div>
                 
                 <div class="col-lg-4 mt-3 mt-lg-0">
                     <div class="p-3 border border-secondary border-opacity-25 shadow-inner" style="border-radius: 12px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(5px);">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-white-50" style="font-size: 12.5px;">Chỉ số Vận hành AI</span>
-                            <span class="badge bg-success" style="font-size: 10px; border-radius: 4px;">TỐT GẦN ĐÂY</span>
+                            <span class="text-white-50" style="font-size: 12.5px;">Trạng thái Cơ sở dữ liệu</span>
+                            <span class="badge bg-success" style="font-size: 10px; border-radius: 4px;">KẾT NỐI TỐT</span>
                         </div>
                         <div class="d-flex align-items-center gap-2.5">
-                            <h3 class="fw-bold text-success mb-0 m-0">99.8%</h3>
+                            <h3 class="fw-bold text-success mb-0 m-0">Hoạt động</h3>
                             <div style="font-size: 11px; line-height: 1.3;" class="text-white-50">
-                                Đồng bộ IoT: <strong class="text-white">0.08s</strong><br>
-                                AI Beeknoee: <strong class="text-white">Sẵn sàng</strong>
+                                Nhân sự: <strong class="text-white"><?= ($data['totalDoctors'] ?? 0) + ($data['totalNurses'] ?? 0) ?> thành viên</strong><br>
+                                Ca trực hôm nay: <strong class="text-white">Ổn định</strong>
                             </div>
                         </div>
                     </div>
@@ -44,13 +44,13 @@
             
             <hr class="my-3" style="border-color: rgba(255, 255, 255, 0.1);">
             
-            <!-- Trợ lý AI Quick Summary Block -->
+            <!-- System warning and insight block -->
             <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center justify-content-center bg-primary text-white" style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--primary) !important; flex-shrink: 0;">
-                    <i class="fa-solid fa-brain" style="font-size: 13px;"></i>
+                <div class="d-flex align-items-center justify-content-center bg-warning text-dark" style="width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 13px;"></i>
                 </div>
                 <div style="font-size: 13px;" class="text-white-50">
-                    <strong class="text-white">Nhận định từ AI:</strong> Hệ thống ghi nhận các lượt hẹn hôm nay diễn ra đúng tiến độ. Cảnh báo tồn kho <code><?= count($lowStockMedicines ?? []) ?></code> loại dược phẩm cần lưu ý đặt thêm. Thiết bị y tế đang được bảo trì an toàn.
+                    <strong class="text-white">Thông báo hệ thống:</strong> Ghi nhận có <code><?= count($lowStockMedicines ?? []) ?></code> loại dược phẩm sắp hết hạn hoặc dưới định mức tồn kho tối thiểu. Vui lòng kiểm tra danh mục dược phẩm để thực hiện đặt thêm.
                 </div>
             </div>
         </div>

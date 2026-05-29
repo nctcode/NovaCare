@@ -124,6 +124,11 @@
                                         Cập nhật
                                     </button>
                                     <ul class="dropdown-menu">
+                                        <?php if ($statusVal === 'confirmed' && in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
+                                        <li><a class="dropdown-item" href="index.php?page=queue&action=checkin&appointment_id=<?= $a['id'] ?>">
+                                            <i class="fa-solid fa-ticket text-info"></i> Cấp số khám (Check-in)</a></li>
+                                        <hr class="dropdown-divider">
+                                        <?php endif; ?>
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=confirmed')">
                                             <i class="bi bi-check-circle text-primary"></i> Xác nhận</a></li>
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=appointments&action=updateStatus&id=<?= $a['id'] ?>&status=completed')">

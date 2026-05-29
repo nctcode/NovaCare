@@ -54,16 +54,18 @@
                             <td><?= date('d/m/Y H:i', strtotime($pr['created_at'])) ?></td>
                             <td>
                                 <?php
-                                $status = $pr['status'] ?? 'draft';
-                                if ($status === 'draft') {
-                                    echo '<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Chưa thanh toán</span>';
-                                } elseif ($status === 'paid') {
-                                    echo '<span class="badge bg-primary"><i class="bi bi-currency-dollar me-1"></i>Chờ giao thuốc</span>';
-                                } elseif ($status === 'dispensed') {
-                                    echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã giao thuốc</span>';
-                                } elseif ($status === 'cancelled') {
-                                    echo '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>';
-                                }
+                                 $status = $pr['status'] ?? 'draft';
+                                 if ($status === 'draft') {
+                                     echo '<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Chưa thanh toán</span>';
+                                 } elseif ($status === 'paid') {
+                                     echo '<span class="badge bg-info text-dark"><i class="bi bi-shield-check me-1"></i>Chờ duyệt</span>';
+                                 } elseif ($status === 'approved') {
+                                     echo '<span class="badge bg-primary"><i class="bi bi-check-circle me-1"></i>Chờ giao thuốc</span>';
+                                 } elseif ($status === 'dispensed') {
+                                     echo '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Đã giao thuốc</span>';
+                                 } elseif ($status === 'cancelled') {
+                                     echo '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>';
+                                 }
                                 ?>
                             </td>
                             <td>

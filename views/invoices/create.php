@@ -8,14 +8,14 @@
         <form method="POST" action="index.php?page=invoices&action=store" id="invoiceForm">
             <?php echo Security::csrfField(); ?>
             
-            <!-- 1. Thông tin chung (3 cột bằng nhau) -->
+            <!-- 1. Thông tin chung -->
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-bold">Bệnh nhân <span class="text-danger">*</span></label>
                     <select name="patient_id" id="patientSelect" class="form-select" required>
                         <option value="">-- Chọn bệnh nhân --</option>
                         <?php foreach ($patients as $p): ?>
-                            <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?> (<?= $p['phone'] ?>)</option>
+                            <option value="<?= $p['id'] ?>" data-insurance="<?= htmlspecialchars($p['insurance_number'] ?? '') ?>"><?= htmlspecialchars($p['name']) ?> (<?= htmlspecialchars($p['phone'] ?? '') ?>)</option>
                         <?php endforeach; ?>
                     </select>
                     <!-- Đơn thuốc tự động xếp gọn bên dưới select bệnh nhân khi xuất hiện -->
@@ -26,7 +26,25 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Mã số BHYT</label>
+                    <input type="text" name="insurance_number" id="insuranceNumber" class="form-control" placeholder="Tự động điền hoặc nhập tay">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Tỷ lệ BHYT (%)</label>
+                    <select name="insurance_rate" id="insuranceRate" class="form-select" onchange="recalc()">
+                        <option value="0">0% (Không BHYT)</option>
+                        <option value="40">40% (Trái tuyến)</option>
+                        <option value="60">60% (Trái tuyến tỉnh)</option>
+                        <option value="80">80% (Đúng tuyến)</option>
+                        <option value="100">100% (Ưu đãi/Hộ nghèo)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Giảm giá (VNĐ)</label>
+                    <input type="number" name="discount" class="form-control" value="0" min="0" id="discountInput" onchange="recalc()">
+                </div>
+                <div class="col-md-2">
                     <label class="form-label fw-bold">Phương thức thanh toán</label>
                     <select name="payment_method" class="form-select">
                         <option value="cash">💵 Tiền mặt</option>
@@ -35,10 +53,6 @@
                         <option value="vnpay">🏦 VNPay</option>
                         <option value="transfer">🔄 Chuyển khoản</option>
                     </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Giảm giá (VNĐ)</label>
-                    <input type="number" name="discount" class="form-control" value="0" min="0" id="discountInput">
                 </div>
             </div>
 
@@ -70,13 +84,18 @@
                                 <td style="border-top: 1px solid #dee2e6;"></td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="text-end fw-bold text-danger" style="padding: 12px 16px;">Giảm giá:</td>
+                                <td colspan="4" class="text-end fw-bold text-danger" style="padding: 12px 16px;">Giảm giá khác:</td>
                                 <td class="fw-bold text-danger text-end" style="padding: 12px 16px;" id="discountDisplay">-0đ</td>
                                 <td></td>
                             </tr>
+                            <tr id="insuranceRow" style="display: none;">
+                                <td colspan="4" class="text-end fw-bold text-success" style="padding: 12px 16px;">BHYT chi trả (<span id="insuranceRateDisplay">0%</span>):</td>
+                                <td class="fw-bold text-success text-end" style="padding: 12px 16px;" id="insuranceDisplay">-0đ</td>
+                                <td></td>
+                            </tr>
                             <tr class="final-row">
-                                <td colspan="4" class="text-end fw-bold">THÀNH TIỀN:</td>
-                                <td class="fw-bold text-end" id="finalDisplay">0đ</td>
+                                <td colspan="4" class="text-end fw-bold">BỆNH NHÂN CẦN TRẢ:</td>
+                                <td class="fw-bold text-end" id="finalDisplay" style="font-size: 1.15rem; color: #1e3c72;">0đ</td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -201,10 +220,25 @@ function recalc() {
     });
 
     const discount = parseFloat(document.getElementById('discountInput')?.value || 0);
-    const final_ = total - discount;
+    const preFinal = total - discount;
+
+    // BHYT
+    const rate = parseFloat(document.getElementById('insuranceRate')?.value || 0);
+    const insuranceCoverage = preFinal * (rate / 100);
+    const final_ = preFinal - insuranceCoverage;
 
     document.getElementById('totalDisplay').textContent = total.toLocaleString('vi-VN') + 'đ';
     document.getElementById('discountDisplay').textContent = '-' + discount.toLocaleString('vi-VN') + 'đ';
+
+    const insRow = document.getElementById('insuranceRow');
+    if (rate > 0) {
+        insRow.style.display = '';
+        document.getElementById('insuranceRateDisplay').textContent = rate + '%';
+        document.getElementById('insuranceDisplay').textContent = '-' + insuranceCoverage.toLocaleString('vi-VN') + 'đ';
+    } else {
+        insRow.style.display = 'none';
+    }
+
     document.getElementById('finalDisplay').textContent = final_.toLocaleString('vi-VN') + 'đ';
 }
 
@@ -217,13 +251,30 @@ document.getElementById('patientSelect').addEventListener('change', function() {
     const container = document.getElementById('prescriptionContainer');
     const select = document.getElementById('prescriptionSelect');
     
+    // Auto fill insurance number
+    const selectedOption = this.options[this.selectedIndex];
+    const insuranceNum = selectedOption ? selectedOption.getAttribute('data-insurance') : '';
+    const insuranceInput = document.getElementById('insuranceNumber');
+    const insuranceRateSelect = document.getElementById('insuranceRate');
+    
+    if (insuranceNum && insuranceNum.trim() !== '') {
+        insuranceInput.value = insuranceNum;
+        insuranceRateSelect.value = "80"; // Default to 80% standard rate
+    } else {
+        insuranceInput.value = '';
+        insuranceRateSelect.value = "0";
+    }
+    
     // Reset and hide
     container.style.display = 'none';
     select.innerHTML = '<option value="">-- Không chọn --</option>';
     document.getElementById('itemsBody').innerHTML = '';
     addRow();
     
-    if (!patientId) return;
+    if (!patientId) {
+        recalc();
+        return;
+    }
     
     fetch(`index.php?page=invoices&action=getUnpaidPrescriptions&patient_id=${patientId}`)
         .then(res => res.json())
@@ -235,8 +286,12 @@ document.getElementById('patientSelect').addEventListener('change', function() {
                 });
                 container.style.display = 'block';
             }
+            recalc();
         })
-        .catch(err => console.error('Lỗi khi tải đơn thuốc:', err));
+        .catch(err => {
+            console.error('Lỗi khi tải đơn thuốc:', err);
+            recalc();
+        });
 });
 
 // Prescription selection change handler

@@ -180,6 +180,37 @@ class PrescriptionController {
         require_once __DIR__ . '/../views/layout/footer.php';
     }
 
+    // Duyệt đơn thuốc (Pharmacist)
+    public function approve() {
+        Security::requireRole(['admin', 'pharmacist']);
+        Security::requirePost('index.php?page=prescriptions');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+        $notes = trim($_POST['pharmacist_notes'] ?? '');
+
+        try {
+            $prescription = $this->prescriptionModel->findById($id);
+            if (!$prescription) {
+                throw new Exception('Không tìm thấy đơn thuốc.');
+            }
+            if ($prescription['status'] !== 'paid') {
+                throw new Exception('Đơn thuốc chưa được thanh toán hoặc đã được duyệt.');
+            }
+
+            $user = $_SESSION['user'];
+            $result = $this->prescriptionModel->approve($id, $user['id'], $notes);
+            if (!$result) {
+                throw new Exception('Lỗi hệ thống khi duyệt đơn thuốc.');
+            }
+            $_SESSION['success'] = 'Duyệt đơn thuốc thành công cho đơn thuốc #' . $id;
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+        }
+        header("Location: index.php?page=prescriptions&action=view&id=" . $id);
+        exit;
+    }
+
     // Xác nhận giao thuốc (Pharmacist)
     public function dispense() {
         Security::requireRole(['admin', 'pharmacist']);
@@ -192,8 +223,8 @@ class PrescriptionController {
             if (!$prescription) {
                 throw new Exception('Không tìm thấy đơn thuốc.');
             }
-            if ($prescription['status'] !== 'paid') {
-                throw new Exception('Đơn thuốc chưa được thanh toán hoặc đã được phát thuốc.');
+            if ($prescription['status'] !== 'approved') {
+                throw new Exception('Đơn thuốc chưa được Dược sĩ duyệt. Vui lòng duyệt trước khi giao thuốc.');
             }
 
             $this->prescriptionModel->updateStatus($id, 'dispensed');

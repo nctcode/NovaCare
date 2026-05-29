@@ -96,8 +96,8 @@ class Invoice {
 
     // Tạo hóa đơn
     public function create($data) {
-        $sql = "INSERT INTO invoices (patient_id, appointment_id, admission_id, prescription_id, total_amount, discount, final_amount, payment_method, status, notes, created_by) 
-                VALUES (:patient_id, :appointment_id, :admission_id, :prescription_id, :total_amount, :discount, :final_amount, :payment_method, 'pending', :notes, :created_by)";
+        $sql = "INSERT INTO invoices (patient_id, appointment_id, admission_id, prescription_id, total_amount, discount, final_amount, insurance_number, insurance_rate, insurance_coverage, patient_payment, payment_method, status, notes, created_by) 
+                VALUES (:patient_id, :appointment_id, :admission_id, :prescription_id, :total_amount, :discount, :final_amount, :insurance_number, :insurance_rate, :insurance_coverage, :patient_payment, :payment_method, 'pending', :notes, :created_by)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $data['patient_id']);
         $stmt->bindValue(':appointment_id', $data['appointment_id'] ?: null, $data['appointment_id'] ? PDO::PARAM_INT : PDO::PARAM_NULL);
@@ -106,6 +106,10 @@ class Invoice {
         $stmt->bindParam(':total_amount', $data['total_amount']);
         $stmt->bindParam(':discount', $data['discount']);
         $stmt->bindParam(':final_amount', $data['final_amount']);
+        $stmt->bindValue(':insurance_number', $data['insurance_number'] ?: null, $data['insurance_number'] ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindParam(':insurance_rate', $data['insurance_rate']);
+        $stmt->bindParam(':insurance_coverage', $data['insurance_coverage']);
+        $stmt->bindParam(':patient_payment', $data['patient_payment']);
         $stmt->bindParam(':payment_method', $data['payment_method']);
         $stmt->bindParam(':notes', $data['notes']);
         $stmt->bindParam(':created_by', $data['created_by']);
@@ -151,19 +155,31 @@ class Invoice {
         $stmt->execute();
         $total = $stmt->fetch()['total'];
 
-        // Lấy discount hiện tại
-        $sql2 = "SELECT discount FROM invoices WHERE id = :id";
+        // Lấy discount và tỷ lệ BHYT hiện tại
+        $sql2 = "SELECT discount, insurance_rate FROM invoices WHERE id = :id";
         $stmt2 = $this->conn->prepare($sql2);
         $stmt2->bindParam(':id', $invoiceId);
         $stmt2->execute();
-        $discount = $stmt2->fetch()['discount'] ?? 0;
+        $invoiceData = $stmt2->fetch();
+        $discount = $invoiceData['discount'] ?? 0;
+        $insuranceRate = $invoiceData['insurance_rate'] ?? 0;
 
         $final = $total - $discount;
+        $insuranceCoverage = $final * ($insuranceRate / 100);
+        $patientPayment = $final - $insuranceCoverage;
 
-        $sql3 = "UPDATE invoices SET total_amount = :total, final_amount = :final, updated_by = :updated_by WHERE id = :id";
+        $sql3 = "UPDATE invoices 
+                 SET total_amount = :total, 
+                     final_amount = :final, 
+                     insurance_coverage = :insurance_coverage, 
+                     patient_payment = :patient_payment, 
+                     updated_by = :updated_by 
+                 WHERE id = :id";
         $stmt3 = $this->conn->prepare($sql3);
         $stmt3->bindParam(':total', $total);
         $stmt3->bindParam(':final', $final);
+        $stmt3->bindParam(':insurance_coverage', $insuranceCoverage);
+        $stmt3->bindParam(':patient_payment', $patientPayment);
         $userId = $_SESSION['user']['id'] ?? null;
         $stmt3->bindParam(':updated_by', $userId);
         $stmt3->bindParam(':id', $invoiceId);
@@ -177,17 +193,35 @@ class Invoice {
         $stmt->bindParam(':id', $invoiceId);
         $stmt->execute();
         $total = $stmt->fetch()['total'];
-        $final = $total - $discount;
 
-        $userId = $_SESSION['user']['id'] ?? null;
-        $sql2 = "UPDATE invoices SET total_amount = :total, discount = :discount, final_amount = :final, updated_by = :updated_by WHERE id = :id";
+        $sql2 = "SELECT insurance_rate FROM invoices WHERE id = :id";
         $stmt2 = $this->conn->prepare($sql2);
-        $stmt2->bindParam(':total', $total);
-        $stmt2->bindParam(':discount', $discount);
-        $stmt2->bindParam(':final', $final);
-        $stmt2->bindParam(':updated_by', $userId);
         $stmt2->bindParam(':id', $invoiceId);
         $stmt2->execute();
+        $insuranceRate = $stmt2->fetch()['insurance_rate'] ?? 0;
+
+        $final = $total - $discount;
+        $insuranceCoverage = $final * ($insuranceRate / 100);
+        $patientPayment = $final - $insuranceCoverage;
+
+        $userId = $_SESSION['user']['id'] ?? null;
+        $sql3 = "UPDATE invoices 
+                 SET total_amount = :total, 
+                     discount = :discount, 
+                     final_amount = :final, 
+                     insurance_coverage = :insurance_coverage, 
+                     patient_payment = :patient_payment, 
+                     updated_by = :updated_by 
+                 WHERE id = :id";
+        $stmt3 = $this->conn->prepare($sql3);
+        $stmt3->bindParam(':total', $total);
+        $stmt3->bindParam(':discount', $discount);
+        $stmt3->bindParam(':final', $final);
+        $stmt3->bindParam(':insurance_coverage', $insuranceCoverage);
+        $stmt3->bindParam(':patient_payment', $patientPayment);
+        $stmt3->bindParam(':updated_by', $userId);
+        $stmt3->bindParam(':id', $invoiceId);
+        $stmt3->execute();
     }
 
     // Đánh dấu đã thanh toán
@@ -304,7 +338,7 @@ class Invoice {
 
     // Lấy danh sách bệnh nhân (chỉ lấy chưa bị xóa mềm)
     public function getPatients() {
-        $sql = "SELECT p.id, u.name, u.phone FROM patients p JOIN users u ON p.user_id = u.id WHERE p.deleted_at IS NULL ORDER BY u.name";
+        $sql = "SELECT p.id, u.name, u.phone, p.insurance_number FROM patients p JOIN users u ON p.user_id = u.id WHERE p.deleted_at IS NULL ORDER BY u.name";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();

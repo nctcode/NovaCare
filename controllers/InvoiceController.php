@@ -108,6 +108,12 @@ class InvoiceController {
             }
             $finalAmount = $totalAmount - $discount;
 
+            // Tính toán BHYT
+            $insuranceNumber = $_POST['insurance_number'] ?: null;
+            $insuranceRate = floatval($_POST['insurance_rate'] ?? 0);
+            $insuranceCoverage = $finalAmount * ($insuranceRate / 100);
+            $patientPayment = $finalAmount - $insuranceCoverage;
+
             $invoiceData = [
                 'patient_id' => $_POST['patient_id'],
                 'appointment_id' => $_POST['appointment_id'] ?: null,
@@ -116,6 +122,10 @@ class InvoiceController {
                 'total_amount' => $totalAmount,
                 'discount' => $discount,
                 'final_amount' => $finalAmount,
+                'insurance_number' => $insuranceNumber,
+                'insurance_rate' => $insuranceRate,
+                'insurance_coverage' => $insuranceCoverage,
+                'patient_payment' => $patientPayment,
                 'payment_method' => $_POST['payment_method'] ?? 'cash',
                 'notes' => trim($_POST['notes'] ?? ''),
                 'created_by' => $user['id'],

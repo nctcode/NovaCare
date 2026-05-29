@@ -156,7 +156,7 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Lấy bệnh nhân liên kết động với một bác sĩ cụ thể
+    // Lấy bệnh nhân liên kết động với một bác sĩ cụ thể (gồm hẹn khám, bệnh án, nội trú và hàng chờ hôm nay)
     public function getByDoctorId($doctorId) {
         $sql = "SELECT p.*, u.name, u.email, u.phone 
                 FROM patients p 
@@ -168,12 +168,20 @@ class Patient {
                     SELECT patient_id FROM medical_records WHERE doctor_id = :doctor_id2 AND deleted_at IS NULL
                     UNION
                     SELECT patient_id FROM admissions WHERE doctor_id = :doctor_id3 AND deleted_at IS NULL
+                    UNION
+                    SELECT patient_id FROM queue_tickets WHERE doctor_id = :doctor_id4 AND queue_date = CURDATE()
+                    UNION
+                    SELECT patient_id FROM queue_tickets WHERE doctor_id IS NULL AND queue_date = CURDATE() AND department_id IN (
+                        SELECT department_id FROM doctor_departments WHERE doctor_id = :doctor_id5
+                    )
                 )
                 ORDER BY u.name ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':doctor_id1', $doctorId, PDO::PARAM_INT);
         $stmt->bindParam(':doctor_id2', $doctorId, PDO::PARAM_INT);
         $stmt->bindParam(':doctor_id3', $doctorId, PDO::PARAM_INT);
+        $stmt->bindParam(':doctor_id4', $doctorId, PDO::PARAM_INT);
+        $stmt->bindParam(':doctor_id5', $doctorId, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

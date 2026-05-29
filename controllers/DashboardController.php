@@ -114,6 +114,11 @@ class DashboardController {
             require_once __DIR__ . '/../models/Admission.php';
             $admissionModel = new Admission();
             $data['activeAdmissions'] = $admissionModel->countActive();
+            // Hàng chờ hôm nay
+            require_once __DIR__ . '/../models/QueueTicket.php';
+            $queueModel = new QueueTicket();
+            $data['queueStats'] = $queueModel->getStatsToday();
+            $data['waitingTickets'] = $queueModel->getNextWaiting(5);
         }
 
         if ($role === 'cashier') {

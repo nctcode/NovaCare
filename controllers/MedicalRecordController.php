@@ -92,8 +92,13 @@ class MedicalRecordController {
             exit;
         }
 
-        $patients = $this->patientModel->getAll();
         $doctor = $this->doctorModel->findByUserId($user['id']);
+        $patients = [];
+        if ($doctor) {
+            $patients = $this->patientModel->getByDoctorId($doctor['id']);
+        } else {
+            $patients = $this->patientModel->getAll();
+        }
         
         $appointments = [];
         if ($doctor) {

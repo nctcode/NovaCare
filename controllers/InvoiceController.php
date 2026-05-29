@@ -55,6 +55,23 @@ class InvoiceController {
         $services = $this->invoiceModel->getServices();
         $medicines = $this->invoiceModel->getMedicines();
 
+        $presetPrescriptionId = isset($_GET['prescription_id']) ? intval($_GET['prescription_id']) : 0;
+        $presetPatientId = 0;
+        if ($presetPrescriptionId > 0) {
+            $prescription = $this->prescriptionModel->findById($presetPrescriptionId);
+            if ($prescription) {
+                if ($prescription['status'] !== 'draft') {
+                    $existingInvoice = $this->invoiceModel->findByPrescriptionId($presetPrescriptionId);
+                    if ($existingInvoice) {
+                        $_SESSION['info'] = 'Đơn thuốc này đã được lập hóa đơn thanh toán.';
+                        header("Location: index.php?page=invoices&action=detail&id=" . $existingInvoice['id']);
+                        exit;
+                    }
+                }
+                $presetPatientId = $prescription['patient_id'];
+            }
+        }
+
         $pageTitle = 'Tạo hóa đơn mới';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/invoices/create.php';

@@ -134,6 +134,10 @@
 const servicesData = <?= json_encode($services) ?>;
 const medicinesData = <?= json_encode($medicines) ?>;
 
+// Preset values from URL scanning
+const presetPrescriptionId = <?= json_encode($presetPrescriptionId ?? 0) ?>;
+const presetPatientId = <?= json_encode($presetPatientId ?? 0) ?>;
+
 let rowCount = 0;
 
 function addRow() {
@@ -269,9 +273,9 @@ document.getElementById('patientSelect').addEventListener('change', function() {
     container.style.display = 'none';
     select.innerHTML = '<option value="">-- Không chọn --</option>';
     document.getElementById('itemsBody').innerHTML = '';
-    addRow();
     
     if (!patientId) {
+        addRow();
         recalc();
         return;
     }
@@ -282,14 +286,23 @@ document.getElementById('patientSelect').addEventListener('change', function() {
             if (data.success && data.prescriptions && data.prescriptions.length > 0) {
                 data.prescriptions.forEach(p => {
                     const date = new Date(p.created_at).toLocaleDateString('vi-VN');
-                    select.innerHTML += `<option value="${p.id}">Đơn thuốc #${p.id} - Bác sĩ ${p.doctor_name} (${date})</option>`;
+                    const isSelected = (presetPrescriptionId > 0 && p.id == presetPrescriptionId) ? 'selected' : '';
+                    select.innerHTML += `<option value="${p.id}" ${isSelected}>Đơn thuốc #${p.id} - Bác sĩ ${p.doctor_name} (${date})</option>`;
                 });
                 container.style.display = 'block';
+                
+                // If there's a preset prescription ID, trigger the prescriptionSelect change event
+                if (presetPrescriptionId > 0) {
+                    select.dispatchEvent(new Event('change'));
+                }
+            } else {
+                addRow();
             }
             recalc();
         })
         .catch(err => {
             console.error('Lỗi khi tải đơn thuốc:', err);
+            addRow();
             recalc();
         });
 });
@@ -361,6 +374,14 @@ function addPrescriptionItemRow(item) {
     document.getElementById('select_' + rowCount).value = item.medicine_id;
 }
 
-// Add first row by default
-addRow();
+// Auto init page if preset variables exist
+document.addEventListener('DOMContentLoaded', function() {
+    if (presetPatientId > 0) {
+        const patientSelect = document.getElementById('patientSelect');
+        patientSelect.value = presetPatientId;
+        patientSelect.dispatchEvent(new Event('change'));
+    } else {
+        addRow();
+    }
+});
 </script>

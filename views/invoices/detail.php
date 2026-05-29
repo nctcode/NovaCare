@@ -128,6 +128,25 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
             </table>
         </div>
 
+        <!-- Mã QR nhận thuốc tại quầy Dược (hiển thị khi hóa đơn đã thanh toán và có đơn thuốc) -->
+        <?php if ($invoice['status'] === 'paid' && !empty($invoice['prescription_id'])): ?>
+            <?php
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+            $host = $_SERVER['HTTP_HOST'];
+            $script = $_SERVER['SCRIPT_NAME'];
+            $baseUrl = "$protocol://$host" . $script;
+            $prescriptionUrl = $baseUrl . "?page=prescriptions&action=view&id=" . $invoice['prescription_id'];
+            ?>
+            <div class="qr-pharmacy-card text-center my-4">
+                <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-qrcode me-1"></i> MÃ QR NHẬN THUỐC (QUẦY DƯỢC)</h6>
+                <p class="text-muted small mb-3 no-print">Bệnh nhân mang phiếu này hoặc xuất trình mã để nhận thuốc tại quầy dược.</p>
+                <div class="mb-2">
+                    <img src="https://quickchart.io/qr?text=<?= urlencode($prescriptionUrl) ?>&size=150" alt="QR Code Dược sĩ" class="qr-code-img img-fluid" style="border: 4px solid white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);" />
+                </div>
+                <span class="badge-paid-qr">Đã thanh toán hóa đơn</span>
+            </div>
+        <?php endif; ?>
+
         <!-- Action Buttons -->
         <div class="d-flex gap-2 flex-wrap no-print">
             <a href="index.php?page=invoices" class="btn btn-outline-secondary" style="border-radius:20px; font-weight:500;">
@@ -169,6 +188,65 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
     .main-content { margin-left: 0 !important; padding: 0 !important; }
     .page-content { padding: 0 !important; }
     .content-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    
+    .qr-pharmacy-card {
+        max-width: 120px !important;
+        padding: 8px !important;
+        margin: 15px 0 0 0 !important;
+        border: 1px solid #555 !important;
+        box-shadow: none !important;
+        float: left;
+        page-break-inside: avoid;
+    }
+    .qr-pharmacy-card h6 {
+        font-size: 8px !important;
+        margin-bottom: 2px !important;
+    }
+    .qr-pharmacy-card p {
+        display: none !important;
+    }
+    .qr-pharmacy-card img {
+        width: 80px !important;
+        height: 80px !important;
+    }
+    .qr-pharmacy-card .badge-paid-qr {
+        font-size: 7px !important;
+        padding: 2px 6px !important;
+        border: 1px solid #555 !important;
+        color: black !important;
+        background: none !important;
+    }
+}
+
+/* Glassmorphism styling on screen */
+.qr-pharmacy-card {
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.5) 0%, rgba(220, 252, 231, 0.6) 100%);
+    border: 1px dashed #10b981;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.1), 0 8px 10px -6px rgba(16, 185, 129, 0.05);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 450px;
+    margin: 24px auto;
+}
+.qr-pharmacy-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.15), 0 10px 10px -5px rgba(16, 185, 129, 0.08);
+    border-color: #059669;
+}
+.qr-pharmacy-card:hover .qr-code-img {
+    transform: scale(1.05);
+}
+.badge-paid-qr {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 6px 16px;
+    border-radius: 30px;
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+    display: inline-block;
 }
 </style>
 

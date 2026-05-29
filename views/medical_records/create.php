@@ -21,13 +21,26 @@
             <?php endif; ?>
 
             <div class="col-md-6 mb-3">
-                <label for="patient_id" class="form-label fw-bold">Bệnh nhân <span class="text-danger">*</span></label>
-                <select class="form-select border-2" id="patient_id" name="patient_id" required>
-                    <option value="">-- Chọn bệnh nhân --</option>
-                    <?php foreach ($patients as $pat): ?>
-                        <option value="<?= $pat['id'] ?>"><?= htmlspecialchars($pat['name']) ?> (<?= htmlspecialchars($pat['phone']) ?>)</option>
-                    <?php endforeach; ?>
-                </select>
+                <label class="form-label fw-bold">Bệnh nhân <span class="text-danger">*</span></label>
+                <div class="dropdown" id="patientDropdown">
+                    <button class="form-select text-start d-flex justify-content-between align-items-center border-2" type="button" id="patientDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="background-image: none; height: 38px;">
+                        <span id="selected_patient_label" class="text-muted">-- Chọn bệnh nhân từ danh sách --</span>
+                        <i class="fa-solid fa-chevron-down text-muted fs-7"></i>
+                    </button>
+                    <div class="dropdown-menu w-100 p-2 shadow-sm border-light-subtle" aria-labelledby="patientDropdownBtn" style="min-width: 100%;">
+                        <!-- Search input at the top of list -->
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-light border-opacity-50 py-1 px-2"><i class="fa-solid fa-magnifying-glass fs-7"></i></span>
+                            <input type="text" id="patient_search_input" class="form-control form-control-sm" placeholder="Tìm tên hoặc số điện thoại..." autocomplete="off">
+                        </div>
+                        
+                        <!-- Scrollable list of patients -->
+                        <div id="patient_list_container" style="max-height: 200px; overflow-y: auto;">
+                            <!-- Patients will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="patient_id" id="patient_id" required>
             </div>
             
             <div class="col-md-6 mb-3">
@@ -335,5 +348,130 @@ document.addEventListener('DOMContentLoaded', function() {
             icdSuggest.style.display = 'none';
         }
     });
+
+    // ====== PATIENT AUTOCOMPLETE LOGIC ======
+    const dropdownBtn = document.getElementById('patientDropdownBtn');
+    const patientSearchInput = document.getElementById('patient_search_input');
+    const patientListContainer = document.getElementById('patient_list_container');
+    const patientIdInput = document.getElementById('patient_id');
+    const selectedLabel = document.getElementById('selected_patient_label');
+    
+    let patientDebounceTimer;
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .replace(/"/g, "&quot;")
+                  .replace(/'/g, "&#039;");
+    }
+
+    // Load patients and render the list
+    function fetchAndRenderPatients(query = '') {
+        fetch(`index.php?page=patients&action=searchAjax&q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => {
+                patientListContainer.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    const item = document.createElement('div');
+                    item.className = 'text-muted disabled text-center py-3';
+                    item.style.fontSize = '13px';
+                    item.textContent = 'Không tìm thấy bệnh nhân nào';
+                    patientListContainer.appendChild(item);
+                } else {
+                    data.forEach(patient => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom border-light';
+                        item.style.fontSize = '13.5px';
+                        item.style.textAlign = 'left';
+                        item.style.width = '100%';
+                        item.style.background = 'none';
+                        item.style.border = 'none';
+                        item.innerHTML = `
+                            <div>
+                                <strong class="text-dark">${escapeHtml(patient.name)}</strong>
+                                <div class="text-muted small">${patient.phone ? escapeHtml(patient.phone) : 'Chưa cập nhật SĐT'}</div>
+                            </div>
+                            <span class="badge bg-light text-secondary border">Chọn</span>
+                        `;
+                        
+                        item.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            selectPatient(patient.id, patient.name, patient.phone);
+                        });
+                        patientListContainer.appendChild(item);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Lỗi khi tải bệnh nhân:', err);
+            });
+    }
+
+    function selectPatient(id, name, phone) {
+        patientIdInput.value = id;
+        selectedLabel.innerHTML = `<span class="fw-bold text-success">${escapeHtml(name)}</span> <span class="text-muted small ms-2">(${phone ? escapeHtml(phone) : 'Chưa có SĐT'})</span>`;
+        selectedLabel.classList.remove('text-muted');
+        
+        // Hide dropdown
+        const dropdownEl = document.getElementById('patientDropdownBtn');
+        const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownEl);
+        dropdown.hide();
+    }
+
+    // Load initial list on page load
+    fetchAndRenderPatients('');
+
+    // Focus search input when dropdown opens
+    const dropdownMenu = document.querySelector('#patientDropdown .dropdown-menu');
+    if (dropdownMenu) {
+        dropdownMenu.addEventListener('shown.bs.dropdown', function () {
+            patientSearchInput.focus();
+        });
+    }
+
+    // Prevent dropdown from closing when clicking inside search input or list container
+    if (patientSearchInput) {
+        patientSearchInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        patientSearchInput.addEventListener('input', function(e) {
+            clearTimeout(patientDebounceTimer);
+            const query = this.value.trim();
+            
+            patientDebounceTimer = setTimeout(() => {
+                fetchAndRenderPatients(query);
+            }, 300);
+        });
+    }
+    if (patientListContainer) {
+        patientListContainer.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
 });
 </script>
+
+<style>
+#patient_list_container .dropdown-item {
+    cursor: pointer;
+    transition: background 0.15s ease-in-out;
+    border-radius: 4px;
+    margin-bottom: 2px;
+}
+#patient_list_container .dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+#patientDropdownBtn {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+#patientDropdownBtn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+</style>

@@ -177,7 +177,13 @@ class Prescription {
                 FROM medical_records mr
                 JOIN patients p ON mr.patient_id = p.id
                 JOIN users pu ON p.user_id = pu.id
-                WHERE mr.doctor_id = :doctor_id AND mr.deleted_at IS NULL
+                WHERE mr.doctor_id = :doctor_id 
+                  AND mr.deleted_at IS NULL
+                  AND mr.id NOT IN (
+                      SELECT medical_record_id 
+                      FROM prescriptions 
+                      WHERE status != 'cancelled'
+                  )
                 ORDER BY mr.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':doctor_id', $doctorId);

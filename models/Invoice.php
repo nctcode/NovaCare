@@ -360,4 +360,13 @@ class Invoice {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    // Tìm hóa đơn theo mã đơn thuốc
+    public function findByPrescriptionId($prescriptionId) {
+        $sql = "SELECT * FROM invoices WHERE prescription_id = :prescription_id AND deleted_at IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':prescription_id', $prescriptionId);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
 }

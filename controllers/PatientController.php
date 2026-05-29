@@ -14,6 +14,40 @@ class PatientController {
         $this->patientModel = new Patient();
     }
 
+    // API Tìm kiếm bệnh nhân bằng AJAX (hỗ trợ phân quyền)
+    public function searchAjax() {
+        header('Content-Type: application/json; charset=utf-8');
+        Security::requireRole(['admin', 'receptionist', 'doctor']);
+
+        $q = trim($_GET['q'] ?? '');
+        $user = $_SESSION['user'];
+        $doctorId = null;
+
+        // Nếu là bác sĩ, giới hạn chỉ tìm bệnh nhân có liên kết
+        if ($user['role'] === 'doctor') {
+            require_once __DIR__ . '/../models/Doctor.php';
+            $doctorModel = new Doctor();
+            $doctorInfo = $doctorModel->findByUserId($user['id']);
+            $doctorId = $doctorInfo ? $doctorInfo['id'] : 0;
+        }
+
+        if (strlen($q) < 1) {
+            // Nếu từ khóa rỗng, trả về danh sách bệnh nhân liên kết mặc định
+            if ($doctorId !== null) {
+                $results = $this->patientModel->getByDoctorId($doctorId);
+                $results = array_slice($results, 0, 15);
+            } else {
+                $results = $this->patientModel->getAll();
+                $results = array_slice($results, 0, 15);
+            }
+        } else {
+            $results = $this->patientModel->searchPatients($q, $doctorId);
+        }
+
+        echo json_encode($results, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     // Danh sách bệnh nhân
     public function index() {
         Security::requireRole(['admin', 'receptionist', 'doctor']);

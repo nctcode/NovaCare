@@ -186,6 +186,49 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Tìm kiếm bệnh nhân theo tên hoặc số điện thoại, hỗ trợ giới hạn theo doctor_id
+    public function searchPatients($query, $doctorId = null) {
+        $sql = "SELECT p.*, u.name, u.email, u.phone 
+                FROM patients p 
+                JOIN users u ON p.user_id = u.id 
+                WHERE p.deleted_at IS NULL AND u.deleted_at IS NULL 
+                AND (u.name LIKE :q1 OR u.phone LIKE :q2)";
+        
+        if ($doctorId !== null) {
+            $sql .= " AND p.id IN (
+                SELECT patient_id FROM appointments WHERE doctor_id = :doctor_id1 AND deleted_at IS NULL
+                UNION
+                SELECT patient_id FROM medical_records WHERE doctor_id = :doctor_id2 AND deleted_at IS NULL
+                UNION
+                SELECT patient_id FROM admissions WHERE doctor_id = :doctor_id3 AND deleted_at IS NULL
+                UNION
+                SELECT patient_id FROM queue_tickets WHERE doctor_id = :doctor_id4 AND queue_date = CURDATE()
+                UNION
+                SELECT patient_id FROM queue_tickets WHERE doctor_id IS NULL AND queue_date = CURDATE() AND department_id IN (
+                    SELECT department_id FROM doctor_departments WHERE doctor_id = :doctor_id5
+                )
+            )";
+        }
+        
+        $sql .= " ORDER BY u.name ASC LIMIT 15";
+        
+        $stmt = $this->conn->prepare($sql);
+        $searchParam = "%" . $query . "%";
+        $stmt->bindValue(':q1', $searchParam);
+        $stmt->bindValue(':q2', $searchParam);
+        
+        if ($doctorId !== null) {
+            $stmt->bindValue(':doctor_id1', $doctorId, PDO::PARAM_INT);
+            $stmt->bindValue(':doctor_id2', $doctorId, PDO::PARAM_INT);
+            $stmt->bindValue(':doctor_id3', $doctorId, PDO::PARAM_INT);
+            $stmt->bindValue(':doctor_id4', $doctorId, PDO::PARAM_INT);
+            $stmt->bindValue(':doctor_id5', $doctorId, PDO::PARAM_INT);
+        }
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // Đếm tổng bệnh nhân (chỉ đếm chưa bị xóa mềm)
     public function count() {
         $sql = "SELECT COUNT(*) as total FROM patients WHERE deleted_at IS NULL";

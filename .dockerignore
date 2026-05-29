@@ -1,0 +1,26 @@
+# Git
+.git
+.gitignore
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation & Plans
+*.md
+implementation_plan*
+system_review*
+Sodousecase1.jpg
+
+# IDE
+.vscode
+.idea
+
+# Logs (sẽ được tạo mới trong container)
+logs/*
+!logs/.gitkeep
+
+# OS files
+Thumbs.db
+.DS_Store

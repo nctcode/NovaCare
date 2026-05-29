@@ -86,8 +86,15 @@
                                 </td>
                                 <?php endif; ?>
                                 <td>
-                                    <div class="text-truncate diagnosis-text" style="max-width: 250px;" title="<?= htmlspecialchars($rec['diagnosis']) ?>">
-                                        <?= htmlspecialchars($rec['diagnosis']) ?>
+                                    <div class="d-flex align-items-center">
+                                        <?php if (!empty($rec['icd10_code'])): ?>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5 me-1.5 icd10-code" style="font-size: 10px; border-radius: 4px; background-color: rgba(239, 68, 68, 0.08) !important;">
+                                            <?= htmlspecialchars($rec['icd10_code']) ?>
+                                        </span>
+                                        <?php endif; ?>
+                                        <div class="text-truncate diagnosis-text" style="max-width: 200px;" title="<?= htmlspecialchars($rec['diagnosis']) ?>">
+                                            <?= htmlspecialchars($rec['diagnosis']) ?>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="text-end">
@@ -119,21 +126,24 @@ function filterRecords() {
         const tr = trs[i];
         let found = false;
         
-        // Search columns: Record ID, Patient Name, Doctor Name, Diagnosis
+        // Search columns: Record ID, Patient Name, Doctor Name, Diagnosis, ICD-10
         const patientNameEl = tr.querySelector(".patient-name");
         const doctorNameEl = tr.querySelector(".doctor-name");
         const diagnosisEl = tr.querySelector(".diagnosis-text");
+        const icd10El = tr.querySelector(".icd10-code");
         const recordIdEl = tr.cells[0]; // First cell is ID
         
         const patientName = patientNameEl ? patientNameEl.textContent.toLowerCase() : "";
         const doctorName = doctorNameEl ? doctorNameEl.textContent.toLowerCase() : "";
         const diagnosis = diagnosisEl ? diagnosisEl.textContent.toLowerCase() : "";
+        const icd10 = icd10El ? icd10El.textContent.toLowerCase() : "";
         const recordId = recordIdEl ? recordIdEl.textContent.toLowerCase() : "";
         
         if (
             patientName.includes(filter) || 
             doctorName.includes(filter) || 
             diagnosis.includes(filter) || 
+            icd10.includes(filter) || 
             recordId.includes(filter)
         ) {
             found = true;

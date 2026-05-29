@@ -372,90 +372,128 @@
             return s;
         }
 
-        // Fetch Data from JSON API
+        // Render Queue UI with received data
+        function updateQueueUI(data) {
+            // Update current called ticket
+            const current = data.called && data.called.length > 0 ? data.called[0] : null;
+            const numberEl = document.getElementById('current-number');
+            const patientEl = document.getElementById('current-patient');
+            const roomEl = document.getElementById('current-room');
+            const cardEl = document.getElementById('current-called-card');
+
+            if (current) {
+                const paddedNum = pad(current.ticket_number, 4);
+                const roomName = current.room_name || 'Phòng khám ' + (current.department_name || 'Đa khoa');
+                
+                numberEl.textContent = paddedNum;
+                patientEl.textContent = current.patient_name;
+                roomEl.textContent = roomName;
+
+                // Trigger Voice & Sound if it's a new call
+                if (current.id !== lastCalledId) {
+                    lastCalledId = current.id;
+                    speakTicket(paddedNum, current.patient_name, roomName);
+                    
+                    // Flashing animation
+                    cardEl.classList.remove('animate__animated', 'animate__pulse');
+                    void cardEl.offsetWidth; // Trigger reflow
+                    cardEl.classList.add('animate__animated', 'animate__pulse');
+                }
+            } else {
+                numberEl.textContent = "----";
+                patientEl.textContent = "Chưa có bệnh nhân";
+                roomEl.textContent = "---";
+                lastCalledId = null;
+            }
+
+            // Update waiting list
+            const waitingListEl = document.getElementById('waiting-list');
+            const waitingCountEl = document.getElementById('waiting-count');
+            
+            waitingCountEl.textContent = data.stats ? data.stats.waiting : 0;
+
+            if (!data.waiting || data.waiting.length === 0) {
+                waitingListEl.innerHTML = `
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-face-smile fa-3x mb-3 text-primary"></i>
+                        <p class="fs-5">Không có bệnh nhân chờ khám</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                data.waiting.forEach(w => {
+                    const prioClass = w.priority === 'emergency' ? 'emergency' : (w.priority === 'priority' ? 'priority' : '');
+                    const prioBadge = w.priority === 'emergency' ? '<span class="badge bg-danger ms-2">CẤP CỨU</span>' : (w.priority === 'priority' ? '<span class="badge bg-warning text-dark ms-2">ƯU TIÊN</span>' : '');
+                    const destText = w.room_name || w.department_name || 'Đa khoa';
+
+                    html += `
+                        <div class="waiting-row ${prioClass}">
+                            <div>
+                                <span class="waiting-row-number">${pad(w.ticket_number, 4)}</span>
+                                ${prioBadge}
+                                <div class="waiting-row-name">${w.patient_name}</div>
+                            </div>
+                            <div class="waiting-row-dept">
+                                <div>${destText}</div>
+                                <div class="waiting-row-room"><i class="fa-solid fa-circle-info me-1"></i>Chờ gọi</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                waitingListEl.innerHTML = html;
+            }
+        }
+
+        // Fetch Data from JSON API (Fallback mode)
         async function fetchQueueData() {
             try {
                 const response = await fetch('index.php?page=queue&action=displayData');
                 if (!response.ok) throw new Error('Network response error');
                 const data = await response.json();
-
-                // Update current called ticket
-                const current = data.called && data.called.length > 0 ? data.called[0] : null;
-                const numberEl = document.getElementById('current-number');
-                const patientEl = document.getElementById('current-patient');
-                const roomEl = document.getElementById('current-room');
-                const cardEl = document.getElementById('current-called-card');
-
-                if (current) {
-                    const paddedNum = pad(current.ticket_number, 4);
-                    const roomName = current.room_name || 'Phòng khám ' + (current.department_name || 'Đa khoa');
-                    
-                    numberEl.textContent = paddedNum;
-                    patientEl.textContent = current.patient_name;
-                    roomEl.textContent = roomName;
-
-                    // Trigger Voice & Sound if it's a new call
-                    if (current.id !== lastCalledId) {
-                        lastCalledId = current.id;
-                        speakTicket(paddedNum, current.patient_name, roomName);
-                        
-                        // Flashing animation
-                        cardEl.classList.remove('animate__animated', 'animate__pulse');
-                        void cardEl.offsetWidth; // Trigger reflow
-                        cardEl.classList.add('animate__animated', 'animate__pulse');
-                    }
-                } else {
-                    numberEl.textContent = "----";
-                    patientEl.textContent = "Chưa có bệnh nhân";
-                    roomEl.textContent = "---";
-                    lastCalledId = null;
-                }
-
-                // Update waiting list
-                const waitingListEl = document.getElementById('waiting-list');
-                const waitingCountEl = document.getElementById('waiting-count');
-                
-                waitingCountEl.textContent = data.stats ? data.stats.waiting : 0;
-
-                if (!data.waiting || data.waiting.length === 0) {
-                    waitingListEl.innerHTML = `
-                        <div class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-face-smile fa-3x mb-3 text-primary"></i>
-                            <p class="fs-5">Không có bệnh nhân chờ khám</p>
-                        </div>
-                    `;
-                } else {
-                    let html = '';
-                    data.waiting.forEach(w => {
-                        const prioClass = w.priority === 'emergency' ? 'emergency' : (w.priority === 'priority' ? 'priority' : '');
-                        const prioBadge = w.priority === 'emergency' ? '<span class="badge bg-danger ms-2">CẤP CỨU</span>' : (w.priority === 'priority' ? '<span class="badge bg-warning text-dark ms-2">ƯU TIÊN</span>' : '');
-                        const destText = w.room_name || w.department_name || 'Đa khoa';
-
-                        html += `
-                            <div class="waiting-row ${prioClass}">
-                                <div>
-                                    <span class="waiting-row-number">${pad(w.ticket_number, 4)}</span>
-                                    ${prioBadge}
-                                    <div class="waiting-row-name">${w.patient_name}</div>
-                                </div>
-                                <div class="waiting-row-dept">
-                                    <div>${destText}</div>
-                                    <div class="waiting-row-room"><i class="fa-solid fa-circle-info me-1"></i>Chờ gọi</div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    waitingListEl.innerHTML = html;
-                }
-
+                updateQueueUI(data);
             } catch (err) {
-                console.error("Lỗi lấy dữ liệu hàng chờ: ", err);
+                console.error("Lỗi lấy dữ liệu hàng chờ (Polling): ", err);
             }
         }
 
-        // Loop fetch every 5 seconds
-        setInterval(fetchQueueData, 5000);
-        fetchQueueData();
+        // ====== Server-Sent Events (SSE) Client 4.0 ======
+        let eventSource = null;
+        let pollingInterval = null;
+
+        function connectSSE() {
+            if (!!window.EventSource) {
+                console.log("Khởi tạo kết nối SSE Realtime...");
+                eventSource = new EventSource('index.php?page=queue&action=streamQueue');
+
+                eventSource.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log("Nhận cập nhật gọi số (SSE):", data.timestamp);
+                        updateQueueUI(data);
+                    } catch (e) {
+                        console.error("Lỗi parse SSE JSON:", e);
+                    }
+                };
+
+                eventSource.onerror = function(err) {
+                    console.warn("SSE gặp sự cố hoặc ngắt kết nối. Đang kích hoạt Polling dự phòng...");
+                    eventSource.close();
+                    startFallbackPolling();
+                };
+            } else {
+                console.log("Trình duyệt không hỗ trợ SSE. Dùng Polling truyền thống.");
+                startFallbackPolling();
+            }
+        }
+
+        function startFallbackPolling() {
+            if (pollingInterval) return;
+            fetchQueueData();
+            pollingInterval = setInterval(fetchQueueData, 5000);
+        }
+
+        // Bắt đầu chạy
+        connectSSE();
     </script>
 </body>
 </html>

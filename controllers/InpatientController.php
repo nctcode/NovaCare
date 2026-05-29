@@ -25,7 +25,7 @@ class InpatientController {
 
     // Danh sách nhập viện
     public function index() {
-        Security::requireRole(['admin', 'receptionist', 'doctor', 'nurse']);
+        Security::requireRole(['admin', 'doctor', 'nurse']);
         $user = $_SESSION['user'];
         $filter = $_GET['filter'] ?? 'active';
 
@@ -50,7 +50,7 @@ class InpatientController {
 
     // Sơ đồ phòng
     public function rooms() {
-        Security::requireRole(['admin', 'receptionist', 'doctor', 'nurse']);
+        Security::requireRole(['admin', 'doctor', 'nurse']);
         $rooms = $this->roomModel->getAll();
 
         // Lấy giường cho mỗi phòng
@@ -66,7 +66,7 @@ class InpatientController {
 
     // Form nhập viện
     public function admit() {
-        Security::requireRole(['admin', 'receptionist', 'nurse', 'doctor']);
+        Security::requireRole(['admin', 'nurse', 'doctor']);
         $patients = [];
         $allPatients = $this->patientModel->getAll();
         foreach ($allPatients as $p) {
@@ -84,7 +84,7 @@ class InpatientController {
 
     // Lưu nhập viện
     public function storeAdmit() {
-        Security::requireRole(['admin', 'receptionist', 'nurse', 'doctor']);
+        Security::requireRole(['admin', 'nurse', 'doctor']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 
@@ -122,7 +122,7 @@ class InpatientController {
 
     // Chi tiết ca nhập viện
     public function detail() {
-        Security::requireRole(['admin', 'receptionist', 'doctor', 'nurse']);
+        Security::requireRole(['admin', 'doctor', 'nurse']);
         $id = $_GET['id'] ?? 0;
         $admission = $this->admissionModel->findById($id);
 
@@ -158,7 +158,7 @@ class InpatientController {
 
     // Xuất viện
     public function discharge() {
-        Security::requireRole(['admin', 'receptionist', 'nurse', 'doctor']);
+        Security::requireRole(['admin', 'nurse', 'doctor']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 
@@ -291,6 +291,120 @@ class InpatientController {
 
         header('Content-Type: application/json');
         echo json_encode($records, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * AI Cảnh báo Vitals bất thường - Smart Hospital 4.0
+     * Phân tích các chỉ số sinh tồn vừa nhập → cảnh báo nếu bất thường
+     */
+    public function aiVitalsAlert() {
+        header('Content-Type: application/json; charset=utf-8');
+        Security::requireRole(['admin', 'nurse', 'doctor']);
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $admissionId = intval($input['admission_id'] ?? 0);
+
+        if (!$admissionId) {
+            echo json_encode(['success' => false, 'error' => 'Thiếu thông tin nhập viện.']);
+            exit;
+        }
+
+        $admission = $this->admissionModel->findById($admissionId);
+        if (!$admission) {
+            echo json_encode(['success' => false, 'error' => 'Không tìm thấy ca nhập viện.']);
+            exit;
+        }
+
+        // Vitals hiện tại từ input
+        $vitals = [
+            'temperature' => $input['temperature'] ?? null,
+            'blood_pressure_sys' => $input['blood_pressure_sys'] ?? null,
+            'blood_pressure_dia' => $input['blood_pressure_dia'] ?? null,
+            'heart_rate' => $input['heart_rate'] ?? null,
+            'respiratory_rate' => $input['respiratory_rate'] ?? null,
+            'spo2' => $input['spo2'] ?? null,
+        ];
+
+        // Lấy lịch sử vitals trước đó
+        require_once __DIR__ . '/../models/NursingRecord.php';
+        $nrModel = new NursingRecord();
+        $history = $nrModel->getByAdmissionId($admissionId);
+
+        $historyContext = '';
+        if (!empty($history)) {
+            $historyContext = "LỊCH SỬ VITALS (gần nhất trước):\n";
+            foreach (array_slice($history, 0, 5) as $h) {
+                $parts = [];
+                if ($h['temperature']) $parts[] = "T=" . $h['temperature'] . "°C";
+                if ($h['blood_pressure_sys']) $parts[] = "HA=" . $h['blood_pressure_sys'] . "/" . ($h['blood_pressure_dia'] ?? '?');
+                if ($h['heart_rate']) $parts[] = "HR=" . $h['heart_rate'];
+                if ($h['spo2']) $parts[] = "SpO2=" . $h['spo2'] . "%";
+                $historyContext .= "- [" . ($h['recorded_at'] ?? '?') . "] " . implode(", ", $parts) . "\n";
+            }
+        }
+
+        $vitalsDesc = [];
+        if ($vitals['temperature']) $vitalsDesc[] = "Nhiệt độ: " . $vitals['temperature'] . "°C";
+        if ($vitals['blood_pressure_sys']) $vitalsDesc[] = "Huyết áp: " . $vitals['blood_pressure_sys'] . "/" . ($vitals['blood_pressure_dia'] ?? '?') . " mmHg";
+        if ($vitals['heart_rate']) $vitalsDesc[] = "Nhịp tim: " . $vitals['heart_rate'] . " bpm";
+        if ($vitals['respiratory_rate']) $vitalsDesc[] = "Nhịp thở: " . $vitals['respiratory_rate'] . " /phút";
+        if ($vitals['spo2']) $vitalsDesc[] = "SpO2: " . $vitals['spo2'] . "%";
+
+        if (empty($vitalsDesc)) {
+            echo json_encode(['success' => false, 'error' => 'Chưa nhập chỉ số sinh tồn nào.']);
+            exit;
+        }
+
+        $prompt = "Bạn là AI giám sát sinh hiệu của Bệnh viện thông minh NovaCare 4.0.\n\n"
+            . "BỆNH NHÂN NỘI TRÚ:\n"
+            . "- Họ tên: " . ($admission['patient_name'] ?? 'N/A') . "\n"
+            . "- Chẩn đoán: " . ($admission['diagnosis'] ?? 'N/A') . "\n"
+            . "- Ngày nhập viện: " . ($admission['admission_date'] ?? 'N/A') . "\n\n"
+            . (!empty($historyContext) ? $historyContext . "\n" : "")
+            . "CHỈ SỐ SINH TỒN VỪA ĐO:\n" . implode("\n", $vitalsDesc) . "\n\n"
+            . "YÊU CẦU: Phân tích các chỉ số này, so sánh với ngưỡng bình thường và trend trước đó.\n"
+            . "BẮT BUỘC trả về JSON duy nhất:\n"
+            . "{\n"
+            . "  \"alert_level\": \"normal / warning / danger / critical\",\n"
+            . "  \"abnormal_items\": [\"Liệt kê chỉ số bất thường (nếu có)\"],\n"
+            . "  \"trend\": \"improving / stable / deteriorating\",\n"
+            . "  \"analysis\": \"Phân tích ngắn gọn tình trạng bệnh nhân\",\n"
+            . "  \"recommendation\": \"Khuyến nghị hành động cho y tá/bác sĩ\"\n"
+            . "}";
+
+        require_once __DIR__ . '/../models/BeeknoeeAI.php';
+        $ai = new BeeknoeeAI();
+        if (!$ai->isConfigured()) {
+            require_once __DIR__ . '/../models/GeminiAI.php';
+            $ai = new GeminiAI();
+            if (!$ai->isConfigured()) {
+                echo json_encode(['success' => false, 'error' => 'AI chưa được cấu hình.']);
+                exit;
+            }
+        }
+
+        $ai->systemPrompt = "Bạn là AI giám sát y tế. CHỈ trả về JSON, KHÔNG giải thích.";
+        $result = $ai->chat($prompt);
+
+        if ($result['success']) {
+            $parsed = $result['data'];
+            if (isset($parsed['alert_level'])) {
+                echo json_encode(['success' => true, 'data' => $parsed]);
+            } else {
+                $rawText = $result['raw'] ?? '';
+                if (preg_match('/\{.*\}/s', $rawText, $matches)) {
+                    $jsonDecoded = json_decode($matches[0], true);
+                    if ($jsonDecoded && isset($jsonDecoded['alert_level'])) {
+                        echo json_encode(['success' => true, 'data' => $jsonDecoded]);
+                        exit;
+                    }
+                }
+                echo json_encode(['success' => false, 'error' => 'AI trả về không đúng định dạng.']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Không thể kết nối AI.']);
+        }
         exit;
     }
 }

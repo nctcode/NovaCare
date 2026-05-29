@@ -34,6 +34,25 @@
                     <h6 class="text-dark fw-bold mb-2.5 d-flex align-items-center gap-2" style="font-size: 14.5px;">
                         <i class="fa-solid fa-stethoscope text-danger"></i> Chẩn đoán lâm sàng của Bác sĩ:
                     </h6>
+                    <?php if (!empty($record['icd10_code'])): 
+                        // Fetch ICD-10 details if possible
+                        $db = new Database();
+                        $conn = $db->getConnection();
+                        $stmt = $conn->prepare("SELECT name, name_en, category FROM icd10_codes WHERE code = ?");
+                        $stmt->execute([$record['icd10_code']]);
+                        $icdDetails = $stmt->fetch();
+                    ?>
+                    <div class="mb-3 p-3 rounded-3 bg-light border d-flex flex-wrap align-items-center gap-2" style="font-size: 13px;">
+                        <span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-barcode me-1"></i>ICD-10: <?= htmlspecialchars($record['icd10_code']) ?></span>
+                        <strong class="text-dark"><?= htmlspecialchars($icdDetails['name'] ?? '') ?></strong>
+                        <?php if (!empty($icdDetails['name_en'])): ?>
+                            <span class="text-muted">| <?= htmlspecialchars($icdDetails['name_en']) ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($icdDetails['category'])): ?>
+                            <span class="badge bg-secondary-subtle text-secondary ms-auto"><?= htmlspecialchars($icdDetails['category']) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="p-3.5 border rounded-3 text-dark fw-bold" style="font-size:15px; line-height: 1.6; background: #ffffff; border-color: #e2e8f0 !important; border-left: 5px solid #ef4444 !important; color: #0f172a !important; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
                         <?= nl2br(htmlspecialchars($record['diagnosis'])) ?>
                     </div>

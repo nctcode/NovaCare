@@ -258,4 +258,100 @@ class InvoiceController {
         ]);
         exit;
     }
+
+    /**
+     * Bắt đầu thanh toán VNPay Sandbox - Smart Hospital 4.0
+     */
+    public function payVNPay() {
+        $id = $_GET['id'] ?? 0;
+        $invoice = $this->invoiceModel->findById($id);
+
+        if (!$invoice || $invoice['status'] !== 'pending') {
+            $_SESSION['error'] = 'Hóa đơn không hợp lệ hoặc đã được thanh toán.';
+            header('Location: index.php?page=invoices');
+            exit;
+        }
+
+        require_once __DIR__ . '/../helpers/VNPayHelper.php';
+
+        // Xác định số tiền cần thanh toán
+        $amount = $invoice['patient_payment'] > 0 ? $invoice['patient_payment'] : $invoice['final_amount'];
+
+        // Địa chỉ IP của client
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        // URL trả về sau khi thanh toán xong
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'];
+        $returnUrl = "$protocol://$host" . explode('index.php', $_SERVER['SCRIPT_NAME'])[0] . 'index.php?page=invoices&action=vnpayReturn';
+
+        try {
+            $payment = VNPayHelper::createPaymentUrl($id, $amount, $returnUrl, $ipAddress);
+            
+            // Lưu mã TxnRef vào hóa đơn để đối chiếu sau
+            $db = new Database();
+            $conn = $db->getConnection();
+            $stmt = $conn->prepare("UPDATE invoices SET vnpay_txn_ref = ? WHERE id = ?");
+            $stmt->execute([$payment['txn_ref'], $id]);
+
+            header('Location: ' . $payment['url']);
+            exit;
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi tạo liên kết VNPay: ' . $e->getMessage();
+            header("Location: index.php?page=invoices&action=detail&id=$id");
+            exit;
+        }
+    }
+
+    /**
+     * Nhận phản hồi thanh toán từ VNPay
+     */
+    public function vnpayReturn() {
+        require_once __DIR__ . '/../helpers/VNPayHelper.php';
+
+        if (empty($_GET['vnp_SecureHash'])) {
+            $_SESSION['error'] = 'Tham số phản hồi VNPay không hợp lệ.';
+            header('Location: index.php?page=invoices');
+            exit;
+        }
+
+        $isValid = VNPayHelper::verifyResponse($_GET);
+        
+        $txnRef = $_GET['vnp_TxnRef'] ?? '';
+        $invoiceId = intval(explode('_', $txnRef)[0]);
+        $responseCode = $_GET['vnp_ResponseCode'] ?? '';
+        $transactionNo = $_GET['vnp_TransactionNo'] ?? '';
+
+        if ($invoiceId <= 0) {
+            $_SESSION['error'] = 'Không xác định được mã hóa đơn từ giao dịch VNPay.';
+            header('Location: index.php?page=invoices');
+            exit;
+        }
+
+        $invoice = $this->invoiceModel->findById($invoiceId);
+        if (!$invoice) {
+            $_SESSION['error'] = 'Không tìm thấy hóa đơn liên kết với giao dịch VNPay.';
+            header('Location: index.php?page=invoices');
+            exit;
+        }
+
+        if ($isValid) {
+            // Lưu log giao dịch vào Database
+            $this->invoiceModel->saveVNPayTransaction($invoiceId, $txnRef, $transactionNo, $responseCode);
+
+            if ($responseCode === '00') {
+                // Thanh toán thành công!
+                $this->invoiceModel->markPaid($invoiceId, 'vnpay');
+                $_SESSION['success'] = 'Thanh toán hóa đơn qua VNPay thành công!';
+            } else {
+                // Thanh toán thất bại hoặc người dùng hủy
+                $_SESSION['error'] = 'Giao dịch VNPay không thành công hoặc bị hủy bỏ. Mã lỗi: ' . $responseCode;
+            }
+        } else {
+            $_SESSION['error'] = 'Chữ ký phản hồi VNPay không hợp lệ (Sai chữ ký bảo mật).';
+        }
+
+        header("Location: index.php?page=invoices&action=detail&id=$invoiceId");
+        exit;
+    }
 }

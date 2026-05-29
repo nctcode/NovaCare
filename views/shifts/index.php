@@ -19,6 +19,8 @@
     </div>
 <?php endif; ?>
 
+<?php $hasAction = in_array($user['role'], ['admin', 'doctor', 'nurse']) || (isset($isHead) && $isHead); ?>
+
 <div class="content-card" data-aos="fade-up">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5><i class="fa-solid fa-clock-rotate-left me-2"></i>Danh sách Ca trực</h5>
@@ -41,14 +43,14 @@
                         <th>Y tá/ĐD (Đã duyệt / Cần)</th>
                         <th>Loại ca</th>
                         <th>Ghi chú</th>
-                        <?php if ($user['role'] === 'doctor' || $user['role'] === 'nurse' || (isset($isHead) && $isHead)): ?>
+                        <?php if ($hasAction): ?>
                         <th>Thao tác</th>
                         <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($shifts)): ?>
-                        <tr><td colspan="9" class="text-center text-muted py-4">Không có ca trực phù hợp</td></tr>
+                        <tr><td colspan="<?= $hasAction ? 9 : 8 ?>" class="text-center text-muted py-4">Không có ca trực phù hợp</td></tr>
                     <?php else: ?>
                         <?php foreach ($shifts as $idx => $s): ?>
                         <tr>
@@ -60,15 +62,19 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <strong><?= date('d/m/Y', strtotime($s['shift_date'])) ?></strong>
+                                <strong><?= !empty($s['shift_date']) ? date('d/m/Y', strtotime($s['shift_date'])) : '-' ?></strong>
                                 <br><small class="text-muted"><?php 
-                                    $dayOfWeek = date('N', strtotime($s['shift_date']));
-                                    $days = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
-                                    echo $days[$dayOfWeek];
+                                    if (!empty($s['shift_date'])) {
+                                        $dayOfWeek = date('N', strtotime($s['shift_date']));
+                                        $days = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+                                        echo $days[$dayOfWeek];
+                                    } else {
+                                        echo '-';
+                                    }
                                 ?></small>
                             </td>
                             <td>
-                                <span class="text-nowrap"><?= date('H:i', strtotime($s['start_time'])) ?> - <?= date('H:i', strtotime($s['end_time'])) ?></span>
+                                <span class="text-nowrap"><?= !empty($s['start_time']) ? date('H:i', strtotime($s['start_time'])) : '--:--' ?> - <?= !empty($s['end_time']) ? date('H:i', strtotime($s['end_time'])) : '--:--' ?></span>
                             </td>
                             <td>
                                 <span class="badge bg-info text-dark"><?= $s['approved_doctors'] ?> / <?= $s['required_doctors'] ?></span>
@@ -88,7 +94,10 @@
                                 </span>
                             </td>
                             <td>
-                                <small class="text-muted text-wrap d-block" style="max-                            <td>
+                                <small class="text-muted text-wrap d-block" style="max-width: 150px;"><?= htmlspecialchars($s['notes'] ?? '-') ?></small>
+                            </td>
+                            <?php if ($hasAction): ?>
+                            <td>
                                 <div class="d-flex flex-column gap-1 align-items-start">
                                     <?php if (isset($isHead) && $isHead && $user['role'] !== 'admin'): ?>
                                         <!-- Đối với Trưởng khoa: Chỉ hiện nút Xem danh sách & Duyệt đăng ký -->
@@ -137,6 +146,7 @@
                                     <?php endif; ?>
                                 </div>
                             </td>
+                            <?php endif; ?>
                         </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

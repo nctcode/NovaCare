@@ -264,6 +264,53 @@ class QueueController {
     }
 
     /**
+     * SSE Stream - Đẩy dữ liệu gọi số thời gian thực (Server-Sent Events) - Smart Hospital 4.0
+     */
+    public function streamQueue() {
+        // Cấu hình headers cho SSE
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no'); // Tránh buffering trên Nginx
+
+        // Giải phóng session để tránh chặn các request khác
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        $lastHash = '';
+
+        while (true) {
+            if (connection_aborted()) {
+                break;
+            }
+
+            $calledTickets = $this->queueModel->getCurrentCalled();
+            $waitingTickets = $this->queueModel->getNextWaiting(10);
+            $stats = $this->queueModel->getStatsToday();
+
+            $payload = [
+                'called' => $calledTickets,
+                'waiting' => $waitingTickets,
+                'stats' => $stats
+            ];
+
+            $currentHash = md5(json_encode($payload));
+
+            if ($currentHash !== $lastHash) {
+                $lastHash = $currentHash;
+                $payload['timestamp'] = date('H:i:s');
+                echo "data: " . json_encode($payload, JSON_UNESCAPED_UNICODE) . "\n\n";
+                ob_flush();
+                flush();
+            }
+
+            sleep(1); // Kiểm tra lại sau 1 giây
+        }
+        exit;
+    }
+
+    /**
      * API JSON - Lấy phòng khám theo khoa (cho AJAX dropdown)
      */
     public function getRooms() {

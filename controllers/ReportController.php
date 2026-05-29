@@ -54,7 +54,7 @@ class ReportController {
     }
 
     // Thống kê tổng quan
-    private function getOverviewStats() {
+    public function getOverviewStats() {
         $stats = [];
 
         // Tổng BN
@@ -101,7 +101,7 @@ class ReportController {
     }
 
     // Doanh thu theo tháng (12 tháng gần nhất)
-    private function getRevenueByMonth() {
+    public function getRevenueByMonth() {
         $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, 
                        COALESCE(SUM(final_amount), 0) as revenue,
                        COUNT(*) as invoice_count
@@ -116,7 +116,7 @@ class ReportController {
     }
 
     // Bệnh nhân theo khoa
-    private function getPatientsByDepartment() {
+    public function getPatientsByDepartment() {
         $sql = "SELECT dep.name as department_name, COUNT(DISTINCT mr.patient_id) as patient_count
                 FROM medical_records mr
                 JOIN doctors d ON mr.doctor_id = d.id
@@ -130,7 +130,7 @@ class ReportController {
     }
 
     // Lịch hẹn theo trạng thái
-    private function getAppointmentsByStatus() {
+    public function getAppointmentsByStatus() {
         $sql = "SELECT status, COUNT(*) as total
                 FROM appointments
                 WHERE MONTH(appointment_date) = MONTH(CURDATE()) AND YEAR(appointment_date) = YEAR(CURDATE())
@@ -141,7 +141,7 @@ class ReportController {
     }
 
     // Top bác sĩ (số lượng khám)
-    private function getTopDoctors() {
+    public function getTopDoctors() {
         $sql = "SELECT u.name, d.specialty, COUNT(mr.id) as record_count
                 FROM medical_records mr
                 JOIN doctors d ON mr.doctor_id = d.id
@@ -155,7 +155,7 @@ class ReportController {
     }
 
     // Công suất giường bệnh
-    private function getBedOccupancy() {
+    public function getBedOccupancy() {
         $result = [];
         
         // Tổng giường

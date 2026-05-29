@@ -62,6 +62,83 @@
     </div>
 </div>
 
+<!-- ================= AI PREDICTIVE OPERATIONAL LOAD (4.0) ================= -->
+<div class="row mb-4" data-aos="fade-up" data-aos-delay="750">
+    <div class="col-12">
+        <div class="content-card" style="border: 1px solid #c7d2fe; background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%);">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 style="color:#4f46e5; font-weight:700;"><i class="fa-solid fa-brain me-2"></i>Dự báo Vận hành & Tải Bệnh viện (AI 4.0)</h5>
+                <button type="button" class="btn btn-sm btn-primary px-3 py-2" id="btnAiPredict" style="border-radius:20px; font-weight:600; background:#4f46e5; border:none;">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Khởi chạy Dự báo AI
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="aiPredictPlaceholder" class="text-center py-4">
+                    <p class="text-muted mb-0"><i class="fa-solid fa-circle-info me-1"></i> Nhấp nút để AI phân tích lịch hẹn 30 ngày qua, công suất giường nội trú và khoa/phòng để dự đoán lưu lượng tuần tới.</p>
+                </div>
+                
+                <div id="aiPredictLoading" class="text-center py-4" style="display:none;">
+                    <i class="fa-solid fa-circle-notch fa-spin fa-2x text-primary mb-2"></i>
+                    <p class="text-muted mb-0">AI đang xử lý số liệu bệnh viện và lập mô hình dự báo...</p>
+                </div>
+
+                <div id="aiPredictResult" style="display:none;">
+                    <div class="row g-4">
+                        <!-- Cột 1: Chỉ số chính -->
+                        <div class="col-md-4 border-end">
+                            <div class="p-3 bg-white rounded-3 border mb-3">
+                                <small class="text-muted fw-semibold">Tải dự kiến tuần tới</small>
+                                <div class="d-flex align-items-baseline gap-2 mt-1">
+                                    <h2 class="fw-bold text-primary mb-0" id="aiLoadPct">0%</h2>
+                                    <span class="badge" id="aiLoadRiskBadge">Bình thường</span>
+                                </div>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar progress-bar-striped" role="progressbar" id="aiLoadProgressBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 bg-white rounded-3 border mb-3">
+                                <small class="text-muted fw-semibold"><i class="fa-solid fa-calendar-day me-1"></i>Ngày cao điểm</small>
+                                <h6 class="fw-bold mt-1 mb-0" id="aiPeakDays">—</h6>
+                            </div>
+
+                            <div class="p-3 bg-white rounded-3 border">
+                                <small class="text-muted fw-semibold"><i class="fa-solid fa-hospital me-1"></i>Khoa bận rộn nhất</small>
+                                <h6 class="fw-bold mt-1 mb-0" id="aiBusiestDept">—</h6>
+                            </div>
+                        </div>
+
+                        <!-- Cột 2: Biểu đồ dự báo 7 ngày -->
+                        <div class="col-md-4 border-end">
+                            <h6 class="fw-bold mb-3" style="color:#4f46e5;"><i class="fa-solid fa-chart-simple me-1"></i>Dự báo 7 ngày tới</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-borderless align-middle mb-0" style="font-size:13px;">
+                                    <tbody id="aiForecastTableBody">
+                                        <!-- Javascript generated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Cột 3: Phân tích & Đề xuất hành động -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-magnifying-glass-chart me-1"></i>Phân tích xu hướng</h6>
+                                <p class="text-muted small lh-sm" id="aiAnalysisText" style="text-align:justify;"></p>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-success mb-1"><i class="fa-solid fa-lightbulb me-1"></i>Đề xuất của AI</h6>
+                                <p class="text-muted small lh-sm" id="aiRecommendationsText" style="text-align:justify;"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ================= END AI PREDICTIVE ================= -->
+
 <!-- Biểu đồ & Bảng chi tiết -->
 <div class="row g-4 mb-4">
     <!-- Biểu đồ doanh thu -->
@@ -158,6 +235,88 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // AI Predict click
+    const btnAi = document.getElementById('btnAiPredict');
+    btnAi.addEventListener('click', async function() {
+        document.getElementById('aiPredictPlaceholder').style.display = 'none';
+        document.getElementById('aiPredictLoading').style.display = 'block';
+        document.getElementById('aiPredictResult').style.display = 'none';
+        btnAi.disabled = true;
+
+        try {
+            const res = await fetch('index.php?page=dashboard&action=aiPredictLoad');
+            const data = await res.json();
+
+            if (data.success && data.data) {
+                const d = data.data;
+
+                // Cập nhật Cột 1
+                document.getElementById('aiLoadPct').textContent = d.predicted_load_percentage + '%';
+                document.getElementById('aiPeakDays').textContent = d.peak_days.join(', ');
+                document.getElementById('aiBusiestDept').textContent = d.busiest_department;
+
+                const pb = document.getElementById('aiLoadProgressBar');
+                pb.style.width = d.predicted_load_percentage + '%';
+                
+                const rb = document.getElementById('aiLoadRiskBadge');
+                const riskMap = {
+                    normal: { text: 'Bình thường', bg: '#22c55e' },
+                    warning: { text: 'Cảnh báo', bg: '#f59e0b' },
+                    danger: { text: 'Quá tải ⚠️', bg: '#ef4444' },
+                    critical: { text: 'Nguy cấp 🚨', bg: '#dc2626' }
+                };
+                const risk = riskMap[d.risk_level] || { text: d.risk_level, bg: '#94a3b8' };
+                rb.textContent = risk.text;
+                rb.style.backgroundColor = risk.bg;
+
+                if (d.predicted_load_percentage > 85) {
+                    pb.className = 'progress-bar progress-bar-striped bg-danger';
+                } else if (d.predicted_load_percentage > 60) {
+                    pb.className = 'progress-bar progress-bar-striped bg-warning';
+                } else {
+                    pb.className = 'progress-bar progress-bar-striped bg-success';
+                }
+
+                // Cập nhật Cột 2 (Forecast)
+                const tbody = document.getElementById('aiForecastTableBody');
+                tbody.innerHTML = '';
+                
+                const statusBadges = {
+                    low: { text: 'Thấp', bg: '#e0f2fe', color: '#0369a1' },
+                    medium: { text: 'TB', bg: '#fef3c7', color: '#b45309' },
+                    high: { text: 'Cao ⚠️', bg: '#fee2e2', color: '#b91c1c' }
+                };
+
+                d.forecast_7days.forEach(f => {
+                    const sb = statusBadges[f.load_status] || { text: f.load_status, bg: '#f3f4f6', color: '#374151' };
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-semibold" style="width:30%">${f.day}</td>
+                            <td style="width:40%"><span class="badge bg-light text-dark border">${f.estimated_patients} BN</span></td>
+                            <td style="width:30%"><span class="badge" style="background:${sb.bg}; color:${sb.color}; font-size:11px;">${sb.text}</span></td>
+                        </tr>
+                    `;
+                });
+
+                // Cập nhật Cột 3
+                document.getElementById('aiAnalysisText').textContent = d.analysis;
+                document.getElementById('aiRecommendationsText').textContent = d.recommendations;
+
+                document.getElementById('aiPredictResult').style.display = 'block';
+            } else {
+                alert('Dự báo thất bại: ' + (data.error || 'Lỗi không rõ'));
+                document.getElementById('aiPredictPlaceholder').style.display = 'block';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Lỗi kết nối máy chủ AI.');
+            document.getElementById('aiPredictPlaceholder').style.display = 'block';
+        }
+
+        document.getElementById('aiPredictLoading').style.display = 'none';
+        btnAi.disabled = false;
+    });
+
     // Doanh thu chart
     const revData = <?= json_encode($revenueByMonth ?? []) ?>;
     const revLabels = revData.map(r => r.month);

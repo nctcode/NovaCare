@@ -198,54 +198,14 @@ class DashboardController {
 
         // Director dashboard data
         if ($role === 'director') {
-            require_once __DIR__ . '/../models/Invoice.php';
-            $invoiceModel = new Invoice();
+            require_once __DIR__ . '/../controllers/ReportController.php';
+            $reportCtrl = new ReportController();
             
-            $directorStats = [
-                'total_patients' => $patientModel->count(),
-                'total_doctors' => $doctorModel->count(),
-                'total_nurses' => $nurseModel->count(),
-                'today_appointments' => $appointmentModel->countByDate(date('Y-m-d')),
-                'month_revenue' => 0,
-                'total_revenue' => $invoiceModel->getTotalRevenue(),
-                'current_inpatients' => 0,
-                'low_stock_medicines' => count($medicineModel->getLowStock()),
-                'pending_lab_orders' => 0,
-            ];
-
-            try {
-                require_once __DIR__ . '/../models/Admission.php';
-                $admissionModel = new Admission();
-                $directorStats['current_inpatients'] = $admissionModel->countActive();
-            } catch (Exception $e) {}
-
-            try {
-                require_once __DIR__ . '/../models/LabOrder.php';
-                $labModel = new LabOrder();
-                $directorStats['pending_lab_orders'] = $labModel->countByStatus('pending') + $labModel->countByStatus('in_progress');
-            } catch (Exception $e) {}
-
-            // Doanh thu theo tháng (loaded from ReportController for detail page)
-            $revenueByMonth = [];
-            
-            // Thống kê lịch hẹn
-            $appointmentsByStatus = [];
-            
-            // Top bác sĩ
-            $topDoctors = [];
-            
-            // Công suất giường
-            $bedOccupancy = ['total_beds' => 0, 'occupied_beds' => 0, 'occupancy_rate' => 0];
-            try {
-                $db = new Database();
-                $conn = $db->getConnection();
-                $stmt = $conn->query("SELECT COUNT(*) as total FROM beds");
-                $bedOccupancy['total_beds'] = $stmt->fetch()['total'];
-                $stmt = $conn->query("SELECT COUNT(*) as total FROM beds WHERE status = 'occupied'");
-                $bedOccupancy['occupied_beds'] = $stmt->fetch()['total'];
-                $bedOccupancy['occupancy_rate'] = $bedOccupancy['total_beds'] > 0 
-                    ? round(($bedOccupancy['occupied_beds'] / $bedOccupancy['total_beds']) * 100, 1) : 0;
-            } catch (Exception $e) {}
+            $directorStats = $reportCtrl->getOverviewStats();
+            $revenueByMonth = $reportCtrl->getRevenueByMonth();
+            $appointmentsByStatus = $reportCtrl->getAppointmentsByStatus();
+            $topDoctors = $reportCtrl->getTopDoctors();
+            $bedOccupancy = $reportCtrl->getBedOccupancy();
         }
 
         $pageTitle = 'Dashboard';
@@ -283,5 +243,120 @@ class DashboardController {
         }
 
         require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    /**
+     * AI Dự đoán Lưu lượng Bệnh nhân & Tải Bệnh viện (AJAX API) - Smart Hospital 4.0
+     * 
+     * Phân tích lịch hẹn 30 ngày qua + công suất giường bệnh + khoa/phòng để dự báo tải vận hành
+     */
+    public function aiPredictLoad() {
+        header('Content-Type: application/json; charset=utf-8');
+        Security::requireRole(['director', 'admin']);
+
+        $db = new Database();
+        $conn = $db->getConnection();
+
+        // 1. Thu thập data quá khứ (Lịch hẹn 30 ngày qua theo DOW)
+        $sqlAppts = "SELECT DAYOFWEEK(appointment_date) as dow, COUNT(*) as count 
+                     FROM appointments 
+                     WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                     GROUP BY DAYOFWEEK(appointment_date)";
+        $stmt = $conn->query($sqlAppts);
+        $apptHistory = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $dowNames = [1 => 'Chủ Nhật', 2 => 'Thứ Hai', 3 => 'Thứ Ba', 4 => 'Thứ Tư', 5 => 'Thứ Năm', 6 => 'Thứ Sáu', 7 => 'Thứ Bảy'];
+        $historyText = "LƯỢT KHÁM HẰNG NGÀY TRONG 30 NGÀY QUA:\n";
+        foreach ($apptHistory as $h) {
+            $historyText .= "- " . ($dowNames[$h['dow']] ?? 'N/A') . ": " . $h['count'] . " lượt khám\n";
+        }
+
+        // 2. Dữ liệu công suất hiện tại
+        $stmtBeds = $conn->query("SELECT COUNT(*) as total FROM beds");
+        $totalBeds = $stmtBeds->fetch()['total'] ?? 0;
+        
+        $stmtOcc = $conn->query("SELECT COUNT(*) as occupied FROM beds WHERE status = 'occupied'");
+        $occupiedBeds = $stmtOcc->fetch()['occupied'] ?? 0;
+
+        $stmtInpatients = $conn->query("SELECT COUNT(*) as total FROM admissions WHERE status = 'admitted'");
+        $currentInpatients = $stmtInpatients->fetch()['total'] ?? 0;
+
+        // 3. Số ca phân bổ theo khoa khám bệnh (qua số medical records)
+        $sqlDepts = "SELECT dep.name as dept_name, COUNT(mr.id) as count
+                     FROM medical_records mr
+                     JOIN doctors d ON mr.doctor_id = d.id
+                     JOIN departments dep ON d.department_id = dep.id
+                     WHERE mr.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                     GROUP BY dep.id
+                     ORDER BY count DESC";
+        $stmtDepts = $conn->query($sqlDepts);
+        $deptHistory = $stmtDepts->fetchAll(PDO::FETCH_ASSOC);
+
+        $deptText = "PHÂN BỔ BỆNH NHÂN THEO KHOA (30 ngày):\n";
+        foreach ($deptHistory as $d) {
+            $deptText .= "- Khoa " . $d['dept_name'] . ": " . $d['count'] . " bệnh nhân\n";
+        }
+
+        // 4. Tạo prompt AI dự báo tải
+        $prompt = "Bạn là trợ lý AI phân tích và dự báo tải vận hành y tế của Bệnh viện NovaCare 4.0.\n\n"
+            . "DỮ LIỆU HIỆN TẠI VÀ QUÁ KHỨ BỆNH VIỆN:\n"
+            . "- Tổng số giường bệnh nội trú: " . $totalBeds . "\n"
+            . "- Số giường đang sử dụng: " . $occupiedBeds . " (" . ($totalBeds > 0 ? round(($occupiedBeds/$totalBeds)*100, 1) : 0) . "%)\n"
+            . "- Bệnh nhân điều trị nội trú hiện tại: " . $currentInpatients . "\n\n"
+            . $historyText . "\n"
+            . $deptText . "\n"
+            . "YÊU CẦU: Hãy phân tích xu hướng lưu lượng bệnh nhân và dự báo 7 ngày tới.\n"
+            . "BẮT BUỘC trả về duy nhất định dạng JSON sau:\n"
+            . "{\n"
+            . "  \"predicted_load_percentage\": 75,\n"
+            . "  \"risk_level\": \"normal / warning / danger / critical\",\n"
+            . "  \"peak_days\": [\"Thứ Hai\", \"Thứ Sáu\"],\n"
+            . "  \"busiest_department\": \"Tên khoa bận rộn nhất\",\n"
+            . "  \"forecast_7days\": [\n"
+            . "     {\"day\": \"Thứ Hai\", \"estimated_patients\": 45, \"load_status\": \"high\"},\n"
+            . "     {\"day\": \"Thứ Ba\", \"estimated_patients\": 30, \"load_status\": \"medium\"},\n"
+            . "     {\"day\": \"Thứ Tư\", \"estimated_patients\": 25, \"load_status\": \"low\"},\n"
+            . "     {\"day\": \"Thứ Năm\", \"estimated_patients\": 28, \"load_status\": \"medium\"},\n"
+            . "     {\"day\": \"Thứ Sáu\", \"estimated_patients\": 42, \"load_status\": \"high\"},\n"
+            . "     {\"day\": \"Thứ Bảy\", \"estimated_patients\": 20, \"load_status\": \"low\"},\n"
+            . "     {\"day\": \"Chủ Nhật\", \"estimated_patients\": 15, \"load_status\": \"low\"}\n"
+            . "  ],\n"
+            . "  \"analysis\": \"Phân tích chi tiết về xu hướng tăng/giảm bệnh nhân trong tuần tới\",\n"
+            . "  \"recommendations\": \"Đề xuất phân bổ ca trực cho bác sĩ/y tá, mua thêm vật tư/thuốc, chuẩn bị giường trống...\"\n"
+            . "}";
+
+        require_once __DIR__ . '/../models/BeeknoeeAI.php';
+        $ai = new BeeknoeeAI();
+        if (!$ai->isConfigured()) {
+            require_once __DIR__ . '/../models/GeminiAI.php';
+            $ai = new GeminiAI();
+            if (!$ai->isConfigured()) {
+                echo json_encode(['success' => false, 'error' => 'AI chưa được cấu hình.']);
+                exit;
+            }
+        }
+
+        $ai->systemPrompt = "Bạn là AI dự báo lưu lượng bệnh viện thông minh. Chỉ trả về JSON.";
+        $result = $ai->chat($prompt);
+
+        if ($result['success']) {
+            $parsed = $result['data'];
+            if (isset($parsed['predicted_load_percentage'])) {
+                echo json_encode(['success' => true, 'data' => $parsed]);
+            } else {
+                $rawText = $result['raw'] ?? '';
+                if (preg_match('/\{.*\}/s', $rawText, $matches)) {
+                    $jsonDecoded = json_decode($matches[0], true);
+                    if ($jsonDecoded && isset($jsonDecoded['predicted_load_percentage'])) {
+                        echo json_encode(['success' => true, 'data' => $jsonDecoded]);
+                        exit;
+                    }
+                }
+                echo json_encode(['success' => false, 'error' => 'AI phản hồi sai định dạng.', 'raw' => $rawText]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Không thể liên kết với AI.']);
+        }
+        exit;
     }
 }

@@ -74,6 +74,7 @@ class Prescription {
         $sql = "SELECT pr.*, 
                     du.name as doctor_name,
                     pu.name as patient_name,
+                    mr.patient_id,
                     mr.diagnosis, mr.notes,
                     au.name as approved_by_name
                 FROM prescriptions pr

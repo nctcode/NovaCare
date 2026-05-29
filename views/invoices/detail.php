@@ -49,6 +49,12 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
                     <table class="table table-borderless mb-0" style="font-size:14px;">
                         <tr><td class="text-muted" style="width:140px;">Phương thức:</td><td class="fw-bold"><?= $methodLabels[$invoice['payment_method']] ?? $invoice['payment_method'] ?></td></tr>
                         <tr><td class="text-muted">Người tạo:</td><td><?= htmlspecialchars($invoice['created_by_name'] ?? '-') ?></td></tr>
+                        <?php if (!empty($invoice['vnpay_transaction_no'])): ?>
+                            <tr><td class="text-muted">Mã GD VNPay:</td><td class="fw-bold text-success"><?= htmlspecialchars($invoice['vnpay_transaction_no']) ?></td></tr>
+                        <?php endif; ?>
+                        <?php if (!empty($invoice['vnpay_txn_ref'])): ?>
+                            <tr><td class="text-muted">Mã Đơn hàng:</td><td class="text-secondary" style="font-size:12px;"><?= htmlspecialchars($invoice['vnpay_txn_ref']) ?></td></tr>
+                        <?php endif; ?>
                         <?php if ($invoice['notes']): ?>
                         <tr><td class="text-muted">Ghi chú:</td><td><?= htmlspecialchars($invoice['notes']) ?></td></tr>
                         <?php endif; ?>
@@ -130,22 +136,28 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
             <button onclick="window.print()" class="btn btn-outline-primary" style="border-radius:20px; font-weight:500;">
                 <i class="fa-solid fa-print me-2"></i>In hóa đơn
             </button>
-            <?php if ($invoice['status'] === 'pending' && in_array($_SESSION['user']['role'], ['admin', 'receptionist'])): ?>
-                <div class="dropdown">
-                    <button class="btn btn-success dropdown-toggle" style="border-radius:20px; font-weight:500;" data-bs-toggle="dropdown">
-                        <i class="fa-solid fa-check me-2"></i>Thanh toán
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=cash')">💵 Tiền mặt</a></li>
-                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=card')">💳 Thẻ ngân hàng</a></li>
-                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=momo')">📱 MoMo</a></li>
-                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=vnpay')">🏦 VNPay</a></li>
-                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=transfer')">🔄 Chuyển khoản</a></li>
-                    </ul>
-                </div>
-                <a href="index.php?page=invoices&action=cancel&id=<?= $invoice['id'] ?>" class="btn btn-outline-danger" style="border-radius:20px; font-weight:500;" onclick="return confirm('Bạn chắc chắn muốn hủy hóa đơn này?')">
-                    <i class="fa-solid fa-ban me-2"></i>Hủy hóa đơn
+            <?php if ($invoice['status'] === 'pending'): ?>
+                <a href="index.php?page=invoices&action=payVNPay&id=<?= $invoice['id'] ?>" class="btn btn-primary text-white" style="border-radius:20px; font-weight:600; background: linear-gradient(135deg, #0ea5e9, #2563eb); border:none;">
+                    <i class="fa-solid fa-credit-card me-2"></i>Thanh toán VNPay Sandbox
                 </a>
+                
+                <?php if (in_array($_SESSION['user']['role'], ['admin', 'cashier', 'receptionist'])): ?>
+                    <div class="dropdown">
+                        <button class="btn btn-success dropdown-toggle" style="border-radius:20px; font-weight:500;" data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-check me-2"></i>Thanh toán quầy
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=cash')">💵 Tiền mặt</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=card')">💳 Thẻ ngân hàng</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=momo')">📱 MoMo</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=vnpay')">🏦 VNPay Quầy</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=transfer')">🔄 Chuyển khoản</a></li>
+                        </ul>
+                    </div>
+                    <a href="index.php?page=invoices&action=cancel&id=<?= $invoice['id'] ?>" class="btn btn-outline-danger" style="border-radius:20px; font-weight:500;" onclick="return confirm('Bạn chắc chắn muốn hủy hóa đơn này?')">
+                        <i class="fa-solid fa-ban me-2"></i>Hủy hóa đơn
+                    </a>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>

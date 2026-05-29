@@ -246,6 +246,23 @@ class Invoice {
         return $result;
     }
 
+    /**
+     * Lưu thông tin giao dịch VNPay
+     */
+    public function saveVNPayTransaction($id, $txnRef, $transactionNo, $responseCode) {
+        $sql = "UPDATE invoices 
+                SET vnpay_txn_ref = :txn_ref, 
+                    vnpay_transaction_no = :transaction_no, 
+                    vnpay_response_code = :response_code 
+                WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':txn_ref', $txnRef);
+        $stmt->bindParam(':transaction_no', $transactionNo);
+        $stmt->bindParam(':response_code', $responseCode);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+
     // Hủy hóa đơn (soft: đổi status, không xóa)
     public function cancel($id) {
         $userId = $_SESSION['user']['id'] ?? null;

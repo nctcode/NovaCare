@@ -78,14 +78,17 @@ class MedicalRecord {
 
     public function create($data) {
         $userId = $_SESSION['user']['id'] ?? null;
-        $sql = "INSERT INTO medical_records (patient_id, doctor_id, appointment_id, diagnosis, treatment, notes, created_by) 
-                VALUES (:patient_id, :doctor_id, :appointment_id, :diagnosis, :treatment, :notes, :created_by)";
+        $sql = "INSERT INTO medical_records (patient_id, doctor_id, appointment_id, icd10_code, diagnosis, treatment, notes, created_by) 
+                VALUES (:patient_id, :doctor_id, :appointment_id, :icd10_code, :diagnosis, :treatment, :notes, :created_by)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $data['patient_id']);
         $stmt->bindParam(':doctor_id', $data['doctor_id']);
         
         $aptId = !empty($data['appointment_id']) ? $data['appointment_id'] : null;
         $stmt->bindValue(':appointment_id', $aptId, PDO::PARAM_INT);
+
+        $icdCode = !empty($data['icd10_code']) ? $data['icd10_code'] : null;
+        $stmt->bindValue(':icd10_code', $icdCode, PDO::PARAM_STR);
         
         $stmt->bindParam(':diagnosis', $data['diagnosis']);
         $stmt->bindParam(':treatment', $data['treatment']);
@@ -97,7 +100,8 @@ class MedicalRecord {
 
         AuditLog::logCreate('medical_records', $newId, [
             'diagnosis' => $data['diagnosis'],
-            'treatment' => $data['treatment']
+            'treatment' => $data['treatment'],
+            'icd10_code' => $icdCode
         ]);
         return $newId;
     }

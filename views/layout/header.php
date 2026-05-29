@@ -216,12 +216,6 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-calendar-check"></i> <span>Lịch hẹn</span>
             </a>
         </li>
-        <li class="menu-label">Nội trú</li>
-        <li>
-            <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
-                <i class="fa-solid fa-bed-pulse"></i> <span>Quản lý Nội trú</span>
-            </a>
-        </li>
         <li class="menu-label">Nhân sự</li>
         <li>
             <a href="index.php?page=doctors" class="<?= $currentPage === 'doctors' ? 'active' : '' ?>">
@@ -231,6 +225,11 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         <li>
             <a href="index.php?page=nurses" class="<?= $currentPage === 'nurses' ? 'active' : '' ?>">
                 <i class="fa-solid fa-user-nurse"></i> <span>Y tá</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=shifts" class="<?= $currentPage === 'shifts' ? 'active' : '' ?>">
+                <i class="fa-solid fa-clock"></i> <span>Lịch trực ca</span>
             </a>
         </li>
 

@@ -274,7 +274,12 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
         </li>
         <li>
             <a href="index.php?page=records" class="<?= $currentPage === 'records' ? 'active' : '' ?>">
-                <i class="fa-solid fa-file-medical"></i> <span>Bệnh án nội trú</span>
+                <i class="fa-solid fa-file-medical"></i> <span>Hồ sơ Bệnh án</span>
+            </a>
+        </li>
+        <li>
+            <a href="index.php?page=inpatient" class="<?= $currentPage === 'inpatient' ? 'active' : '' ?>">
+                <i class="fa-solid fa-bed-pulse"></i> <span>Chỉ định nội trú</span>
             </a>
         </li>
         <li>
@@ -422,7 +427,11 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                     <i class="fa-regular fa-bell"></i>
                     <?php
                     // Count notifications
-                    $notifCount = 0;
+                    require_once __DIR__ . '/../../models/Notification.php';
+                    $sysNotifModel = new Notification();
+                    $systemNotifs = $sysNotifModel->getUnreadByUserId($user['id']);
+                    
+                    $notifCount = count($systemNotifs);
                     if (!empty($lowStockMedicines)) $notifCount += count($lowStockMedicines);
                     if (!empty($recentAppointments)) {
                         foreach ($recentAppointments as $ra) {
@@ -449,10 +458,26 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                         <span class="notif-count"><?= $notifCount ?> mới</span>
                         <?php endif; ?>
                     </div>
-                    <div class="notif-list">
+                    <div class="notif-list" style="max-height: 350px; overflow-y: auto;">
                         <?php
                         $hasNotif = false;
 
+                        // System Notifications (Shift reminders / assignments)
+                        if (!empty($systemNotifs)):
+                            $hasNotif = true;
+                            foreach ($systemNotifs as $sn):
+                        ?>
+                        <div class="notif-item position-relative" style="background-color: rgba(2, 132, 199, 0.03); cursor: pointer;" onclick="markRead(<?= $sn['id'] ?>, this)">
+                            <div class="notif-icon" style="background: rgba(14, 165, 233, 0.1); color: #0284c7;"><i class="fa-solid fa-bell"></i></div>
+                            <div class="notif-body">
+                                <div class="notif-text"><strong><?= htmlspecialchars($sn['title']) ?></strong></div>
+                                <div class="notif-text text-muted" style="font-size: 11.5px;"><?= htmlspecialchars($sn['message']) ?></div>
+                                <div class="notif-time"><i class="fa-regular fa-clock me-1"></i><?= date('H:i d/m/Y', strtotime($sn['created_at'])) ?></div>
+                            </div>
+                        </div>
+                        <?php endforeach; endif; ?>
+
+                        <?php
                         // Low stock warnings
                         if (!empty($lowStockMedicines)):
                             $hasNotif = true;
@@ -493,11 +518,31 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                         </div>
                         <?php endif; ?>
                     </div>
-                    <div class="notif-footer">
-                        <a href="index.php?page=appointments"><i class="fa-solid fa-arrow-right me-1"></i>Xem tất cả lịch hẹn</a>
+                    <div class="notif-footer d-flex justify-content-between align-items-center p-2 bg-light">
+                        <button onclick="markAllRead()" class="btn btn-sm btn-link text-decoration-none" style="font-size:12px;"><i class="fa-solid fa-check-double me-1"></i>Đánh dấu tất cả đã đọc</button>
+                        <a href="index.php?page=appointments" class="text-decoration-none" style="font-size:12px;"><i class="fa-solid fa-arrow-right me-1"></i>Lịch hẹn</a>
                     </div>
                 </div>
             </div>
+
+            <!-- JavaScript helper to handle notification marking via AJAX -->
+            <script>
+            function markRead(id, element) {
+                fetch('index.php?page=shifts&action=markNotifRead&id=' + id, {
+                    method: 'GET'
+                }).then(response => {
+                    element.style.opacity = '0.5';
+                    setTimeout(() => { element.remove(); location.reload(); }, 300);
+                });
+            }
+            function markAllRead() {
+                fetch('index.php?page=shifts&action=markAllNotifsRead', {
+                    method: 'GET'
+                }).then(() => {
+                    location.reload();
+                });
+            }
+            </script>
 
             <!-- User info -->
             <?php $cleanName = preg_replace('/^(Bác sĩ|BS\.|Bs\.|Bs|BS)\s+/iu', '', $user['name']); ?>

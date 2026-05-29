@@ -7,8 +7,18 @@
 <?php endif; ?>
 
 <?php
-$sClasses = ['active'=>'badge bg-success-subtle text-success border border-success-subtle','discharged'=>'badge bg-secondary-subtle text-secondary border','transferred'=>'badge bg-warning-subtle text-warning border border-warning-subtle'];
-$sLabels = ['active'=>'Đang nằm viện','discharged'=>'Đã xuất viện','transferred'=>'Chuyển khoa'];
+$sClasses = [
+    'pending' => 'badge bg-warning-subtle text-warning border border-warning-subtle',
+    'active' => 'badge bg-success-subtle text-success border border-success-subtle',
+    'discharged' => 'badge bg-secondary-subtle text-secondary border',
+    'transferred' => 'badge bg-warning-subtle text-warning border border-warning-subtle'
+];
+$sLabels = [
+    'pending' => 'Chờ xếp giường',
+    'active' => 'Đang nằm viện',
+    'discharged' => 'Đã xuất viện',
+    'transferred' => 'Chuyển khoa'
+];
 $typeLabels = ['standard'=>'Thường','vip'=>'VIP','icu'=>'ICU'];
 $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
 ?>
@@ -139,7 +149,7 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
                         <div class="d-flex align-items-center justify-content-center justify-content-md-start flex-wrap gap-2">
                             <span class="inpatient-tag">
                                 <i class="fa-solid fa-bed text-success"></i>
-                                Phòng: <strong><?= $admission['room_number'] ?> (Giường <?= $admission['bed_number'] ?>)</strong>
+                                Phòng: <strong><?= $admission['room_number'] ? $admission['room_number'] . ' (Giường ' . $admission['bed_number'] . ')' : 'Chờ xếp giường' ?></strong>
                             </span>
                             <span class="inpatient-tag">
                                 <i class="fa-solid fa-building text-primary"></i>
@@ -147,7 +157,7 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
                             </span>
                             <span class="inpatient-tag">
                                 <i class="fa-solid fa-calendar text-warning"></i>
-                                Nhập viện: <strong><?= date('d/m/Y H:i', strtotime($admission['admission_date'])) ?></strong>
+                                <?= $admission['status'] === 'pending' ? 'Chỉ định:' : 'Nhập viện:' ?> <strong><?= date('d/m/Y H:i', strtotime($admission['admission_date'])) ?></strong>
                             </span>
                         </div>
                     </div>
@@ -332,6 +342,18 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
                     <!-- Bed allocation -->
                     <div class="p-3.5 border rounded-4 mb-3" style="background: #f8fafc;">
                         <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bed text-success me-2"></i>Bố trí phòng & giường bệnh</h6>
+                        <?php if ($admission['status'] === 'pending'): ?>
+                            <div class="p-3 bg-warning-subtle text-warning border border-warning-subtle rounded-3 text-center">
+                                <i class="fa-solid fa-clock me-1"></i> Bệnh nhân đang chờ xếp phòng và giường bệnh.
+                                <?php if (in_array($_SESSION['user']['role'], ['admin', 'nurse', 'receptionist'])): ?>
+                                <div class="mt-2">
+                                    <a href="index.php?page=inpatient&action=assignBed&id=<?= $admission['id'] ?>" class="btn btn-sm btn-warning fw-bold text-dark" style="border-radius: 8px;">
+                                        <i class="fa-solid fa-bed me-1"></i> Xếp giường ngay
+                                    </a>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php else: ?>
                         <div class="row g-3">
                             <div class="col-6">
                                 <small class="text-muted d-block">PHÒNG KHÁM/BUỒNG</small>
@@ -347,9 +369,10 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
                             </div>
                             <div class="col-6">
                                 <small class="text-muted d-block">ĐƠN GIÁ GIƯỜNG</small>
-                                <strong class="text-dark"><?= number_format($admission['price_per_day'], 0, ',', '.') ?>đ/ngày</strong>
+                                <strong class="text-dark"><?= number_format($admission['price_per_day'] ?? 0, 0, ',', '.') ?>đ/ngày</strong>
                             </div>
                         </div>
+                        <?php endif; ?>
                     </div>
                     
                     <!-- Doctor in charge -->
@@ -410,7 +433,7 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
                     </div>
                     <div class="col-md-4 text-center border-end border-success border-opacity-25">
                         <small class="text-muted d-block font-weight-bold mb-1" style="font-size: 12px; letter-spacing: 0.5px;">ĐƠN GIÁ GIƯỜNG / NGÀY</small>
-                        <h3 class="m-0 fw-bold text-dark" style="font-size: 24px;"><?= number_format($admission['price_per_day'], 0, ',', '.') ?>đ</h3>
+                        <h3 class="m-0 fw-bold text-dark" style="font-size: 24px;"><?= number_format($admission['price_per_day'] ?? 0, 0, ',', '.') ?>đ</h3>
                     </div>
                     <div class="col-md-4 text-center">
                         <small class="text-muted d-block font-weight-bold mb-1" style="font-size: 12px; letter-spacing: 0.5px;">TỔNG PHÍ GIƯỜNG (TẠM TÍNH)</small>

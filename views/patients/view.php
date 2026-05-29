@@ -207,6 +207,11 @@ $isDoctor = ($_SESSION['user']['role'] === 'doctor');
                             <i class="fa-solid fa-brain"></i> Xem Tóm tắt AI
                         </button>
                         <?php endif; ?>
+                        <?php if ($isDoctor): ?>
+                        <a href="index.php?page=inpatient&action=admit&patient_id=<?= $patient['id'] ?>" class="btn btn-danger btn-sm px-3.5 py-2 fw-semibold d-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);">
+                            <i class="fa-solid fa-hospital-user"></i> Chỉ định nhập viện
+                        </a>
+                        <?php endif; ?>
                         <a href="index.php?page=patients" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 8px; font-size: 12.5px; font-weight: 600;">
                             <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
                         </a>

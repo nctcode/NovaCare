@@ -9,6 +9,7 @@ require_once __DIR__ . '/../models/Shift.php';
 require_once __DIR__ . '/../models/Doctor.php';
 require_once __DIR__ . '/../models/Nurse.php';
 require_once __DIR__ . '/../helpers/Security.php';
+require_once __DIR__ . '/../models/Notification.php';
 
 class ShiftController {
     private $shiftModel;
@@ -72,6 +73,22 @@ class ShiftController {
         // Kiểm tra xem có phải trưởng khoa / điều dưỡng trưởng không
         $isHead = Security::isHeadOfDepartment() !== false;
 
+        // Đếm ca đêm tuần hiện tại cho BS/ĐD (dùng cho cảnh báo)
+        $nightShiftsThisWeek = 0;
+        if ($user['role'] === 'doctor' && $departmentId) {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if ($doctor) {
+                $weekStart = date('Y-m-d', strtotime('monday this week'));
+                $nightShiftsThisWeek = $this->shiftModel->countNightShiftsInWeek($doctor['id'], $weekStart);
+            }
+        } elseif ($user['role'] === 'nurse' && $departmentId) {
+            $nurse = $this->nurseModel->findByUserId($user['id']);
+            if ($nurse) {
+                $weekStart = date('Y-m-d', strtotime('monday this week'));
+                $nightShiftsThisWeek = $this->shiftModel->countNurseNightShiftsInWeek($nurse['id'], $weekStart);
+            }
+        }
+
         $pageTitle = 'Quản lý Ca trực';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/shifts/index.php';
@@ -121,6 +138,84 @@ class ShiftController {
         } catch (Exception $e) {
             $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }
+        header('Location: index.php?page=shifts');
+        exit;
+    }
+
+    // Giao diện tạo ca trực hàng loạt cho cả tuần (Trưởng khoa / Điều dưỡng trưởng)
+    public function bulkCreate() {
+        Security::requireHeadRole();
+        $pageTitle = 'Tạo Ca trực Hàng loạt';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/shifts/bulk_create.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Xử lý tạo ca trực hàng loạt cho cả tuần (Trưởng khoa / Điều dưỡng trưởng)
+    public function bulkStore() {
+        $headInfo = Security::requireHeadRole();
+        Security::requirePost('index.php?page=shifts');
+        Security::requireCsrf();
+
+        $departmentId = $headInfo['department_id'];
+        $startMonday = $_POST['start_monday'] ?? '';
+        $postedShifts = $_POST['shifts'] ?? [];
+
+        if (empty($startMonday) || empty($postedShifts)) {
+            $_SESSION['error'] = 'Vui lòng chọn tuần và đánh dấu các ca làm việc cần khởi tạo.';
+            header('Location: index.php?page=shifts&action=bulkCreate');
+            exit;
+        }
+
+        // Kiểm tra xem startMonday có phải là Thứ 2 không
+        $mondayTimestamp = strtotime($startMonday);
+        if (date('N', $mondayTimestamp) != 1) { // 1 = Monday
+            $_SESSION['error'] = 'Ngày bắt đầu tuần phải là ngày Thứ Hai.';
+            header('Location: index.php?page=shifts&action=bulkCreate');
+            exit;
+        }
+
+        $createdCount = 0;
+        try {
+            foreach ($postedShifts as $dayIndex => $slots) {
+                // dayIndex: 1=Monday, 2=Tuesday, ..., 7=Sunday
+                $offset = (int)$dayIndex - 1;
+                $shiftDate = date('Y-m-d', strtotime("+$offset days", $mondayTimestamp));
+
+                foreach ($slots as $slotIndex => $s) {
+                    // Kiểm tra xem ca này có được chọn không
+                    if (!isset($s['enabled'])) {
+                        continue;
+                    }
+
+                    $data = [
+                        'department_id'    => $departmentId,
+                        'name'             => trim($s['name'] ?? 'Ca làm việc'),
+                        'shift_date'       => $shiftDate,
+                        'start_time'       => $s['start_time'] ?? '08:00',
+                        'end_time'         => $s['end_time'] ?? '17:00',
+                        'required_doctors' => (int)($s['required_doctors'] ?? 1),
+                        'required_nurses'  => (int)($s['required_nurses'] ?? 1),
+                        'shift_type'       => $s['shift_type'] ?? 'day',
+                        'notes'            => trim($s['notes'] ?? '')
+                    ];
+
+                    $this->shiftModel->create($data);
+                    $createdCount++;
+                }
+            }
+
+            if ($createdCount > 0) {
+                $_SESSION['success'] = "Khởi tạo thành công hàng loạt $createdCount ca trực cho khoa của bạn!";
+            } else {
+                $_SESSION['error'] = 'Bạn chưa chọn bất kỳ ca làm việc nào trong lịch biểu.';
+                header('Location: index.php?page=shifts&action=bulkCreate');
+                exit;
+            }
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi trong quá trình tạo ca trực: ' . $e->getMessage();
+        }
+
         header('Location: index.php?page=shifts');
         exit;
     }
@@ -326,6 +421,126 @@ class ShiftController {
         }
 
         header('Location: index.php?page=shifts&action=manage&shift_id=' . $shiftId);
+        exit;
+    }
+
+    // ==========================================
+    //  TRƯỞNG KHOA: QUẢN LÝ QUOTA & CHỈ ĐỊNH
+    // ==========================================
+
+    // Xem bảng thống kê quota ca đêm của nhân viên trong khoa
+    public function staffQuota() {
+        $headInfo = Security::requireHeadRole();
+        $departmentId = $headInfo['department_id'];
+
+        $staffList = $this->shiftModel->getStaffQuotaByDepartment($departmentId);
+        $nightShifts = $this->shiftModel->getNightShiftsAvailable($departmentId);
+        $quotaStats = $this->shiftModel->getQuotaStats($departmentId);
+
+        $weekStart = date('Y-m-d', strtotime('monday this week'));
+        $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+
+        $pageTitle = 'Thống kê Quota Ca trực';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/shifts/staff_quota.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Trưởng khoa chỉ định trực cho nhân viên (POST + CSRF)
+    public function assign() {
+        $headInfo = Security::requireHeadRole();
+        Security::requirePost('index.php?page=shifts&action=staffQuota');
+        Security::requireCsrf();
+
+        $staffId = (int)($_POST['staff_id'] ?? 0);
+        $shiftId = (int)($_POST['shift_id'] ?? 0);
+        $role = $_POST['role'] ?? '';
+
+        if (!$staffId || !$shiftId || !in_array($role, ['doctor', 'nurse'])) {
+            $_SESSION['error'] = 'Dữ liệu không hợp lệ.';
+            header('Location: index.php?page=shifts&action=staffQuota');
+            exit;
+        }
+
+        // Kiểm tra ca trực thuộc khoa của Trưởng khoa
+        $shift = $this->shiftModel->findById($shiftId);
+        if (!$shift || ($shift['department_id'] !== null && $shift['department_id'] != $headInfo['department_id'])) {
+            $_SESSION['error'] = 'Bạn không có quyền chỉ định trực ca này.';
+            header('Location: index.php?page=shifts&action=staffQuota');
+            exit;
+        }
+
+        $result = $this->shiftModel->assignStaffToShift($staffId, $shiftId, $role);
+
+        switch ($result) {
+            case 'success':
+                // Gửi notification cho nhân viên được chỉ định
+                $notifModel = new Notification();
+                if ($role === 'doctor') {
+                    $doctor = $this->doctorModel->findById($staffId);
+                    if ($doctor) {
+                        $shiftDate = date('d/m/Y', strtotime($shift['shift_date']));
+                        $notifModel->create(
+                            $doctor['user_id'],
+                            '📋 Được chỉ định ca trực đêm',
+                            'Trưởng khoa đã chỉ định bạn trực ca đêm ngày ' . $shiftDate 
+                            . ' (' . htmlspecialchars($shift['name'] ?? 'Ca trực') . '). '
+                            . 'Vui lòng kiểm tra lịch trực của bạn.'
+                        );
+                    }
+                } else {
+                    $nurse = $this->nurseModel->findById($staffId);
+                    if ($nurse) {
+                        $shiftDate = date('d/m/Y', strtotime($shift['shift_date']));
+                        $notifModel->create(
+                            $nurse['user_id'],
+                            '📋 Được chỉ định ca trực đêm',
+                            'Trưởng khoa đã chỉ định bạn trực ca đêm ngày ' . $shiftDate
+                            . ' (' . htmlspecialchars($shift['name'] ?? 'Ca trực') . '). '
+                            . 'Vui lòng kiểm tra lịch trực của bạn.'
+                        );
+                    }
+                }
+                $_SESSION['success'] = 'Đã chỉ định trực thành công!';
+                break;
+            case 'already_registered':
+                $_SESSION['error'] = 'Nhân viên này đã đăng ký ca trực này rồi.';
+                break;
+            case 'night_shift_full':
+                $_SESSION['error'] = 'Ca trực đêm đã đủ 20 người.';
+                break;
+            default:
+                $_SESSION['error'] = 'Không thể chỉ định trực.';
+        }
+
+        header('Location: index.php?page=shifts&action=staffQuota');
+        exit;
+    }
+
+    // Đánh dấu 1 thông báo là đã đọc (AJAX API)
+    public function markNotifRead() {
+        header('Content-Type: application/json');
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id) {
+            $notif = new Notification();
+            $notif->markAsRead($id);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid ID']);
+        }
+        exit;
+    }
+
+    // Đánh dấu tất cả thông báo của user đã đọc (AJAX API)
+    public function markAllNotifsRead() {
+        header('Content-Type: application/json');
+        if (isset($_SESSION['user']['id'])) {
+            $notif = new Notification();
+            $notif->markAllAsRead($_SESSION['user']['id']);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Not logged in']);
+        }
         exit;
     }
 }

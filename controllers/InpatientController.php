@@ -29,11 +29,21 @@ class InpatientController {
         $user = $_SESSION['user'];
         $filter = $_GET['filter'] ?? 'active';
 
-        if ($filter === 'all') {
-            $admissions = $this->admissionModel->getAll();
-        } else {
-            $admissions = $this->admissionModel->getActive();
+        $doctorId = null;
+        if ($user['role'] === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if ($doctor) {
+                $doctorId = $doctor['id'];
+            }
         }
+
+        if ($filter === 'all') {
+            $admissions = $this->admissionModel->getAll($doctorId);
+        } else {
+            $admissions = $this->admissionModel->getActive($doctorId);
+        }
+
+        $pendingAdmissions = $this->admissionModel->getPending($doctorId);
 
         $stats = [
             'totalRooms' => $this->roomModel->count(),
@@ -76,6 +86,16 @@ class InpatientController {
         $doctors = $this->doctorModel->getAll();
         $beds = $this->roomModel->getAvailableBeds();
 
+        $user = $_SESSION['user'];
+        $currentDoctorId = null;
+        if ($user['role'] === 'doctor') {
+            $doctor = $this->doctorModel->findByUserId($user['id']);
+            if ($doctor) {
+                $currentDoctorId = $doctor['id'];
+            }
+        }
+        $preselectedPatientId = $_GET['patient_id'] ?? null;
+
         $pageTitle = 'Nhập viện bệnh nhân';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/inpatient/admit.php';
@@ -89,10 +109,14 @@ class InpatientController {
         Security::requireCsrf();
 
         try {
+            $bedId = !empty($_POST['bed_id']) ? $_POST['bed_id'] : null;
+            $status = ($bedId !== null) ? 'active' : 'pending';
+
             $data = [
                 'patient_id' => $_POST['patient_id'],
                 'doctor_id' => $_POST['doctor_id'],
-                'bed_id' => $_POST['bed_id'],
+                'bed_id' => $bedId,
+                'status' => $status,
                 'admission_date' => $_POST['admission_date'] ?: date('Y-m-d H:i:s'),
                 'diagnosis' => trim($_POST['diagnosis'] ?? ''),
                 'notes' => trim($_POST['notes'] ?? ''),
@@ -100,16 +124,20 @@ class InpatientController {
 
             $admissionId = $this->admissionModel->admit($data);
 
-            // Cập nhật trạng thái giường
-            $this->roomModel->updateBedStatus($data['bed_id'], 'occupied');
+            if ($bedId !== null) {
+                // Cập nhật trạng thái giường
+                $this->roomModel->updateBedStatus($data['bed_id'], 'occupied');
 
-            // Lấy room_id từ bed để refresh room status (qua Model)
-            $roomId = $this->roomModel->getRoomIdByBedId($data['bed_id']);
-            if ($roomId) {
-                $this->roomModel->refreshRoomStatus($roomId);
+                // Lấy room_id từ bed để refresh room status (qua Model)
+                $roomId = $this->roomModel->getRoomIdByBedId($data['bed_id']);
+                if ($roomId) {
+                    $this->roomModel->refreshRoomStatus($roomId);
+                }
+                $_SESSION['success'] = 'Nhập viện thành công! Mã: #' . $admissionId;
+            } else {
+                $_SESSION['success'] = 'Chỉ định nhập viện thành công! Hồ sơ đang ở trạng thái Chờ xếp giường. Mã: #' . $admissionId;
             }
 
-            $_SESSION['success'] = 'Nhập viện thành công! Mã: #' . $admissionId;
             header("Location: index.php?page=inpatient&action=detail&id=$admissionId");
             exit;
 
@@ -148,7 +176,7 @@ class InpatientController {
         $endDate = $admission['discharge_date'] ? new DateTime($admission['discharge_date']) : new DateTime();
         $days = $startDate->diff($endDate)->days;
         if ($days == 0) $days = 1;
-        $roomCost = $days * $admission['price_per_day'];
+        $roomCost = $days * ($admission['price_per_day'] ?? 0);
 
         $pageTitle = 'Chi tiết Nhập viện #' . $id;
         require_once __DIR__ . '/../views/layout/header.php';
@@ -406,5 +434,70 @@ class InpatientController {
             echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Không thể kết nối AI.']);
         }
         exit;
+    }
+
+    // Giao diện xếp giường cho bệnh nhân đang chờ
+    public function assignBed() {
+        Security::requireRole(['admin', 'nurse', 'receptionist']);
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'Không tìm thấy mã hồ sơ nhập viện.';
+            header('Location: index.php?page=inpatient');
+            exit;
+        }
+
+        $admission = $this->admissionModel->findById($id);
+        if (!$admission || $admission['status'] !== 'pending') {
+            $_SESSION['error'] = 'Hồ sơ không tồn tại hoặc đã được xếp giường.';
+            header('Location: index.php?page=inpatient');
+            exit;
+        }
+
+        $beds = $this->roomModel->getAvailableBeds();
+        $pageTitle = 'Xếp giường bệnh nhân';
+        
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/inpatient/assign_bed.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Lưu xếp giường
+    public function storeAssignBed() {
+        Security::requireRole(['admin', 'nurse', 'receptionist']);
+        Security::requirePost('index.php?page=inpatient');
+        Security::requireCsrf();
+
+        $id = $_GET['id'] ?? null;
+        $bedId = $_POST['bed_id'] ?? null;
+        $admissionDate = $_POST['admission_date'] ?? null;
+
+        if (!$id || !$bedId) {
+            $_SESSION['error'] = 'Thiếu thông tin hồ sơ hoặc giường bệnh.';
+            header('Location: index.php?page=inpatient');
+            exit;
+        }
+
+        try {
+            // Cập nhật hồ sơ admission
+            $this->admissionModel->assignBed($id, $bedId, $admissionDate);
+
+            // Cập nhật trạng thái giường thành occupied
+            $this->roomModel->updateBedStatus($bedId, 'occupied');
+
+            // Cập nhật trạng thái phòng
+            $roomId = $this->roomModel->getRoomIdByBedId($bedId);
+            if ($roomId) {
+                $this->roomModel->refreshRoomStatus($roomId);
+            }
+
+            $_SESSION['success'] = 'Xếp giường bệnh thành công!';
+            header("Location: index.php?page=inpatient&action=detail&id=$id");
+            exit;
+
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+            header("Location: index.php?page=inpatient&action=assignBed&id=$id");
+            exit;
+        }
     }
 }

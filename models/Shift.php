@@ -39,23 +39,29 @@ class Shift {
             error_log("Migration error for shifts: " . $e->getMessage());
         }
 
-        // Check doctor_shifts table
+        // Check doctor_shifts table (migrate status with 'assigned')
         try {
             $stmt = $this->conn->prepare("SHOW COLUMNS FROM doctor_shifts LIKE 'status'");
             $stmt->execute();
-            if (!$stmt->fetch()) {
-                $this->conn->exec("ALTER TABLE doctor_shifts ADD COLUMN status enum('pending','approved','rejected') DEFAULT 'pending'");
+            $col = $stmt->fetch();
+            if (!$col) {
+                $this->conn->exec("ALTER TABLE doctor_shifts ADD COLUMN status enum('pending','approved','rejected','assigned') DEFAULT 'pending'");
+            } elseif (strpos($col['Type'], 'assigned') === false) {
+                $this->conn->exec("ALTER TABLE doctor_shifts MODIFY COLUMN status enum('pending','approved','rejected','assigned') DEFAULT 'pending'");
             }
         } catch (Exception $e) {
             error_log("Migration error for doctor_shifts: " . $e->getMessage());
         }
 
-        // Check nurse_shifts table
+        // Check nurse_shifts table (migrate status with 'assigned')
         try {
             $stmt = $this->conn->prepare("SHOW COLUMNS FROM nurse_shifts LIKE 'status'");
             $stmt->execute();
-            if (!$stmt->fetch()) {
-                $this->conn->exec("ALTER TABLE nurse_shifts ADD COLUMN status enum('pending','approved','rejected') DEFAULT 'pending'");
+            $col = $stmt->fetch();
+            if (!$col) {
+                $this->conn->exec("ALTER TABLE nurse_shifts ADD COLUMN status enum('pending','approved','rejected','assigned') DEFAULT 'pending'");
+            } elseif (strpos($col['Type'], 'assigned') === false) {
+                $this->conn->exec("ALTER TABLE nurse_shifts MODIFY COLUMN status enum('pending','approved','rejected','assigned') DEFAULT 'pending'");
             }
         } catch (Exception $e) {
             error_log("Migration error for nurse_shifts: " . $e->getMessage());
@@ -318,5 +324,174 @@ class Shift {
         $stmt->execute();
         $row = $stmt->fetch();
         return $row['cnt'];
+    }
+
+    // ==========================================
+    //  TRƯỞNG KHOA: QUẢN LÝ QUOTA & CHỈ ĐỊNH
+    // ==========================================
+
+    /**
+     * Lấy danh sách nhân viên trong khoa + số ca đêm đã đăng ký trong tuần
+     * Dùng cho Trưởng khoa xem ai đủ/thiếu quota
+     */
+    public function getStaffQuotaByDepartment($departmentId, $weekStart = null) {
+        if (!$weekStart) {
+            $weekStart = date('Y-m-d', strtotime('monday this week'));
+        }
+        $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+
+        // Lấy bác sĩ trong khoa + đếm ca đêm
+        $sqlDoctors = "SELECT d.id as staff_id, u.id as user_id, u.name, 'doctor' as role, d.specialty,
+                              (SELECT COUNT(*) FROM doctor_shifts ds 
+                               JOIN shifts s ON ds.shift_id = s.id 
+                               WHERE ds.doctor_id = d.id 
+                               AND s.shift_type = 'night' 
+                               AND s.shift_date BETWEEN :ws1 AND :we1) as night_shifts_count
+                       FROM doctors d
+                       JOIN users u ON d.user_id = u.id
+                       WHERE d.department_id = :dept1
+                       AND d.deleted_at IS NULL
+                       AND (u.deleted_at IS NULL AND u.status = 'active')";
+        $stmt = $this->conn->prepare($sqlDoctors);
+        $stmt->execute([':dept1' => $departmentId, ':ws1' => $weekStart, ':we1' => $weekEnd]);
+        $doctors = $stmt->fetchAll();
+
+        // Lấy điều dưỡng trong khoa + đếm ca đêm
+        $sqlNurses = "SELECT n.id as staff_id, u.id as user_id, u.name, 'nurse' as role, 'Điều dưỡng' as specialty,
+                             (SELECT COUNT(*) FROM nurse_shifts ns 
+                              JOIN shifts s ON ns.shift_id = s.id 
+                              WHERE ns.nurse_id = n.id 
+                              AND s.shift_type = 'night' 
+                              AND s.shift_date BETWEEN :ws2 AND :we2) as night_shifts_count
+                      FROM nurses n
+                      JOIN users u ON n.user_id = u.id
+                      WHERE n.department_id = :dept2
+                      AND (u.deleted_at IS NULL AND u.status = 'active')";
+        $stmt = $this->conn->prepare($sqlNurses);
+        $stmt->execute([':dept2' => $departmentId, ':ws2' => $weekStart, ':we2' => $weekEnd]);
+        $nurses = $stmt->fetchAll();
+
+        return array_merge($doctors, $nurses);
+    }
+
+    /**
+     * Trưởng khoa chỉ định trực cho nhân viên
+     * Insert vào doctor_shifts/nurse_shifts với status = 'assigned'
+     */
+    public function assignStaffToShift($staffId, $shiftId, $role) {
+        if ($role === 'doctor') {
+            // Kiểm tra đã đăng ký chưa
+            $sql = "SELECT COUNT(*) as cnt FROM doctor_shifts WHERE doctor_id = :sid AND shift_id = :shid";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':sid' => $staffId, ':shid' => $shiftId]);
+            if ($stmt->fetch()['cnt'] > 0) return 'already_registered';
+
+            // Kiểm tra ca đêm tối đa 20 bác sĩ
+            $shift = $this->findById($shiftId);
+            if ($shift['shift_type'] === 'night') {
+                $sql = "SELECT COUNT(*) as cnt FROM doctor_shifts WHERE shift_id = :shid";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([':shid' => $shiftId]);
+                if ($stmt->fetch()['cnt'] >= 20) return 'night_shift_full';
+            }
+
+            $sql = "INSERT INTO doctor_shifts (doctor_id, shift_id, status) VALUES (:sid, :shid, 'assigned')";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':sid' => $staffId, ':shid' => $shiftId]);
+            return 'success';
+
+        } elseif ($role === 'nurse') {
+            $sql = "SELECT COUNT(*) as cnt FROM nurse_shifts WHERE nurse_id = :sid AND shift_id = :shid";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':sid' => $staffId, ':shid' => $shiftId]);
+            if ($stmt->fetch()['cnt'] > 0) return 'already_registered';
+
+            $shift = $this->findById($shiftId);
+            if ($shift['shift_type'] === 'night') {
+                $sql = "SELECT 
+                            (SELECT COUNT(*) FROM doctor_shifts WHERE shift_id = :s1) +
+                            (SELECT COUNT(*) FROM nurse_shifts WHERE shift_id = :s2) as total";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([':s1' => $shiftId, ':s2' => $shiftId]);
+                if ($stmt->fetch()['total'] >= 20) return 'night_shift_full';
+            }
+
+            $sql = "INSERT INTO nurse_shifts (nurse_id, shift_id, status) VALUES (:sid, :shid, 'assigned')";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':sid' => $staffId, ':shid' => $shiftId]);
+            return 'success';
+        }
+
+        return 'invalid_role';
+    }
+
+    /**
+     * Lấy ca đêm còn trống trong tuần (để Trưởng khoa chọn khi chỉ định)
+     */
+    public function getNightShiftsAvailable($departmentId, $weekStart = null) {
+        if (!$weekStart) {
+            $weekStart = date('Y-m-d', strtotime('monday this week'));
+        }
+        $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+
+        $sql = "SELECT s.*, dep.name as department_name,
+                       (SELECT COUNT(*) FROM doctor_shifts ds WHERE ds.shift_id = s.id) as registered_doctors,
+                       (SELECT COUNT(*) FROM nurse_shifts ns WHERE ns.shift_id = s.id) as registered_nurses
+                FROM shifts s
+                LEFT JOIN departments dep ON s.department_id = dep.id
+                WHERE s.department_id = :dept
+                AND s.shift_type = 'night'
+                AND s.shift_date BETWEEN :ws AND :we
+                ORDER BY s.shift_date ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':dept' => $departmentId, ':ws' => $weekStart, ':we' => $weekEnd]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Thống kê nhanh quota ca trực cho Dashboard Trưởng khoa
+     * Trả về: tổng NV, NV đủ quota, NV thiếu, số đăng ký chờ duyệt
+     */
+    public function getQuotaStats($departmentId) {
+        $staffList = $this->getStaffQuotaByDepartment($departmentId);
+        $totalStaff = count($staffList);
+        $sufficientCount = 0;
+        $insufficientCount = 0;
+        $insufficientList = [];
+
+        foreach ($staffList as $s) {
+            if ($s['night_shifts_count'] >= 2) {
+                $sufficientCount++;
+            } else {
+                $insufficientCount++;
+                $insufficientList[] = $s;
+            }
+        }
+
+        // Đếm đăng ký chờ duyệt
+        $weekStart = date('Y-m-d', strtotime('monday this week'));
+        $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+
+        $sql = "SELECT 
+                    (SELECT COUNT(*) FROM doctor_shifts ds JOIN shifts s ON ds.shift_id = s.id 
+                     WHERE s.department_id = :d1 AND ds.status = 'pending' 
+                     AND s.shift_date BETWEEN :ws1 AND :we1) +
+                    (SELECT COUNT(*) FROM nurse_shifts ns JOIN shifts s ON ns.shift_id = s.id 
+                     WHERE s.department_id = :d2 AND ns.status = 'pending' 
+                     AND s.shift_date BETWEEN :ws2 AND :we2) as pending_count";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':d1' => $departmentId, ':ws1' => $weekStart, ':we1' => $weekEnd,
+            ':d2' => $departmentId, ':ws2' => $weekStart, ':we2' => $weekEnd,
+        ]);
+        $pendingCount = $stmt->fetch()['pending_count'];
+
+        return [
+            'total_staff' => $totalStaff,
+            'sufficient' => $sufficientCount,
+            'insufficient' => $insufficientCount,
+            'insufficient_list' => $insufficientList,
+            'pending_count' => $pendingCount,
+        ];
     }
 }

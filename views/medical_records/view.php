@@ -571,6 +571,11 @@ if (!empty($record['icd10_code'])) {
             <i class="fa-solid fa-arrow-left-long me-2"></i> Trở về Danh sách
         </a>
         <div class="d-flex gap-2">
+            <?php if ($_SESSION['user']['role'] === 'doctor'): ?>
+            <a href="index.php?page=inpatient&action=admit&patient_id=<?= $record['patient_id'] ?>" class="btn btn-danger action-btn d-flex align-items-center gap-1.5" style="border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);">
+                <i class="fa-solid fa-hospital-user"></i> CHỈ ĐỊNH NHẬP VIỆN
+            </a>
+            <?php endif; ?>
             <button onclick="window.print()" class="btn btn-primary-gradient action-btn">
                 <i class="fa-solid fa-print me-1.5"></i> IN HỒ SƠ Y KHOA
             </button>

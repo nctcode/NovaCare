@@ -8,6 +8,8 @@ require_once __DIR__ . '/../models/Nurse.php';
 require_once __DIR__ . '/../models/Appointment.php';
 require_once __DIR__ . '/../models/Medicine.php';
 require_once __DIR__ . '/../models/Equipment.php';
+require_once __DIR__ . '/../models/Notification.php';
+require_once __DIR__ . '/../models/Shift.php';
 
 class DashboardController {
 
@@ -77,13 +79,37 @@ class DashboardController {
                 $data['doctorInfo'] = $doctor;
                 $data['myAppointments'] = $appointmentModel->getByDoctorId($doctor['id']);
                 // Lấy ca trực
-                require_once __DIR__ . '/../models/Shift.php';
                 $shiftModel = new Shift();
                 $data['myShifts'] = $shiftModel->getShiftsByDoctorId($doctor['id']);
                 // Lấy tư vấn online
                 require_once __DIR__ . '/../models/OnlineConsultation.php';
                 $consultModel = new OnlineConsultation();
                 $data['myConsultations'] = $consultModel->getByDoctorId($doctor['id']);
+
+                // Lớp 1 & Lớp 4: Kiểm tra quota ca đêm tuần này
+                $weekStart = date('Y-m-d', strtotime('monday this week'));
+                $nightCount = $shiftModel->countNightShiftsInWeek($doctor['id'], $weekStart);
+                $data['nightShiftsThisWeek'] = $nightCount;
+
+                // Gửi thông báo tự động (Lớp 4) nếu thiếu quota và chưa gửi tuần này
+                if ($nightCount < 2) {
+                    $notifModel = new Notification();
+                    if (!$notifModel->hasShiftReminderThisWeek($user['id'])) {
+                        $notifModel->create(
+                            $user['id'],
+                            '🌙 Nhắc nhở ca trực đêm',
+                            'Lưu ý: Bạn mới chỉ đăng ký ' . $nightCount . '/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.'
+                        );
+                    }
+                }
+
+                // Lớp 3: Nếu là Trưởng khoa, lấy thống kê quota của khoa
+                require_once __DIR__ . '/../helpers/Security.php';
+                $isHead = Security::isHeadOfDepartment() !== false;
+                if ($isHead) {
+                    $data['isHead'] = true;
+                    $data['shiftQuotaStats'] = $shiftModel->getQuotaStats($doctor['department_id']);
+                }
             }
         }
 
@@ -92,13 +118,37 @@ class DashboardController {
             if ($nurse) {
                 $data['nurseInfo'] = $nurse;
                 // Ca trực của y tá
-                require_once __DIR__ . '/../models/Shift.php';
                 $shiftModel = new Shift();
                 $data['myShifts'] = $shiftModel->getShiftsByNurseId($nurse['id']);
                 // Bệnh nhân nội trú (y tá cần xem)
                 require_once __DIR__ . '/../models/Admission.php';
                 $admissionModel = new Admission();
                 $data['activeAdmissions'] = $admissionModel->countActive();
+
+                // Lớp 1 & Lớp 4: Kiểm tra quota ca đêm tuần này
+                $weekStart = date('Y-m-d', strtotime('monday this week'));
+                $nightCount = $shiftModel->countNurseNightShiftsInWeek($nurse['id'], $weekStart);
+                $data['nightShiftsThisWeek'] = $nightCount;
+
+                // Gửi thông báo tự động (Lớp 4) nếu thiếu quota và chưa gửi tuần này
+                if ($nightCount < 2) {
+                    $notifModel = new Notification();
+                    if (!$notifModel->hasShiftReminderThisWeek($user['id'])) {
+                        $notifModel->create(
+                            $user['id'],
+                            '🌙 Nhắc nhở ca trực đêm',
+                            'Lưu ý: Bạn mới chỉ đăng ký ' . $nightCount . '/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Điều dưỡng trưởng chỉ định trực.'
+                        );
+                    }
+                }
+
+                // Lớp 3: Nếu là Điều dưỡng trưởng (Head Nurse), lấy thống kê quota của khoa
+                require_once __DIR__ . '/../helpers/Security.php';
+                $isHead = Security::isHeadOfDepartment() !== false;
+                if ($isHead) {
+                    $data['isHead'] = true;
+                    $data['shiftQuotaStats'] = $shiftModel->getQuotaStats($nurse['department_id']);
+                }
             }
         }
 

@@ -19,7 +19,7 @@ class Admission {
     }
 
     // Lấy tất cả ca nhập viện
-    public function getAll() {
+    public function getAll($doctorId = null) {
         $sql = "SELECT a.*, 
                     u.name as patient_name, u.phone as patient_phone,
                     du.name as doctor_name,
@@ -30,18 +30,24 @@ class Admission {
                 JOIN users u ON p.user_id = u.id
                 JOIN doctors d ON a.doctor_id = d.id
                 JOIN users du ON d.user_id = du.id
-                JOIN beds b ON a.bed_id = b.id
-                JOIN rooms r ON b.room_id = r.id
+                LEFT JOIN beds b ON a.bed_id = b.id
+                LEFT JOIN rooms r ON b.room_id = r.id
                 LEFT JOIN departments dep ON r.department_id = dep.id
-                WHERE a.deleted_at IS NULL
-                ORDER BY a.created_at DESC";
+                WHERE a.deleted_at IS NULL";
+        if ($doctorId !== null) {
+            $sql .= " AND a.doctor_id = :doctor_id";
+        }
+        $sql .= " ORDER BY a.created_at DESC";
         $stmt = $this->conn->prepare($sql);
+        if ($doctorId !== null) {
+            $stmt->bindParam(':doctor_id', $doctorId);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
     // Lấy ca nhập viện đang active
-    public function getActive() {
+    public function getActive($doctorId = null) {
         $sql = "SELECT a.*, 
                     u.name as patient_name, u.phone as patient_phone,
                     du.name as doctor_name,
@@ -52,12 +58,18 @@ class Admission {
                 JOIN users u ON p.user_id = u.id
                 JOIN doctors d ON a.doctor_id = d.id
                 JOIN users du ON d.user_id = du.id
-                JOIN beds b ON a.bed_id = b.id
-                JOIN rooms r ON b.room_id = r.id
+                LEFT JOIN beds b ON a.bed_id = b.id
+                LEFT JOIN rooms r ON b.room_id = r.id
                 LEFT JOIN departments dep ON r.department_id = dep.id
-                WHERE a.status = 'active' AND a.deleted_at IS NULL
-                ORDER BY a.admission_date DESC";
+                WHERE a.status = 'active' AND a.deleted_at IS NULL";
+        if ($doctorId !== null) {
+            $sql .= " AND a.doctor_id = :doctor_id";
+        }
+        $sql .= " ORDER BY a.admission_date DESC";
         $stmt = $this->conn->prepare($sql);
+        if ($doctorId !== null) {
+            $stmt->bindParam(':doctor_id', $doctorId);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -75,8 +87,8 @@ class Admission {
                 JOIN users u ON p.user_id = u.id
                 JOIN doctors d ON a.doctor_id = d.id
                 JOIN users du ON d.user_id = du.id
-                JOIN beds b ON a.bed_id = b.id
-                JOIN rooms r ON b.room_id = r.id
+                LEFT JOIN beds b ON a.bed_id = b.id
+                LEFT JOIN rooms r ON b.room_id = r.id
                 LEFT JOIN departments dep ON r.department_id = dep.id
                 WHERE a.id = :id AND a.deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
@@ -88,8 +100,9 @@ class Admission {
     // Nhập viện (ghi created_by + audit log)
     public function admit($data) {
         $userId = $_SESSION['user']['id'] ?? null;
+        $status = $data['status'] ?? 'pending';
         $sql = "INSERT INTO admissions (patient_id, doctor_id, bed_id, admission_date, diagnosis, notes, status, created_by) 
-                VALUES (:patient_id, :doctor_id, :bed_id, :admission_date, :diagnosis, :notes, 'active', :created_by)";
+                VALUES (:patient_id, :doctor_id, :bed_id, :admission_date, :diagnosis, :notes, :status, :created_by)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $data['patient_id']);
         $stmt->bindParam(':doctor_id', $data['doctor_id']);
@@ -97,6 +110,7 @@ class Admission {
         $stmt->bindParam(':admission_date', $data['admission_date']);
         $stmt->bindParam(':diagnosis', $data['diagnosis']);
         $stmt->bindParam(':notes', $data['notes']);
+        $stmt->bindParam(':status', $status);
         $stmt->bindParam(':created_by', $userId);
         $stmt->execute();
         $newId = $this->conn->lastInsertId();
@@ -154,14 +168,60 @@ class Admission {
                 FROM admissions a
                 JOIN doctors d ON a.doctor_id = d.id
                 JOIN users du ON d.user_id = du.id
-                JOIN beds b ON a.bed_id = b.id
-                JOIN rooms r ON b.room_id = r.id
+                LEFT JOIN beds b ON a.bed_id = b.id
+                LEFT JOIN rooms r ON b.room_id = r.id
                 WHERE a.patient_id = :patient_id AND a.deleted_at IS NULL
                 ORDER BY a.admission_date DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':patient_id', $patientId);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    // Lấy danh sách chờ xếp giường (pending)
+    public function getPending($doctorId = null) {
+        $sql = "SELECT a.*, 
+                    u.name as patient_name, u.phone as patient_phone,
+                    du.name as doctor_name,
+                    dep.name as department_name
+                FROM admissions a
+                JOIN patients p ON a.patient_id = p.id
+                JOIN users u ON p.user_id = u.id
+                JOIN doctors d ON a.doctor_id = d.id
+                JOIN users du ON d.user_id = du.id
+                LEFT JOIN beds b ON a.bed_id = b.id
+                LEFT JOIN rooms r ON b.room_id = r.id
+                LEFT JOIN departments dep ON r.department_id = dep.id
+                WHERE a.status = 'pending' AND a.deleted_at IS NULL";
+        if ($doctorId !== null) {
+            $sql .= " AND a.doctor_id = :doctor_id";
+        }
+        $sql .= " ORDER BY a.created_at DESC";
+        $stmt = $this->conn->prepare($sql);
+        if ($doctorId !== null) {
+            $stmt->bindParam(':doctor_id', $doctorId);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Thực hiện xếp giường/nhập viện cho hồ sơ chờ
+    public function assignBed($id, $bedId, $admissionDate = null) {
+        $userId = $_SESSION['user']['id'] ?? null;
+        $admDateSql = $admissionDate ? ", admission_date = :admission_date" : "";
+        $sql = "UPDATE admissions SET bed_id = :bed_id, status = 'active', updated_by = :updated_by $admDateSql 
+                WHERE id = :id AND deleted_at IS NULL";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':bed_id', $bedId);
+        $stmt->bindParam(':updated_by', $userId);
+        $stmt->bindParam(':id', $id);
+        if ($admissionDate) {
+            $stmt->bindParam(':admission_date', $admissionDate);
+        }
+        $result = $stmt->execute();
+        
+        AuditLog::logUpdate('admissions', $id, ['status' => 'pending'], ['status' => 'active', 'bed_id' => $bedId]);
+        return $result;
     }
 
     // Đếm (chỉ đếm chưa bị xóa mềm)

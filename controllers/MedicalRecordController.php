@@ -105,6 +105,16 @@ class MedicalRecordController {
             $appointments = $this->appointmentModel->getByDoctorId($doctor['id']);
         }
 
+        // Lấy các tham số tự động điền nếu có
+        $preselectedPatientId = $_GET['patient_id'] ?? null;
+        $preselectedAppointmentId = $_GET['appointment_id'] ?? null;
+        $queueId = $_GET['queue_id'] ?? null;
+
+        $preselectedPatient = null;
+        if ($preselectedPatientId) {
+            $preselectedPatient = $this->patientModel->findById($preselectedPatientId);
+        }
+
         $pageTitle = 'Tạo Hồ sơ Bệnh án';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/medical_records/create.php';
@@ -141,6 +151,22 @@ class MedicalRecordController {
             // Nếu hồ sơ gắn với lịch hẹn, đổi trạng thái lịch hẹn thành completed
             if (!empty($data['appointment_id'])) {
                 $this->appointmentModel->updateStatus($data['appointment_id'], 'completed');
+            }
+
+            // Tự động hoàn thành vé hàng chờ khám liên quan
+            require_once __DIR__ . '/../models/QueueTicket.php';
+            $queueModel = new QueueTicket();
+            $queueId = $_POST['queue_id'] ?? null;
+            if (!empty($queueId)) {
+                $queueModel->updateStatus((int)$queueId, 'completed');
+            } else {
+                // Tự tìm và hoàn thành vé đang khám hôm nay của bệnh nhân này
+                $todayTickets = $queueModel->getToday(['date' => date('Y-m-d'), 'status' => 'in_progress']);
+                foreach ($todayTickets as $t) {
+                    if ($t['patient_id'] == $data['patient_id']) {
+                        $queueModel->updateStatus($t['id'], 'completed');
+                    }
+                }
             }
             
             $_SESSION['success'] = 'Tạo hồ sơ bệnh án thành công!';

@@ -4,6 +4,7 @@
     
     <form method="POST" action="index.php?page=records&action=store" id="formMedicalRecord">
                             <?php echo Security::csrfField(); ?>
+        <input type="hidden" name="queue_id" value="<?= htmlspecialchars($queueId ?? '') ?>">
         <div class="row">
             <?php if ($user['role'] === 'admin'): ?>
             <div class="col-md-12 mb-3">
@@ -24,7 +25,14 @@
                 <label class="form-label fw-bold">Bệnh nhân <span class="text-danger">*</span></label>
                 <div class="dropdown" id="patientDropdown">
                     <button class="form-select text-start d-flex justify-content-between align-items-center border-2" type="button" id="patientDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="background-image: none; height: 38px;">
-                        <span id="selected_patient_label" class="text-muted">-- Chọn bệnh nhân từ danh sách --</span>
+                        <?php if (isset($preselectedPatient) && $preselectedPatient): ?>
+                            <span id="selected_patient_label" class="fw-bold text-success">
+                                <?= htmlspecialchars($preselectedPatient['name']) ?> 
+                                <span class="text-muted small ms-2">(<?= htmlspecialchars($preselectedPatient['phone'] ?? 'Chưa có SĐT') ?>)</span>
+                            </span>
+                        <?php else: ?>
+                            <span id="selected_patient_label" class="text-muted">-- Chọn bệnh nhân từ danh sách --</span>
+                        <?php endif; ?>
                         <i class="fa-solid fa-chevron-down text-muted fs-7"></i>
                     </button>
                     <div class="dropdown-menu w-100 p-2 shadow-sm border-light-subtle" aria-labelledby="patientDropdownBtn" style="min-width: 100%;">
@@ -40,7 +48,7 @@
                         </div>
                     </div>
                 </div>
-                <input type="hidden" name="patient_id" id="patient_id" required>
+                <input type="hidden" name="patient_id" id="patient_id" value="<?= htmlspecialchars($preselectedPatientId ?? '') ?>" required>
             </div>
             
             <div class="col-md-6 mb-3">
@@ -48,9 +56,11 @@
                 <select class="form-select border-2" id="appointment_id" name="appointment_id">
                     <option value="">-- Không liên kết --</option>
                     <?php foreach ($appointments as $apt): 
-                        if ($apt['status'] === 'pending' || $apt['status'] === 'confirmed'):
+                        if ($apt['status'] === 'pending' || $apt['status'] === 'confirmed' || $apt['id'] == $preselectedAppointmentId):
                     ?>
-                        <option value="<?= $apt['id'] ?>"><?= date('d/m/Y H:i', strtotime($apt['appointment_date'])) ?> - <?= htmlspecialchars($apt['patient_name']) ?></option>
+                        <option value="<?= $apt['id'] ?>" <?= (isset($preselectedAppointmentId) && $apt['id'] == $preselectedAppointmentId) ? 'selected' : '' ?>>
+                            <?= date('d/m/Y H:i', strtotime($apt['appointment_date'])) ?> - <?= htmlspecialchars($apt['patient_name']) ?>
+                        </option>
                     <?php endif; endforeach; ?>
                 </select>
                 <small class="text-muted"><i class="fa-solid fa-circle-info mt-1"></i> Sẽ tự động đánh dấu "Hoàn thành" lịch hẹn</small>

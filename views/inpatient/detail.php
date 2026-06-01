@@ -455,20 +455,87 @@ $genderLabels = ['male'=>'Nam','female'=>'Nữ','other'=>'Khác'];
             </div>
             <?php endif; ?>
 
+            <!-- Invoice History List -->
+            <?php if (!empty($invoices)): ?>
+            <div class="mb-4">
+                <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>Lịch sử hóa đơn thanh toán viện phí</h6>
+                <div class="table-wrapper border rounded-3 overflow-hidden bg-white">
+                    <table class="table table-hover m-0" style="font-size: 13.5px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã HĐ</th>
+                                <th>Ngày lập</th>
+                                <th>Tổng tiền thực trả</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($invoices as $inv): ?>
+                            <tr>
+                                <td><strong>#<?= $inv['id'] ?></strong></td>
+                                <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
+                                <td class="text-primary fw-bold"><?= number_format($inv['patient_payment'], 0, ',', '.') ?>đ</td>
+                                <td>
+                                    <?php if ($inv['status'] === 'paid'): ?>
+                                        <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2.5 py-1.5" style="border-radius: 6px;"><i class="fa-solid fa-circle-check me-1"></i>Đã thanh toán</span>
+                                    <?php elseif ($inv['status'] === 'cancelled'): ?>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-25 px-2.5 py-1.5" style="border-radius: 6px;"><i class="fa-solid fa-circle-xmark me-1"></i>Đã hủy</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 px-2.5 py-1.5" style="border-radius: 6px;"><i class="fa-solid fa-circle-exclamation me-1"></i>Chờ thanh toán</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="index.php?page=invoices&action=detail&id=<?= $inv['id'] ?>" class="btn btn-sm btn-outline-primary" style="border-radius: 6px; font-size: 12px; font-weight: 500;">
+                                        <i class="fa-solid fa-eye me-1"></i>Xem hóa đơn
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Discharge control button for active inpatient admissions -->
             <div class="mt-2">
-                <?php if ($admission['status'] === 'active' && in_array($_SESSION['user']['role'], ['admin', 'nurse', 'receptionist', 'doctor'])): ?>
-                <div class="p-3 border rounded-3 bg-light d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
-                    <div>
-                        <h6 class="fw-bold text-dark mb-1" style="font-size: 14px;">Thao tác chỉ định Xuất viện</h6>
-                        <small class="text-muted">Nhấn nút bên dưới để hoàn tất bệnh án nội trú này và trả tự do cho giường bệnh.</small>
-                    </div>
-                    <a href="javascript:void(0)" class="btn btn-success px-4 py-2" style="border-radius:10px; font-weight:600; font-size:13.5px; background-color: #10b981; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);" onclick="if(confirm('Bạn có chắc chắn muốn làm thủ tục xuất viện cho bệnh nhân này?')) postAction('index.php?page=inpatient&action=discharge&id=<?= $admission['id'] ?>')">
-                        <i class="fa-solid fa-right-from-bracket me-1.5"></i> Xác nhận Xuất viện
-                    </a>
-                </div>
-                <?php else: ?>
-                <p class="text-muted small"><i class="fa-solid fa-circle-info me-1"></i>Chức năng xuất viện chỉ khả dụng cho ca bệnh nhân đang điều trị nội trú tích cực và được thực hiện bởi quản trị viên, lễ tân hoặc điều dưỡng.</p>
+                <?php if ($admission['status'] === 'active'): ?>
+                    <?php if ($admission['discharge_ordered'] == 0): ?>
+                        <?php if (in_array($_SESSION['user']['role'], ['admin', 'doctor'])): ?>
+                            <div class="p-3 border rounded-3 bg-light d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1" style="font-size: 14px;">Chỉ định xuất viện lâm sàng</h6>
+                                    <small class="text-muted">Nhấn nút bên dưới để đóng băng số ngày lưu viện và chuyển bệnh án sang bộ phận thu ngân lập hóa đơn.</small>
+                                </div>
+                                <a href="javascript:void(0)" class="btn btn-success px-4 py-2" style="border-radius:10px; font-weight:600; font-size:13.5px; background-color: #10b981; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);" onclick="if(confirm('Bạn có chắc chắn muốn ra chỉ định xuất viện cho bệnh nhân này?')) postAction('index.php?page=inpatient&action=orderDischarge&id=<?= $admission['id'] ?>')">
+                                    <i class="fa-solid fa-file-signature me-1.5"></i> Ký Chỉ định Xuất viện
+                                </a>
+                            </div>
+                        <?php else: ?>
+                            <div class="alert alert-warning border-0 p-3 mb-0 rounded-3 d-flex align-items-center gap-2" style="font-size: 13.5px;">
+                                <i class="fa-solid fa-circle-exclamation text-warning"></i>
+                                <span>Chờ Bác sĩ phụ trách ra chỉ định xuất viện lâm sàng để tiến hành lập hóa đơn thanh toán viện phí.</span>
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div class="alert alert-info border-0 p-3.5 mb-3 rounded-3 d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center bg-info text-white rounded-circle" style="width: 32px; height: 32px;">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0.5" style="font-size: 14.5px;">Đã có chỉ định xuất viện lâm sàng</h6>
+                                <small style="font-size: 12.5px;">Chờ thanh toán viện phí. Bệnh nhân cần liên hệ quầy Thu ngân để hoàn tất hóa đơn lưu viện.</small>
+                            </div>
+                        </div>
+                        <?php if (in_array($_SESSION['user']['role'], ['admin', 'cashier'])): ?>
+                            <div class="mt-2.5">
+                                <a href="index.php?page=invoices&action=create&admission_id=<?= $admission['id'] ?>" class="btn btn-primary px-4 py-2" style="border-radius:10px; font-weight:600; font-size:13.5px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);">
+                                    <i class="fa-solid fa-file-invoice-dollar me-1.5"></i> Lập hóa đơn viện phí
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: db:3306
--- Thời gian đã tạo: Th5 29, 2026 lúc 07:37 AM
+-- Thời gian đã tạo: Th5 31, 2026 lúc 10:50 AM
 -- Phiên bản máy phục vụ: 8.0.46
 -- Phiên bản PHP: 8.3.26
 
@@ -35,7 +35,7 @@ CREATE TABLE `admissions` (
   `admission_date` datetime DEFAULT NULL,
   `discharge_date` datetime DEFAULT NULL,
   `diagnosis` text,
-  `status` enum('active','discharged','transferred') DEFAULT 'active',
+  `status` enum('pending','active','discharged','transferred') DEFAULT 'pending',
   `notes` text,
   `created_by` int DEFAULT NULL,
   `updated_by` int DEFAULT NULL,
@@ -51,7 +51,9 @@ CREATE TABLE `admissions` (
 INSERT INTO `admissions` (`id`, `patient_id`, `doctor_id`, `bed_id`, `admission_date`, `discharge_date`, `diagnosis`, `status`, `notes`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 4, 1, 1, '2026-03-13 17:00:00', '2026-03-18 10:00:00', 'Suy tim độ II (NYHA) - Cần theo dõi ECG liên tục', 'discharged', 'Theo dõi nhịp tim 24h. Hạn chế muối và nước. Báo BS khi SpO2 < 92%.', NULL, NULL, '2026-03-13 17:00:00', '2026-05-02 17:12:27', NULL),
 (2, 6, 1, 4, '2026-05-06 10:00:00', '2026-05-27 16:39:30', 'Cơn nhịp nhanh trên thất', 'discharged', 'Theo dõi đáp ứng thuốc chống loạn nhịp', NULL, 5, '2026-05-06 10:00:00', '2026-05-27 16:39:30', NULL),
-(3, 12, 5, 8, '2026-05-08 14:00:00', NULL, 'Tăng huyết áp kháng trị, chuẩn bị mổ', 'active', 'Kiểm soát HA bằng đường tĩnh mạch trước mổ', NULL, NULL, '2026-05-08 14:00:00', '2026-05-02 17:12:27', NULL);
+(3, 12, 5, 8, '2026-05-08 14:00:00', NULL, 'Tăng huyết áp kháng trị, chuẩn bị mổ', 'active', 'Kiểm soát HA bằng đường tĩnh mạch trước mổ', NULL, NULL, '2026-05-08 14:00:00', '2026-05-02 17:12:27', NULL),
+(5, 6, 1, 2, '2026-05-29 09:43:00', NULL, 'Suy nhược cơ thể nghiêm trọng cần truyền dịch', 'active', '', 2, 5, '2026-05-29 09:43:01', '2026-05-29 09:43:55', NULL),
+(6, 6, 1, 3, '2026-05-31 03:40:00', '2026-05-31 03:42:56', 'nhức đầu', 'discharged', '', 2, 5, '2026-05-31 03:39:48', '2026-05-31 03:42:56', NULL);
 
 --
 -- Bẫy `admissions`
@@ -368,7 +370,94 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `log_type`, `table_name`, `
 (218, 13, 'LOGIN', 'auth', 'users', 13, NULL, '{\"email\": \"duocsi@benhvien.com\"}', '172.18.0.1', '2026-05-29 06:38:34'),
 (219, 1, 'LOGIN', 'auth', 'users', 1, NULL, '{\"email\": \"admin@benhvien.com\"}', '172.18.0.1', '2026-05-29 06:39:57'),
 (220, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 06:41:09'),
-(221, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 07:25:19');
+(221, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 07:25:19'),
+(222, 2, 'INSERT', 'data_change', 'medical_records', 10, NULL, '{\"diagnosis\": \"Tăng huyết áp vô căn giai đoạn 2. Triệu chứng: Đau đầu nhẹ, chóng mặt, nặng ngực khi gắng sức. Huyết áp phòng khám: 155/95 mmHg\", \"treatment\": \"Amlodipin 5mg: 01 viên/ngày (uống sáng).\\r\\n\\r\\nLosartan 50mg: 01 viên/ngày (uống sáng).\\r\\n\\r\\nChỉ định: Đo điện tâm đồ (ECG), siêu âm tim.\", \"icd10_code\": null}', '172.18.0.1', '2026-05-29 07:57:22'),
+(223, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:01:09'),
+(224, 17, 'LOGIN', 'auth', 'users', 17, NULL, '{\"email\": \"benhnhan5@gmail.com\"}', '172.18.0.1', '2026-05-29 08:16:15'),
+(225, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:27:15'),
+(226, 29, 'INSERT', 'data_change', 'invoices', 12, NULL, '{\"total\": \"5000\", \"patient_id\": \"6\"}', '172.18.0.1', '2026-05-29 08:31:21'),
+(227, 29, 'INSERT', 'data_change', 'invoices', 12, NULL, '{\"patient_id\": \"6\", \"final_amount\": 5000}', '172.18.0.1', '2026-05-29 08:31:21'),
+(228, 29, 'UPDATE', 'data_change', 'prescriptions', 16, '{\"status\": \"draft\"}', '{\"status\": \"paid\"}', '172.18.0.1', '2026-05-29 08:31:44'),
+(229, 29, 'UPDATE', 'data_change', 'invoices', 12, '{\"status\": \"pending\"}', '{\"method\": \"vnpay\", \"status\": \"paid\"}', '172.18.0.1', '2026-05-29 08:31:45'),
+(230, 29, 'UPDATE', 'data_change', 'invoices', 12, NULL, '{\"method\": \"vnpay\", \"status\": \"paid\"}', '172.18.0.1', '2026-05-29 08:31:45'),
+(231, 13, 'LOGIN', 'auth', 'users', 13, NULL, '{\"email\": \"duocsi@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:32:24'),
+(232, 13, 'UPDATE', 'data_change', 'prescriptions', 16, '{\"status\": \"paid\"}', '{\"notes\": \"\", \"status\": \"approved\"}', '172.18.0.1', '2026-05-29 08:33:27'),
+(233, 13, 'UPDATE', 'data_change', 'prescriptions', 16, '{\"status\": \"approved\"}', '{\"status\": \"dispensed\"}', '172.18.0.1', '2026-05-29 08:33:36'),
+(234, 7, 'LOGIN', 'auth', 'users', 7, NULL, '{\"email\": \"benhnhan1@gmail.com\"}', '172.18.0.1', '2026-05-29 08:34:37'),
+(235, 17, 'LOGIN', 'auth', 'users', 17, NULL, '{\"email\": \"benhnhan5@gmail.com\"}', '172.18.0.1', '2026-05-29 08:34:48'),
+(236, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:38:03'),
+(237, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:40:28'),
+(238, 2, 'INSERT', 'data_change', 'medical_records', 11, NULL, '{\"diagnosis\": \"Viêm phế quản cấp cơ địa dị ứng. Triệu chứng: Ho khạc đờm trắng đục, sốt nhẹ về chiều (38°C), rát họng, mệt mỏi. Phổi thô, có ít rale ẩm rải rác.\", \"treatment\": \"Glucophage 850mg (Metformin): 02 viên/ngày (chia 2 lần, uống ngay sau ăn sáng/tối).\\r\\nDiamicron MR 60mg: 01 viên/ngày (uống trước ăn sáng).\\r\\nChỉ định: Xét nghiệm bộ mỡ máu, HbA1c định kỳ.\", \"icd10_code\": null}', '172.18.0.1', '2026-05-29 08:41:46'),
+(239, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:42:59'),
+(240, 29, 'INSERT', 'data_change', 'invoices', 13, NULL, '{\"total\": \"4500\", \"patient_id\": \"6\"}', '172.18.0.1', '2026-05-29 08:43:32'),
+(241, 29, 'INSERT', 'data_change', 'invoices', 13, NULL, '{\"patient_id\": \"6\", \"final_amount\": 4500}', '172.18.0.1', '2026-05-29 08:43:32'),
+(242, 29, 'UPDATE', 'data_change', 'prescriptions', 17, '{\"status\": \"draft\"}', '{\"status\": \"paid\"}', '172.18.0.1', '2026-05-29 08:44:05'),
+(243, 29, 'UPDATE', 'data_change', 'invoices', 13, '{\"status\": \"pending\"}', '{\"method\": \"momo\", \"status\": \"paid\"}', '172.18.0.1', '2026-05-29 08:44:05'),
+(244, 29, 'UPDATE', 'data_change', 'invoices', 13, NULL, '{\"method\": \"momo\", \"status\": \"paid\"}', '172.18.0.1', '2026-05-29 08:44:05'),
+(245, 13, 'LOGIN', 'auth', 'users', 13, NULL, '{\"email\": \"duocsi@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:45:04'),
+(246, 13, 'UPDATE', 'data_change', 'prescriptions', 17, '{\"status\": \"paid\"}', '{\"notes\": \"\", \"status\": \"approved\"}', '172.18.0.1', '2026-05-29 08:46:59'),
+(247, 13, 'UPDATE', 'data_change', 'prescriptions', 17, '{\"status\": \"approved\"}', '{\"status\": \"dispensed\"}', '172.18.0.1', '2026-05-29 08:47:12'),
+(248, 9, 'UPDATE', 'data_change', 'prescriptions', 18, '{\"status\": \"paid\"}', '{\"status\": \"dispensed\"}', '127.0.0.1', '2026-05-29 08:56:24'),
+(249, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:58:18'),
+(250, 2, 'INSERT', 'data_change', 'medical_records', 12, NULL, '{\"diagnosis\": \"Viêm phế quản cấp cơ địa dị ứng.\", \"treatment\": \"Augmentin 1g: 02 viên/ngày (chia 2 lần sáng/tối, sau ăn).\", \"icd10_code\": null}', '172.18.0.1', '2026-05-29 08:58:58'),
+(251, 13, 'LOGIN', 'auth', 'users', 13, NULL, '{\"email\": \"duocsi@benhvien.com\"}', '172.18.0.1', '2026-05-29 08:59:44'),
+(252, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-29 09:14:12'),
+(253, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 09:20:16'),
+(254, 1, 'INSERT', 'data_change', 'admissions', 4, NULL, '{\"bed_id\": null, \"patient_id\": \"7\"}', '127.0.0.1', '2026-05-29 09:36:40'),
+(255, 1, 'UPDATE', 'data_change', 'admissions', 4, '{\"status\": \"pending\"}', '{\"bed_id\": \"2\", \"status\": \"active\"}', '127.0.0.1', '2026-05-29 09:36:40'),
+(256, 1, 'DELETE', 'data_change', 'admissions', 4, '{\"diagnosis\": \"TEST DIAGNOSIS - PENDING FLOW\"}', NULL, '127.0.0.1', '2026-05-29 09:36:40'),
+(257, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-29 09:39:45'),
+(258, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 09:40:43'),
+(259, 2, 'INSERT', 'data_change', 'admissions', 5, NULL, '{\"bed_id\": null, \"patient_id\": \"6\"}', '172.18.0.1', '2026-05-29 09:43:01'),
+(260, 5, 'UPDATE', 'data_change', 'admissions', 5, '{\"status\": \"pending\"}', '{\"bed_id\": \"2\", \"status\": \"active\"}', '172.18.0.1', '2026-05-29 09:43:55'),
+(261, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 10:14:28'),
+(262, 1, 'LOGIN', 'auth', 'users', 1, NULL, '{\"email\": \"admin@benhvien.com\"}', '172.18.0.1', '2026-05-29 10:51:35'),
+(263, 14, 'LOGIN', 'auth', 'users', 14, NULL, '{\"email\": \"doctor4@benhvien.com\"}', '172.18.0.1', '2026-05-29 10:52:19'),
+(264, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 10:54:53'),
+(265, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-29 11:11:30'),
+(266, 14, 'LOGIN', 'auth', 'users', 14, NULL, '{\"email\": \"doctor4@benhvien.com\"}', '172.18.0.1', '2026-05-29 11:11:49'),
+(267, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 11:12:34'),
+(268, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 15:03:14'),
+(269, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 15:31:38'),
+(270, 2, 'INSERT', 'data_change', 'lab_orders', 2, NULL, '{\"test_name\": \"Xét nghiệm công thức máu\", \"patient_id\": \"6\"}', '172.18.0.1', '2026-05-29 15:45:25'),
+(271, 2, 'UPDATE', 'data_change', 'lab_orders', 2, NULL, '{\"status\": \"cancelled\"}', '172.18.0.1', '2026-05-29 15:59:17'),
+(272, 12, 'LOGIN', 'auth', 'users', 12, NULL, '{\"email\": \"letan@benhvien.com\"}', '172.18.0.1', '2026-05-29 18:24:25'),
+(273, 12, 'INSERT', 'data_change', 'queue_tickets', 7, NULL, '{\"patient_id\": \"6\", \"department_id\": \"3\", \"ticket_number\": \"1\"}', '172.18.0.1', '2026-05-29 18:24:44'),
+(274, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 18:24:53'),
+(275, 2, 'UPDATE', 'data_change', 'queue_tickets', 7, NULL, '{\"status\": \"called\"}', '172.18.0.1', '2026-05-29 18:24:57'),
+(276, 2, 'UPDATE', 'data_change', 'queue_tickets', 7, NULL, '{\"status\": \"in_progress\"}', '172.18.0.1', '2026-05-29 18:25:16'),
+(277, 2, 'UPDATE', 'data_change', 'queue_tickets', 7, NULL, '{\"status\": \"completed\"}', '172.18.0.1', '2026-05-29 18:25:43'),
+(278, 12, 'LOGIN', 'auth', 'users', 12, NULL, '{\"email\": \"letan@benhvien.com\"}', '172.18.0.1', '2026-05-29 18:50:49'),
+(279, 12, 'INSERT', 'data_change', 'queue_tickets', 8, NULL, '{\"patient_id\": \"6\", \"department_id\": \"3\", \"ticket_number\": \"2\"}', '172.18.0.1', '2026-05-29 18:51:00'),
+(280, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-29 18:51:09'),
+(281, 2, 'UPDATE', 'data_change', 'queue_tickets', 8, NULL, '{\"status\": \"called\"}', '172.18.0.1', '2026-05-29 18:51:17'),
+(282, 2, 'UPDATE', 'data_change', 'queue_tickets', 8, NULL, '{\"status\": \"in_progress\"}', '172.18.0.1', '2026-05-29 18:51:19'),
+(283, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-30 11:25:28'),
+(284, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-30 11:25:28'),
+(285, 12, 'LOGIN', 'auth', 'users', 12, NULL, '{\"email\": \"letan@benhvien.com\"}', '172.18.0.1', '2026-05-30 11:25:53'),
+(286, 12, 'INSERT', 'data_change', 'queue_tickets', 9, NULL, '{\"patient_id\": \"6\", \"department_id\": \"3\", \"ticket_number\": \"1\"}', '172.18.0.1', '2026-05-30 11:26:11'),
+(287, 2, 'UPDATE', 'data_change', 'queue_tickets', 9, NULL, '{\"status\": \"called\"}', '172.18.0.1', '2026-05-30 11:26:21'),
+(288, 2, 'UPDATE', 'data_change', 'queue_tickets', 9, NULL, '{\"status\": \"in_progress\"}', '172.18.0.1', '2026-05-30 11:52:21'),
+(289, 2, 'UPDATE', 'data_change', 'queue_tickets', 9, NULL, '{\"status\": \"completed\"}', '172.18.0.1', '2026-05-30 11:52:40'),
+(290, 7, 'LOGIN', 'auth', 'users', 7, NULL, '{\"email\": \"benhnhan1@gmail.com\"}', '172.18.0.1', '2026-05-30 12:10:21'),
+(291, 10, 'LOGIN', 'auth', 'users', 10, NULL, '{\"email\": \"benhnhan4@gmail.com\"}', '172.18.0.1', '2026-05-30 12:10:39'),
+(292, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-30 12:13:53'),
+(293, 7, 'LOGIN', 'auth', 'users', 7, NULL, '{\"email\": \"benhnhan1@gmail.com\"}', '172.18.0.1', '2026-05-30 12:14:02'),
+(294, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-30 12:34:36'),
+(295, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-30 17:01:32'),
+(296, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-30 19:51:10'),
+(297, 3, 'LOGIN', 'auth', 'users', 3, NULL, '{\"email\": \"doctor2@benhvien.com\"}', '172.18.0.1', '2026-05-30 20:20:02'),
+(298, 3, 'LOGIN', 'auth', 'users', 3, NULL, '{\"email\": \"doctor2@benhvien.com\"}', '172.18.0.1', '2026-05-30 20:20:34'),
+(299, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-30 20:20:50'),
+(300, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:08:57'),
+(301, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:38:31'),
+(302, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:39:17'),
+(303, 2, 'INSERT', 'data_change', 'admissions', 6, NULL, '{\"bed_id\": null, \"patient_id\": \"6\"}', '172.18.0.1', '2026-05-31 03:39:48'),
+(304, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:39:59'),
+(305, 5, 'UPDATE', 'data_change', 'admissions', 6, '{\"status\": \"pending\"}', '{\"bed_id\": \"3\", \"status\": \"active\"}', '172.18.0.1', '2026-05-31 03:40:26'),
+(306, 5, 'UPDATE', 'data_change', 'admissions', 6, '{\"status\": \"active\"}', '{\"status\": \"discharged\"}', '172.18.0.1', '2026-05-31 03:42:56'),
+(307, 12, 'LOGIN', 'auth', 'users', 12, NULL, '{\"email\": \"letan@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:45:20'),
+(308, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:52:40');
 
 -- --------------------------------------------------------
 
@@ -389,7 +478,7 @@ CREATE TABLE `beds` (
 
 INSERT INTO `beds` (`id`, `room_id`, `bed_number`, `status`) VALUES
 (1, 1, 'G1', 'occupied'),
-(2, 1, 'G2', 'available'),
+(2, 1, 'G2', 'occupied'),
 (3, 2, 'G1', 'available'),
 (4, 2, 'G2', 'available'),
 (5, 3, 'G1', 'available'),
@@ -507,7 +596,7 @@ CREATE TABLE `doctor_shifts` (
   `id` int NOT NULL,
   `doctor_id` int DEFAULT NULL,
   `shift_id` int DEFAULT NULL,
-  `status` enum('pending','approved','rejected') DEFAULT 'pending'
+  `status` enum('pending','approved','rejected','assigned') DEFAULT 'pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -519,7 +608,10 @@ INSERT INTO `doctor_shifts` (`id`, `doctor_id`, `shift_id`, `status`) VALUES
 (3, 2, 3, 'pending'),
 (4, 3, 4, 'pending'),
 (7, 1, 2, 'pending'),
-(9, 4, 7, 'approved');
+(9, 4, 7, 'approved'),
+(10, 4, 8, 'approved'),
+(11, 4, 9, 'approved'),
+(12, 4, 22, 'approved');
 
 -- --------------------------------------------------------
 
@@ -672,7 +764,9 @@ INSERT INTO `invoices` (`id`, `patient_id`, `appointment_id`, `admission_id`, `p
 (7, 1, NULL, NULL, 7, NULL, 0.00, 0.00, 0.00, 37500.00, 0.00, 37500.00, 'cash', NULL, NULL, NULL, 'paid', 'Test invoice for prescription', 1, 1, '2026-05-25 09:27:39', '2026-05-25 09:27:39', NULL),
 (8, 1, NULL, NULL, 8, NULL, 0.00, 0.00, 0.00, 37500.00, 0.00, 37500.00, 'cash', NULL, NULL, NULL, 'paid', 'Test invoice for prescription', 1, 1, '2026-05-25 09:27:52', '2026-05-25 09:27:52', NULL),
 (9, 1, NULL, NULL, 10, NULL, 0.00, 0.00, 0.00, 37500.00, 0.00, 37500.00, 'cash', NULL, NULL, NULL, 'paid', 'Test invoice for prescription', 1, 1, '2026-05-25 09:29:12', '2026-05-25 09:29:12', NULL),
-(10, 6, NULL, NULL, 12, NULL, 0.00, 0.00, 0.00, 3500.00, 0.00, 3500.00, 'cash', NULL, NULL, NULL, 'paid', '', 12, 12, '2026-05-25 10:13:18', '2026-05-25 10:29:46', NULL);
+(10, 6, NULL, NULL, 12, NULL, 0.00, 0.00, 0.00, 3500.00, 0.00, 3500.00, 'cash', NULL, NULL, NULL, 'paid', '', 12, 12, '2026-05-25 10:13:18', '2026-05-25 10:29:46', NULL),
+(12, 6, NULL, NULL, 16, NULL, 0.00, 0.00, 5000.00, 5000.00, 0.00, 5000.00, 'vnpay', '12_1780043493', NULL, NULL, 'paid', '', 29, 29, '2026-05-29 08:31:21', '2026-05-29 08:31:44', NULL),
+(13, 6, NULL, NULL, 17, NULL, 0.00, 0.00, 4500.00, 4500.00, 0.00, 4500.00, 'momo', '13_1780044227', NULL, NULL, 'paid', '', 29, 29, '2026-05-29 08:43:32', '2026-05-29 08:44:05', NULL);
 
 -- --------------------------------------------------------
 
@@ -710,7 +804,9 @@ INSERT INTO `invoice_items` (`id`, `invoice_id`, `service_id`, `medicine_id`, `r
 (11, 5, NULL, 5, NULL, 'Furosemide 40mg', 10, 3000.00, 30000.00),
 (12, 5, NULL, 6, NULL, 'Enalapril 5mg', 10, 4500.00, 45000.00),
 (13, 5, NULL, NULL, NULL, 'Phí sinh hoạt khác', 1, 425000.00, 425000.00),
-(14, 10, NULL, 8, NULL, 'Omeprazole 20mg', 1, 3500.00, 3500.00);
+(14, 10, NULL, 8, NULL, 'Omeprazole 20mg', 1, 3500.00, 3500.00),
+(16, 12, NULL, 2, NULL, 'Amoxicillin 500mg', 1, 5000.00, 5000.00),
+(17, 13, NULL, 6, NULL, 'Enalapril 5mg', 1, 4500.00, 4500.00);
 
 -- --------------------------------------------------------
 
@@ -738,7 +834,8 @@ CREATE TABLE `lab_orders` (
 --
 
 INSERT INTO `lab_orders` (`id`, `patient_id`, `doctor_id`, `appointment_id`, `order_type`, `test_name`, `priority`, `status`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 9, 1, NULL, 'imaging', 'Xét nghiệm công thức máu', 'normal', 'completed', 'lâm sàng', 2, '2026-05-27 16:28:01', '2026-05-27 16:33:16');
+(1, 9, 1, NULL, 'imaging', 'Xét nghiệm công thức máu', 'normal', 'completed', 'lâm sàng', 2, '2026-05-27 16:28:01', '2026-05-27 16:33:16'),
+(2, 6, 1, NULL, 'imaging', 'Xét nghiệm công thức máu', 'urgent', 'cancelled', '', 2, '2026-05-29 15:45:25', '2026-05-29 15:59:17');
 
 -- --------------------------------------------------------
 
@@ -827,7 +924,10 @@ INSERT INTO `medical_records` (`id`, `patient_id`, `doctor_id`, `appointment_id`
 (5, 6, 1, 7, NULL, 'Cơn nhịp nhanh trên thất', 'Theo dõi ngoại trú, kê đơn chống loạn nhịp', 'Khuyên bệnh nhân ngừng hút thuốc', NULL, NULL, '2026-05-06 09:00:00', '2026-05-02 17:12:28', NULL),
 (6, 7, 3, 8, NULL, 'Viêm loét dạ dày - tá tràng', 'Omeprazole 20mg x 2 lần/ngày, thay đổi thói quen ăn uống', 'Tránh đồ ăn cay nóng, chua, thức khuya', NULL, NULL, '2026-05-06 13:45:00', '2026-05-02 17:12:28', NULL),
 (7, 9, 2, 10, NULL, 'Thiểu năng tuần hoàn não', 'Cải thiện tuần hoàn não, nghỉ ngơi', 'Nghi ngờ liên quan đến loãng xương cổ', NULL, NULL, '2026-05-07 15:00:00', '2026-05-02 17:12:28', NULL),
-(8, 10, 3, 11, NULL, 'Cơn Gout cấp', 'Colchicine 1mg, tăng liều Allopurinol', 'Chườm lạnh, kiêng đạm động vật', NULL, NULL, '2026-05-08 10:30:00', '2026-05-02 17:12:28', NULL);
+(8, 10, 3, 11, NULL, 'Cơn Gout cấp', 'Colchicine 1mg, tăng liều Allopurinol', 'Chườm lạnh, kiêng đạm động vật', NULL, NULL, '2026-05-08 10:30:00', '2026-05-02 17:12:28', NULL),
+(10, 6, 1, NULL, NULL, 'Tăng huyết áp vô căn giai đoạn 2. Triệu chứng: Đau đầu nhẹ, chóng mặt, nặng ngực khi gắng sức. Huyết áp phòng khám: 155/95 mmHg', 'Amlodipin 5mg: 01 viên/ngày (uống sáng).\r\n\r\nLosartan 50mg: 01 viên/ngày (uống sáng).\r\n\r\nChỉ định: Đo điện tâm đồ (ECG), siêu âm tim.', 'Ăn nhạt (giảm muối), hạn chế mỡ động vật. Tránh thức khuya, stress. Tập thể dục nhẹ nhàng.', 2, NULL, '2026-05-29 07:57:22', '2026-05-29 07:57:22', NULL),
+(11, 6, 1, NULL, NULL, 'Viêm phế quản cấp cơ địa dị ứng. Triệu chứng: Ho khạc đờm trắng đục, sốt nhẹ về chiều (38°C), rát họng, mệt mỏi. Phổi thô, có ít rale ẩm rải rác.', 'Glucophage 850mg (Metformin): 02 viên/ngày (chia 2 lần, uống ngay sau ăn sáng/tối).\r\nDiamicron MR 60mg: 01 viên/ngày (uống trước ăn sáng).\r\nChỉ định: Xét nghiệm bộ mỡ máu, HbA1c định kỳ.', 'Uống nhiều nước ấm (1.5 - 2 lít/ngày). Giữ ấm cổ họng, súc miệng nước muối sinh lý 3 lần/ngày. Kiêng nước đá, đồ ăn lạnh.', 2, NULL, '2026-05-29 08:41:46', '2026-05-29 08:41:46', NULL),
+(12, 6, 1, NULL, NULL, 'Viêm phế quản cấp cơ địa dị ứng.', 'Augmentin 1g: 02 viên/ngày (chia 2 lần sáng/tối, sau ăn).', 'Uống nhiều nước ấm', 2, NULL, '2026-05-29 08:58:58', '2026-05-29 08:58:58', NULL);
 
 --
 -- Bẫy `medical_records`
@@ -869,11 +969,11 @@ CREATE TABLE `medicines` (
 
 INSERT INTO `medicines` (`id`, `name`, `description`, `quantity`, `reserved`, `expiry_date`, `price`) VALUES
 (1, 'Paracetamol 500mg', 'Thuốc giảm đau hạ sốt, dùng phổ biến', 469, 39, '2027-05-01', 2500.00),
-(2, 'Amoxicillin 500mg', 'Kháng sinh nhóm Beta-lactam, điều trị nhiễm khuẩn', 300, 0, '2026-12-01', 5000.00),
-(3, 'Aspirin 81mg', 'Thuốc chống kết tập tiểu cầu, hỗ trợ tim mạch', 200, 0, '2027-03-15', 3500.00),
+(2, 'Amoxicillin 500mg', 'Kháng sinh nhóm Beta-lactam, điều trị nhiễm khuẩn', 299, 0, '2026-12-01', 5000.00),
+(3, 'Aspirin 81mg', 'Thuốc chống kết tập tiểu cầu, hỗ trợ tim mạch', 200, 1, '2027-03-15', 3500.00),
 (4, 'Vitamin C 1000mg', 'Tăng cường sức đề kháng, chống oxy hóa', 600, 0, '2027-08-01', 2000.00),
 (5, 'Furosemide 40mg', 'Thuốc lợi tiểu, điều trị suy tim và phù', 150, 1, '2027-06-01', 3000.00),
-(6, 'Enalapril 5mg', 'Thuốc ức chế ACE, điều trị tăng huyết áp và suy tim', 200, 0, '2027-04-15', 4500.00),
+(6, 'Enalapril 5mg', 'Thuốc ức chế ACE, điều trị tăng huyết áp và suy tim', 199, 0, '2027-04-15', 4500.00),
 (7, 'Topiramate 25mg', 'Thuốc chống động kinh, phòng ngừa Migraine', 8, 0, '2027-01-20', 8000.00),
 (8, 'Omeprazole 20mg', 'Thuốc ức chế bơm proton, điều trị viêm loét dạ dày', 349, 0, '2027-09-01', 3500.00);
 
@@ -899,7 +999,11 @@ CREATE TABLE `notifications` (
 INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `status`, `created_at`) VALUES
 (1, 7, 'Nhắc lịch khám', 'Bạn có lịch khám vào ngày 10/03/2026 lúc 09:00 với BS. Nguyễn Văn An (Tim mạch).', 'unread', '2026-03-09 08:00:00'),
 (2, 8, 'Xác nhận lịch khám', 'Lịch khám của bạn ngày 11/03/2026 với BS. Trần Thị Bình (Thần kinh) đã được đặt thành công.', 'unread', '2026-03-05 08:36:41'),
-(3, 9, 'Kết quả xét nghiệm', 'Kết quả xét nghiệm máu ngày 12/03/2026 của bạn đã có. Vui lòng liên hệ lễ tân để nhận kết quả.', 'read', '2026-03-13 09:00:00');
+(3, 9, 'Kết quả xét nghiệm', 'Kết quả xét nghiệm máu ngày 12/03/2026 của bạn đã có. Vui lòng liên hệ lễ tân để nhận kết quả.', 'read', '2026-03-13 09:00:00'),
+(4, 2, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-29 10:36:43'),
+(5, 14, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 1/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-29 10:52:19'),
+(6, 5, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Điều dưỡng trưởng chỉ định trực.', 'unread', '2026-05-29 11:11:30'),
+(7, 3, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-30 20:20:03');
 
 -- --------------------------------------------------------
 
@@ -933,7 +1037,7 @@ CREATE TABLE `nurse_shifts` (
   `id` int NOT NULL,
   `nurse_id` int NOT NULL,
   `shift_id` int NOT NULL,
-  `status` enum('pending','approved','rejected') DEFAULT 'pending'
+  `status` enum('pending','approved','rejected','assigned') DEFAULT 'pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -1085,7 +1189,11 @@ INSERT INTO `prescriptions` (`id`, `medical_record_id`, `doctor_id`, `approved_b
 (10, 1, 1, NULL, NULL, NULL, 'dispensed', '2026-05-25 09:29:12'),
 (11, 1, 1, NULL, NULL, NULL, 'cancelled', '2026-05-25 09:29:12'),
 (12, 5, 1, NULL, NULL, NULL, 'dispensed', '2026-05-25 10:01:18'),
-(13, 5, 1, NULL, NULL, NULL, 'draft', '2026-05-26 08:58:09');
+(13, 5, 1, NULL, NULL, NULL, 'draft', '2026-05-26 08:58:09'),
+(16, 10, 1, 13, '2026-05-29 08:33:27', '', 'dispensed', '2026-05-29 08:00:25'),
+(17, 11, 1, 13, '2026-05-29 08:46:59', '', 'dispensed', '2026-05-29 08:42:19'),
+(18, 11, 1, NULL, NULL, NULL, 'dispensed', '2026-05-29 08:56:24'),
+(19, 12, 1, NULL, NULL, NULL, 'draft', '2026-05-29 08:59:14');
 
 -- --------------------------------------------------------
 
@@ -1123,7 +1231,10 @@ INSERT INTO `prescription_items` (`id`, `prescription_id`, `medicine_id`, `quant
 (13, 10, 1, 15, '500mg x 3', '5 days', 'After meal'),
 (14, 11, 1, 10, '500mg x 3', '5 days', 'After meal'),
 (15, 12, 8, 1, '5mg', '3', 'Uống sau khi ăn'),
-(16, 13, 5, 1, '50mg', '3', 'Uống sau khi ăn');
+(16, 13, 5, 1, '50mg', '3', 'Uống sau khi ăn'),
+(19, 16, 2, 1, '500mg', '3 ngày', 'Uống sau khi ăn'),
+(20, 17, 6, 1, '500mg', '3 ngày', 'Uống sau khi ăn'),
+(21, 19, 3, 1, '500mg', '3 ngày', 'Uống sau khi ăn');
 
 -- --------------------------------------------------------
 
@@ -1161,7 +1272,10 @@ INSERT INTO `queue_tickets` (`id`, `patient_id`, `ticket_number`, `department_id
 (3, 15, 3, 6, NULL, 1, NULL, 'cancelled', 'normal', '2026-05-28', '2026-05-28 09:13:53', NULL, NULL, NULL, 0, 'Ho lao', 12),
 (4, 15, 4, 5, NULL, 1, NULL, 'cancelled', 'normal', '2026-05-28', '2026-05-28 09:15:17', NULL, NULL, NULL, 0, 'Ho lao', 12),
 (5, 15, 5, 3, 1, 4, NULL, 'completed', 'normal', '2026-05-28', '2026-05-28 09:20:22', '2026-05-28 09:20:29', '2026-05-28 09:20:32', '2026-05-28 09:20:35', 0, 'Ho nhiều', 12),
-(6, 16, 6, 3, NULL, 4, NULL, 'completed', 'normal', '2026-05-28', '2026-05-28 09:24:45', '2026-05-28 09:25:19', '2026-05-28 09:25:21', '2026-05-28 09:25:22', 0, 'aaa', 12);
+(6, 16, 6, 3, NULL, 4, NULL, 'completed', 'normal', '2026-05-28', '2026-05-28 09:24:45', '2026-05-28 09:25:19', '2026-05-28 09:25:21', '2026-05-28 09:25:22', 0, 'aaa', 12),
+(7, 6, 1, 3, NULL, 4, NULL, 'completed', 'normal', '2026-05-29', '2026-05-29 18:24:44', '2026-05-29 18:24:57', '2026-05-29 18:25:16', '2026-05-29 18:25:43', 0, '', 12),
+(8, 6, 2, 3, NULL, 4, NULL, 'in_progress', 'normal', '2026-05-29', '2026-05-29 18:51:00', '2026-05-29 18:51:17', '2026-05-29 18:51:19', NULL, 0, '', 12),
+(9, 6, 1, 3, NULL, 4, NULL, 'completed', 'normal', '2026-05-30', '2026-05-30 11:26:11', '2026-05-30 11:26:21', '2026-05-30 11:52:21', '2026-05-30 11:52:40', 0, '', 12);
 
 -- --------------------------------------------------------
 
@@ -1183,7 +1297,7 @@ CREATE TABLE `rooms` (
 --
 
 INSERT INTO `rooms` (`id`, `room_number`, `department_id`, `room_type`, `price_per_day`, `status`) VALUES
-(1, 'P101', 1, 'standard', 500000.00, 'available'),
+(1, 'P101', 1, 'standard', 500000.00, 'full'),
 (2, 'P102', 1, 'vip', 1500000.00, 'available'),
 (3, 'P201', 2, 'standard', 500000.00, 'available'),
 (4, 'P202', 4, 'icu', 3000000.00, 'available'),
@@ -1244,7 +1358,22 @@ INSERT INTO `shifts` (`id`, `shift_date`, `shift_type`, `department_id`, `name`,
 (4, '2026-05-06', 'night', NULL, NULL, NULL, NULL, 0, 0, NULL),
 (5, '2026-05-07', 'day', NULL, NULL, NULL, NULL, 0, 0, NULL),
 (6, '2026-05-07', 'night', NULL, NULL, NULL, NULL, 0, 0, NULL),
-(7, '2026-05-26', 'night', 3, 'Ca trực cấp cứu', '00:00:00', '22:00:00', 5, 5, '');
+(7, '2026-05-26', 'night', 3, 'Ca trực cấp cứu', '00:00:00', '22:00:00', 5, 5, ''),
+(8, '2026-06-01', 'night', 3, 'Ca Đêm Thường Quy - Khoa Nội', '23:00:00', '04:00:00', 2, 2, ''),
+(9, '2026-06-02', 'night', 3, 'Ca Đêm Thường Quy - Khoa Nội', '23:00:00', '04:00:00', 2, 2, ''),
+(10, '2026-06-03', 'night', 3, 'Ca Đêm Thường Quy - Khoa Nội', '23:00:00', '04:00:00', 2, 2, ''),
+(11, '2026-06-04', 'night', 3, 'Ca Đêm Thường Quy - Khoa Nội', '23:00:00', '04:00:00', 2, 2, ''),
+(12, '2026-06-05', 'night', 3, 'Ca Đêm Thường Quy - Khoa Nội', '23:00:00', '04:00:00', 2, 2, ''),
+(13, '2026-06-06', 'night', 3, 'Ca Đêm Thường Quy - Khoa Nội', '23:00:00', '04:00:00', 2, 2, ''),
+(14, '2026-06-07', 'night', 3, 'Ca Đêm Thường Quy - Khoa Nội', '23:00:00', '04:00:00', 2, 2, ''),
+(15, '2026-06-01', 'day', 3, 'Ca trực ngày', '19:00:00', '17:00:00', 2, 2, ''),
+(16, '2026-06-02', 'day', 3, 'Ca trực ngày', '19:00:00', '17:00:00', 2, 2, ''),
+(17, '2026-06-03', 'day', 3, 'Ca trực ngày', '19:00:00', '17:00:00', 2, 2, ''),
+(18, '2026-06-04', 'day', 3, 'Ca trực ngày', '19:00:00', '17:00:00', 2, 2, ''),
+(19, '2026-06-05', 'day', 3, 'Ca trực ngày', '19:00:00', '17:00:00', 2, 2, ''),
+(20, '2026-06-06', 'day', 3, 'Ca trực ngày', '19:00:00', '17:00:00', 2, 2, ''),
+(21, '2026-06-07', 'day', 3, 'Ca trực ngày', '19:00:00', '17:00:00', 2, 2, ''),
+(22, '2026-06-01', 'day', 3, 'Ca chiều thường', '12:00:00', '18:00:00', 1, 1, '');
 
 -- --------------------------------------------------------
 
@@ -1622,7 +1751,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT cho bảng `admissions`
 --
 ALTER TABLE `admissions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT cho bảng `appointments`
@@ -1634,7 +1763,7 @@ ALTER TABLE `appointments`
 -- AUTO_INCREMENT cho bảng `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=222;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=309;
 
 --
 -- AUTO_INCREMENT cho bảng `beds`
@@ -1664,7 +1793,7 @@ ALTER TABLE `doctor_departments`
 -- AUTO_INCREMENT cho bảng `doctor_shifts`
 --
 ALTER TABLE `doctor_shifts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT cho bảng `equipment`
@@ -1682,19 +1811,19 @@ ALTER TABLE `examination_rooms`
 -- AUTO_INCREMENT cho bảng `invoices`
 --
 ALTER TABLE `invoices`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT cho bảng `invoice_items`
 --
 ALTER TABLE `invoice_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT cho bảng `lab_orders`
 --
 ALTER TABLE `lab_orders`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT cho bảng `lab_results`
@@ -1712,7 +1841,7 @@ ALTER TABLE `medical_devices`
 -- AUTO_INCREMENT cho bảng `medical_records`
 --
 ALTER TABLE `medical_records`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT cho bảng `medicines`
@@ -1724,7 +1853,7 @@ ALTER TABLE `medicines`
 -- AUTO_INCREMENT cho bảng `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT cho bảng `nurses`
@@ -1766,19 +1895,19 @@ ALTER TABLE `patient_services`
 -- AUTO_INCREMENT cho bảng `prescriptions`
 --
 ALTER TABLE `prescriptions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT cho bảng `prescription_items`
 --
 ALTER TABLE `prescription_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT cho bảng `queue_tickets`
 --
 ALTER TABLE `queue_tickets`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT cho bảng `rooms`
@@ -1796,7 +1925,7 @@ ALTER TABLE `services`
 -- AUTO_INCREMENT cho bảng `shifts`
 --
 ALTER TABLE `shifts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT cho bảng `technicians`

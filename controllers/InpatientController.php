@@ -173,10 +173,15 @@ class InpatientController {
 
         // Tính số ngày nằm viện
         $startDate = new DateTime($admission['admission_date']);
-        $endDate = $admission['discharge_date'] ? new DateTime($admission['discharge_date']) : new DateTime();
+        $endDate = $admission['discharge_ordered_at'] ? new DateTime($admission['discharge_ordered_at']) : ($admission['discharge_date'] ? new DateTime($admission['discharge_date']) : new DateTime());
         $days = $startDate->diff($endDate)->days;
         if ($days == 0) $days = 1;
         $roomCost = $days * ($admission['price_per_day'] ?? 0);
+
+        // Lấy danh sách hóa đơn viện phí liên kết
+        require_once __DIR__ . '/../models/Invoice.php';
+        $invoiceModel = new Invoice();
+        $invoices = $invoiceModel->getByAdmissionId($id);
 
         $pageTitle = 'Chi tiết Nhập viện #' . $id;
         require_once __DIR__ . '/../views/layout/header.php';
@@ -184,9 +189,9 @@ class InpatientController {
         require_once __DIR__ . '/../views/layout/footer.php';
     }
 
-    // Xuất viện
-    public function discharge() {
-        Security::requireRole(['admin', 'nurse', 'doctor']);
+    // Chỉ định xuất viện (lâm sàng)
+    public function orderDischarge() {
+        Security::requireRole(['admin', 'doctor']);
         Security::requirePost('index.php?page=inpatient');
         Security::requireCsrf();
 
@@ -194,15 +199,68 @@ class InpatientController {
 
         try {
             $admission = $this->admissionModel->findById($id);
-            if (!$admission) throw new Exception('Không tìm thấy.');
+            if (!$admission) {
+                throw new Exception('Không tìm thấy ca nhập viện.');
+            }
+
+            if ($admission['status'] !== 'active') {
+                throw new Exception('Chỉ có thể chỉ định xuất viện cho ca đang nằm viện (active).');
+            }
+
+            if ($admission['discharge_ordered'] == 1) {
+                throw new Exception('Ca nhập viện đã được chỉ định xuất viện trước đó.');
+            }
+
+            // IDOR Check cho bác sĩ: Chỉ bác sĩ phụ trách mới được ra chỉ định
+            $user = $_SESSION['user'];
+            if ($user['role'] === 'doctor') {
+                $doctor = $this->doctorModel->findByUserId($user['id']);
+                if (!$doctor || $admission['doctor_id'] != $doctor['id']) {
+                    throw new Exception('Bạn không có quyền chỉ định xuất viện cho bệnh nhân này.');
+                }
+            }
+
+            $this->admissionModel->orderDischarge($id);
+            $_SESSION['success'] = 'Chỉ định xuất viện thành công! Hồ sơ đã được gửi đến bộ phận Thu ngân để lập hóa đơn thanh toán.';
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+        }
+
+        header("Location: index.php?page=inpatient&action=detail&id=$id");
+        exit;
+    }
+
+    // Xuất viện trực tiếp (chỉ dành cho Admin trong trường hợp đặc biệt)
+    public function discharge() {
+        Security::requireRole(['admin']);
+        Security::requirePost('index.php?page=inpatient');
+        Security::requireCsrf();
+
+        $id = $_POST['id'] ?? 0;
+
+        try {
+            $admission = $this->admissionModel->findById($id);
+            if (!$admission) {
+                throw new Exception('Không tìm thấy ca nhập viện.');
+            }
+
+            // Kiểm tra trạng thái hoạt động
+            if ($admission['status'] !== 'active') {
+                throw new Exception('Chỉ có thể xuất viện ca đang nằm viện (active).');
+            }
 
             $this->admissionModel->discharge($id);
 
-            // Giải phóng giường
-            $this->roomModel->updateBedStatus($admission['bed_id'], 'available');
-            $this->roomModel->refreshRoomStatus($admission['room_id']);
-
-            $_SESSION['success'] = 'Xuất viện thành công! Giường ' . $admission['bed_number'] . ' (Phòng ' . $admission['room_number'] . ') đã được giải phóng.';
+            // Giải phóng giường và phòng nếu có giường gán
+            if (!empty($admission['bed_id'])) {
+                $this->roomModel->updateBedStatus($admission['bed_id'], 'available');
+                if (!empty($admission['room_id'])) {
+                    $this->roomModel->refreshRoomStatus($admission['room_id']);
+                }
+                $_SESSION['success'] = 'Xuất viện thành công! Giường ' . $admission['bed_number'] . ' (Phòng ' . $admission['room_number'] . ') đã được giải phóng.';
+            } else {
+                $_SESSION['success'] = 'Xuất viện thành công!';
+            }
         } catch (Exception $e) {
             $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }

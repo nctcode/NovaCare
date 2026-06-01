@@ -48,6 +48,19 @@ class Invoice {
         return $stmt->fetchAll();
     }
 
+    // Lấy các hóa đơn liên kết với ca nội trú
+    public function getByAdmissionId($admissionId) {
+        $sql = "SELECT i.*, cu.name as created_by_name 
+                FROM invoices i
+                LEFT JOIN users cu ON i.created_by = cu.id
+                WHERE i.admission_id = :admission_id AND i.deleted_at IS NULL
+                ORDER BY i.created_at DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':admission_id', $admissionId);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public function getPendingByPatientId($patientId) {
         $sql = "SELECT i.*, cu.name as created_by_name 
                 FROM invoices i
@@ -242,6 +255,23 @@ class Invoice {
             $prescriptionModel->updateStatus($invoice['prescription_id'], 'paid');
         }
 
+        // Tự động xuất viện bệnh nhân và giải phóng giường/phòng
+        if ($invoice && !empty($invoice['admission_id'])) {
+            require_once __DIR__ . '/Admission.php';
+            $admissionModel = new Admission();
+            $admissionModel->discharge($invoice['admission_id']);
+            
+            $admission = $admissionModel->findById($invoice['admission_id']);
+            if ($admission && !empty($admission['bed_id'])) {
+                require_once __DIR__ . '/Room.php';
+                $roomModel = new Room();
+                $roomModel->updateBedStatus($admission['bed_id'], 'available');
+                if (!empty($admission['room_id'])) {
+                    $roomModel->refreshRoomStatus($admission['room_id']);
+                }
+            }
+        }
+
         AuditLog::logUpdate('invoices', $id, ['status' => 'pending'], ['status' => 'paid', 'method' => $method]);
         return $result;
     }
@@ -355,7 +385,7 @@ class Invoice {
 
     // Lấy danh sách bệnh nhân (chỉ lấy chưa bị xóa mềm)
     public function getPatients() {
-        $sql = "SELECT p.id, u.name, u.phone, p.insurance_number FROM patients p JOIN users u ON p.user_id = u.id WHERE p.deleted_at IS NULL ORDER BY u.name";
+        $sql = "SELECT p.id, u.name, u.phone, p.insurance_number, p.date_of_birth FROM patients p JOIN users u ON p.user_id = u.id WHERE p.deleted_at IS NULL ORDER BY u.name";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();

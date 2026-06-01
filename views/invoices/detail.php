@@ -149,7 +149,19 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 flex-wrap no-print">
-            <a href="index.php?page=invoices" class="btn btn-outline-secondary" style="border-radius:20px; font-weight:500;">
+            <?php 
+            $backUrl = 'index.php?page=invoices';
+            if (in_array($_SESSION['user']['role'], ['doctor', 'nurse'])) {
+                if (!empty($invoice['admission_id'])) {
+                    $backUrl = 'index.php?page=inpatient&action=detail&id=' . $invoice['admission_id'];
+                } elseif (!empty($invoice['appointment_id'])) {
+                    $backUrl = 'index.php?page=appointments&action=detail&id=' . $invoice['appointment_id'];
+                } else {
+                    $backUrl = 'index.php?page=dashboard';
+                }
+            }
+            ?>
+            <a href="<?= $backUrl ?>" class="btn btn-outline-secondary" style="border-radius:20px; font-weight:500;">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
             </a>
             <button onclick="window.print()" class="btn btn-outline-primary" style="border-radius:20px; font-weight:500;">

@@ -328,7 +328,7 @@ class DashboardController {
         $stmtOcc = $conn->query("SELECT COUNT(*) as occupied FROM beds WHERE status = 'occupied'");
         $occupiedBeds = $stmtOcc->fetch()['occupied'] ?? 0;
 
-        $stmtInpatients = $conn->query("SELECT COUNT(*) as total FROM admissions WHERE status = 'admitted'");
+        $stmtInpatients = $conn->query("SELECT COUNT(*) as total FROM admissions WHERE status = 'active' AND deleted_at IS NULL");
         $currentInpatients = $stmtInpatients->fetch()['total'] ?? 0;
 
         // 3. Số ca phân bổ theo khoa khám bệnh (qua số medical records)

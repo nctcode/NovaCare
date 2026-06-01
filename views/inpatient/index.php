@@ -169,11 +169,6 @@
                                     <?php if ($a['status'] === 'pending' && in_array($_SESSION['user']['role'], ['admin', 'receptionist', 'nurse'])): ?>
                                     <a href="index.php?page=inpatient&action=assignBed&id=<?= $a['id'] ?>" class="btn btn-sm btn-outline-warning" style="border-radius:8px;" title="Xếp giường"><i class="fa-solid fa-bed"></i></a>
                                     <?php endif; ?>
-                                    <?php if ($a['status'] === 'active' && in_array($_SESSION['user']['role'], ['admin', 'receptionist', 'nurse', 'doctor'])): ?>
-                                    <a href="javascript:void(0)" onclick="if(confirm('Xác nhận xuất viện?')) postAction('index.php?page=inpatient&action=discharge&id=<?= $a['id'] ?>')" class="btn btn-sm btn-outline-success" style="border-radius:8px;">
-                                        <i class="fa-solid fa-right-from-bracket"></i>
-                                    </a>
-                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

@@ -17,7 +17,11 @@
                         <select name="patient_id" id="patientSelect" class="form-select select2" required>
                             <option value="">-- Tìm và chọn bệnh nhân --</option>
                             <?php foreach ($patients as $p): ?>
-                                <option value="<?= $p['id'] ?>" data-insurance="<?= htmlspecialchars($p['insurance_number'] ?? '') ?>"><?= htmlspecialchars($p['name']) ?> (SĐT: <?= htmlspecialchars($p['phone'] ?? '') ?>)</option>
+                                <?php 
+                                    $dobStr = !empty($p['date_of_birth']) ? date('d/m/Y', strtotime($p['date_of_birth'])) : '-'; 
+                                    $label = htmlspecialchars($p['name']) . " (Mã: #" . $p['id'] . " - SĐT: " . htmlspecialchars($p['phone'] ?? '-') . " - NS: " . $dobStr . ")";
+                                ?>
+                                <option value="<?= $p['id'] ?>" data-insurance="<?= htmlspecialchars($p['insurance_number'] ?? '') ?>"><?= $label ?></option>
                             <?php endforeach; ?>
                         </select>
                         
@@ -27,6 +31,17 @@
                             <select name="prescription_id" id="prescriptionSelect" class="form-select form-select-sm">
                                 <option value="">-- Không chọn --</option>
                             </select>
+                        </div>
+
+                        <!-- Hồ sơ điều trị nội trú tự động xếp gọn bên dưới select bệnh nhân khi xuất hiện -->
+                        <div id="inpatientContainer" class="mt-2.5 p-2 rounded-3 border" style="display: none; background: rgba(16, 185, 129, 0.03); border-color: rgba(16, 185, 129, 0.15) !important;">
+                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="inpatientCheck" style="cursor: pointer;">
+                                <label class="form-check-label text-success fw-semibold" for="inpatientCheck" style="font-size:12.5px; cursor: pointer;">
+                                    <i class="fa-solid fa-bed me-1"></i>Thanh toán phí giường nội trú
+                                </label>
+                            </div>
+                            <div id="inpatientBedDetails" class="mt-1 small text-muted" style="font-size:11px; margin-left: 28px;"></div>
                         </div>
                     </div>
                     
@@ -53,8 +68,8 @@
                 </div>
             </div>
 
-            <input type="hidden" name="appointment_id" value="">
-            <input type="hidden" name="admission_id" value="">
+            <input type="hidden" name="appointment_id" id="appointmentIdInput" value="">
+            <input type="hidden" name="admission_id" id="admissionIdInput" value="<?= $presetAdmissionId > 0 ? $presetAdmissionId : '' ?>">
 
             <!-- 2. Chi tiết hóa đơn (Bảng dữ liệu) -->
             <div class="mb-4">
@@ -337,6 +352,7 @@ const medicinesData = <?= json_encode($medicines) ?>;
 
 // Preset values from URL scanning
 const presetPrescriptionId = <?= json_encode($presetPrescriptionId ?? 0) ?>;
+const presetAdmissionId = <?= json_encode($presetAdmissionId ?? 0) ?>;
 const presetPatientId = <?= json_encode($presetPatientId ?? 0) ?>;
 const userRole = <?= json_encode($_SESSION['user']['role']) ?>;
 
@@ -460,10 +476,14 @@ function recalc() {
 // Auto recalc when discount changes
 document.getElementById('discountInput').addEventListener('input', recalc);
 
-// Patient selection change handler (AJAX load unpaid prescriptions)
+// Patient selection change handler (AJAX load unpaid prescriptions and inpatient bills)
 function handlePatientChange(patientId, selectedOption) {
     const container = document.getElementById('prescriptionContainer');
     const select = document.getElementById('prescriptionSelect');
+    const inpatientContainer = document.getElementById('inpatientContainer');
+    const inpatientCheck = document.getElementById('inpatientCheck');
+    const admissionIdInput = document.getElementById('admissionIdInput');
+    const inpatientBedDetails = document.getElementById('inpatientBedDetails');
     
     // Auto fill insurance number
     const insuranceNum = selectedOption ? selectedOption.getAttribute('data-insurance') : '';
@@ -481,6 +501,11 @@ function handlePatientChange(patientId, selectedOption) {
     // Reset and hide
     container.style.display = 'none';
     select.innerHTML = '<option value="">-- Không chọn --</option>';
+    inpatientContainer.style.display = 'none';
+    inpatientCheck.checked = false;
+    admissionIdInput.value = '';
+    inpatientBedDetails.innerHTML = '';
+    window.currentPendingAdmission = null;
     document.getElementById('itemsBody').innerHTML = '';
     
     if (!patientId) {
@@ -489,6 +514,7 @@ function handlePatientChange(patientId, selectedOption) {
         return;
     }
     
+    // Load unpaid prescriptions
     fetch(`index.php?page=invoices&action=getUnpaidPrescriptions&patient_id=${patientId}`)
         .then(res => res.json())
         .then(data => {
@@ -504,14 +530,43 @@ function handlePatientChange(patientId, selectedOption) {
                     select.dispatchEvent(new Event('change'));
                 }
             } else {
-                addRow();
+                // If not loading prescription and inpatient isn't loaded/checked yet
+                setTimeout(() => {
+                    if (document.querySelectorAll('#itemsBody tr').length === 0) {
+                        addRow();
+                    }
+                }, 300);
             }
             recalc();
         })
         .catch(err => {
             console.error('Lỗi khi tải đơn thuốc:', err);
-            addRow();
             recalc();
+        });
+
+    // Load pending inpatient discharge bill details
+    fetch(`index.php?page=invoices&action=getPendingAdmissionBill&patient_id=${patientId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.admission) {
+                inpatientContainer.style.display = 'block';
+                inpatientBedDetails.innerHTML = `
+                    Giường: <strong>${data.admission.bed_number}</strong> (Phòng ${data.admission.room_number})<br>
+                    Số ngày lưu trú: <strong>${data.admission.days} ngày</strong> (${new Date(data.admission.admission_date).toLocaleDateString('vi-VN')} - ${data.admission.discharge_ordered_at ? new Date(data.admission.discharge_ordered_at).toLocaleDateString('vi-VN') : 'Hiện tại'})<br>
+                    Đơn giá phòng: <strong>${Number(data.admission.price_per_day).toLocaleString('vi-VN')}đ / ngày</strong><br>
+                    Tổng chi phí tạm tính: <strong class="text-danger">${Number(data.admission.room_cost).toLocaleString('vi-VN')}đ</strong>
+                `;
+                window.currentPendingAdmission = data.admission;
+
+                // Auto-check if presetAdmissionId matches
+                if (presetAdmissionId > 0 && data.admission.id == presetAdmissionId) {
+                    inpatientCheck.checked = true;
+                    inpatientCheck.dispatchEvent(new Event('change'));
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Lỗi khi kiểm tra hồ sơ nội trú:', err);
         });
 }
 
@@ -526,16 +581,78 @@ if (typeof jQuery !== 'undefined') {
     });
 }
 
+// Inpatient Checkbox change event handler
+document.getElementById('inpatientCheck').addEventListener('change', function() {
+    const admissionIdInput = document.getElementById('admissionIdInput');
+    
+    // Clear existing inpatient row if any
+    document.querySelectorAll('.inpatient-row').forEach(row => row.remove());
+    
+    if (this.checked) {
+        if (window.currentPendingAdmission) {
+            admissionIdInput.value = window.currentPendingAdmission.id;
+            addInpatientItemRow(window.currentPendingAdmission);
+            
+            // If there's a single empty default row, remove it
+            const rows = document.querySelectorAll('#itemsBody tr');
+            if (rows.length === 2 && rows[0].id && !document.getElementById('item_id_' + rows[0].id.replace('row_', '')).value && !rows[0].classList.contains('inpatient-row')) {
+                rows[0].remove();
+            }
+        }
+    } else {
+        admissionIdInput.value = '';
+        recalc();
+        // If items body is empty, add a default row
+        if (document.querySelectorAll('#itemsBody tr').length === 0) {
+            addRow();
+        }
+    }
+});
+
+function addInpatientItemRow(admission) {
+    rowCount++;
+    const tbody = document.getElementById('itemsBody');
+    const tr = document.createElement('tr');
+    tr.id = 'row_' + rowCount;
+    tr.className = 'inpatient-row';
+    
+    const pointerEventsStyle = 'style="pointer-events: none; background-color: #f1f5f9; cursor: not-allowed;" tabindex="-1"';
+    const readOnlyAttr = 'readonly tabindex="-1" style="background-color: #f1f5f9; cursor: not-allowed;"';
+
+    tr.innerHTML = `
+        <td style="vertical-align: middle;">
+            <select name="item_type[]" class="form-select form-select-sm" ${pointerEventsStyle}>
+                <option value="room" selected>Giường/Phòng</option>
+            </select>
+            <input type="hidden" name="item_id[]" id="item_id_${rowCount}" value="${admission.room_id}">
+        </td>
+        <td style="vertical-align: middle;">
+            <input type="text" name="description[]" class="form-control form-control-sm" id="desc_${rowCount}" value="Tiền giường ${admission.bed_number} (Phòng ${admission.room_number} - ${admission.days} ngày)" required ${readOnlyAttr}>
+        </td>
+        <td style="vertical-align: middle;"><input type="number" name="quantity[]" class="form-control form-control-sm text-center" value="${admission.days}" min="1" onchange="recalc()" id="qty_${rowCount}" ${readOnlyAttr}></td>
+        <td style="vertical-align: middle;"><input type="number" name="unit_price[]" class="form-control form-control-sm text-end" value="${admission.price_per_day}" min="0" onchange="recalc()" id="price_${rowCount}" ${readOnlyAttr}></td>
+        <td id="amount_${rowCount}" style="font-weight:600; text-align: right; vertical-align: middle; color:#1e293b;">0đ</td>
+        <td class="text-center" style="vertical-align: middle;">
+            <small class="text-success fw-bold"><i class="fa-solid fa-lock"></i></small>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+}
+
 // Prescription selection change handler
 document.getElementById('prescriptionSelect').addEventListener('change', function() {
     const prescriptionId = this.value;
     const tbody = document.getElementById('itemsBody');
     
-    // Clear all existing rows
-    tbody.innerHTML = '';
+    // Clear all existing non-inpatient rows
+    document.querySelectorAll('#itemsBody tr:not(.inpatient-row)').forEach(row => row.remove());
     
     if (!prescriptionId) {
-        addRow();
+        if (document.querySelectorAll('#itemsBody tr').length === 0) {
+            addRow();
+        }
+        recalc();
         return;
     }
     
@@ -548,12 +665,16 @@ document.getElementById('prescriptionSelect').addEventListener('change', functio
                 });
                 recalc();
             } else {
-                addRow();
+                if (document.querySelectorAll('#itemsBody tr').length === 0) {
+                    addRow();
+                }
             }
         })
         .catch(err => {
             console.error('Lỗi tải chi tiết đơn thuốc:', err);
-            addRow();
+            if (document.querySelectorAll('#itemsBody tr').length === 0) {
+                addRow();
+            }
         });
 });
 

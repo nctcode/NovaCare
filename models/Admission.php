@@ -122,7 +122,7 @@ class Admission {
     // Xuất viện (ghi updated_by + audit log)
     public function discharge($id) {
         $userId = $_SESSION['user']['id'] ?? null;
-        $sql = "UPDATE admissions SET status = 'discharged', discharge_date = NOW(), updated_by = :updated_by 
+        $sql = "UPDATE admissions SET status = 'discharged', discharge_date = NOW(), discharge_ordered = 1, discharge_ordered_at = COALESCE(discharge_ordered_at, NOW()), updated_by = :updated_by 
                 WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':updated_by', $userId);
@@ -131,6 +131,60 @@ class Admission {
 
         AuditLog::logUpdate('admissions', $id, ['status' => 'active'], ['status' => 'discharged']);
         return $result;
+    }
+
+    // Chỉ định xuất viện (lâm sàng)
+    public function orderDischarge($id) {
+        $userId = $_SESSION['user']['id'] ?? null;
+        $sql = "UPDATE admissions SET discharge_ordered = 1, discharge_ordered_at = NOW(), updated_by = :updated_by 
+                WHERE id = :id AND deleted_at IS NULL";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':updated_by', $userId);
+        $stmt->bindParam(':id', $id);
+        $result = $stmt->execute();
+
+        AuditLog::logUpdate('admissions', $id, ['discharge_ordered' => 0], ['discharge_ordered' => 1]);
+        return $result;
+    }
+
+    // Lấy ca nhập viện đang hoạt động và có chỉ định xuất viện để lập hóa đơn
+    public function getActiveWithDischargeOrder($patientId) {
+        $sql = "SELECT a.*, 
+                    b.bed_number, b.room_id, r.room_number, r.room_type, r.price_per_day
+                FROM admissions a
+                LEFT JOIN beds b ON a.bed_id = b.id
+                LEFT JOIN rooms r ON b.room_id = r.id
+                WHERE a.patient_id = :patient_id 
+                  AND a.status = 'active' 
+                  AND a.discharge_ordered = 1 
+                  AND a.deleted_at IS NULL 
+                LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':patient_id', $patientId);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
+    // Lấy danh sách tất cả ca nội trú đang hoạt động và có chỉ định xuất viện lâm sàng chờ thanh toán
+    public function getPendingDischargeAdmissions() {
+        $sql = "SELECT a.*, 
+                    u.name as patient_name, u.phone as patient_phone, p.date_of_birth,
+                    b.bed_number, r.room_number, r.price_per_day,
+                    doc_u.name as doctor_name
+                FROM admissions a
+                JOIN patients p ON a.patient_id = p.id
+                JOIN users u ON p.user_id = u.id
+                LEFT JOIN beds b ON a.bed_id = b.id
+                LEFT JOIN rooms r ON b.room_id = r.id
+                LEFT JOIN doctors d ON a.doctor_id = d.id
+                LEFT JOIN users doc_u ON d.user_id = doc_u.id
+                WHERE a.status = 'active' 
+                  AND a.discharge_ordered = 1 
+                  AND a.deleted_at IS NULL
+                ORDER BY a.discharge_ordered_at DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Cập nhật ghi chú (dùng cho Y tá / Bác sĩ)

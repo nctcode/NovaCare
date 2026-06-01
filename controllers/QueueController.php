@@ -224,6 +224,15 @@ class QueueController {
                 'waiting' => 'Chờ khám'
             ];
             $_SESSION['success'] = 'Cập nhật trạng thái: ' . ($statusLabels[$status] ?? $status);
+
+            // Tối ưu hóa: Nếu chuyển sang "Đang khám", điều hướng thẳng tới trang tạo EMR
+            if ($status === 'in_progress') {
+                $ticket = $this->queueModel->findById($id);
+                if ($ticket) {
+                    header('Location: index.php?page=records&action=create&patient_id=' . $ticket['patient_id'] . '&appointment_id=' . ($ticket['appointment_id'] ?? '') . '&queue_id=' . $id);
+                    exit;
+                }
+            }
         } catch (Exception $e) {
             $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
         }

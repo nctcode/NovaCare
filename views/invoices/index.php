@@ -52,13 +52,68 @@
 </div>
 <?php endif; ?>
 
+<?php if (!empty($pendingDischarges)): ?>
+<div class="content-card mb-4 border border-warning-subtle" data-aos="fade-up" style="border-radius:16px; box-shadow:0 4px 20px rgba(245, 158, 11, 0.05); background: #fffbeb;">
+    <div class="card-header d-flex justify-content-between align-items-center bg-transparent border-bottom-0 pt-4 pb-0">
+        <div>
+            <h5 class="m-0 text-warning-emphasis" style="font-weight:700;"><i class="fa-solid fa-clock-rotate-left me-2 text-warning"></i>Ca Nội Trú Chờ Lập Hóa Đơn Xuất Viện</h5>
+            <p class="text-muted" style="font-size:13px; margin:5px 0 0 0;">Danh sách bệnh nhân đã có chỉ định xuất viện lâm sàng từ Bác sĩ, đang chờ thanh toán viện phí.</p>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-wrapper border rounded-3 overflow-hidden bg-white">
+            <table class="table table-hover m-0" style="font-size: 13.5px; vertical-align: middle;">
+                <thead class="table-light">
+                    <tr>
+                        <th>Bệnh nhân</th>
+                        <th>Giường / Phòng</th>
+                        <th>Bác sĩ chỉ định</th>
+                        <th>Thời gian chỉ định</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($pendingDischarges as $pd): ?>
+                    <?php $dobStr = !empty($pd['date_of_birth']) ? date('d/m/Y', strtotime($pd['date_of_birth'])) : '-'; ?>
+                    <tr>
+                        <td>
+                            <strong><?= htmlspecialchars($pd['patient_name']) ?></strong><br>
+                            <span class="text-muted" style="font-size: 11px;">Mã: #<?= $pd['patient_id'] ?> | NS: <?= $dobStr ?> | SĐT: <?= htmlspecialchars($pd['patient_phone'] ?? '-') ?></span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info-subtle text-info border border-info border-opacity-25 px-2.5 py-1.5" style="border-radius: 6px;">
+                                <i class="fa-solid fa-bed me-1"></i>Giường <?= htmlspecialchars($pd['bed_number'] ?? '-') ?> (Phòng <?= htmlspecialchars($pd['room_number'] ?? '-') ?>)
+                            </span>
+                        </td>
+                        <td><?= htmlspecialchars($pd['doctor_name'] ?? 'Bác sĩ trực') ?></td>
+                        <td><?= date('d/m/Y H:i', strtotime($pd['discharge_ordered_at'])) ?></td>
+                        <td>
+                            <a href="index.php?page=invoices&action=create&patient_id=<?= $pd['patient_id'] ?>&admission_id=<?= $pd['id'] ?>" class="btn btn-sm btn-primary" style="border-radius: 8px; font-size:12.5px; font-weight:500;">
+                                <i class="fa-solid fa-file-invoice-dollar me-1"></i> Lập hóa đơn xuất viện
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="content-card" data-aos="fade-up" style="border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.03);">
-    <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom-0 pt-4 pb-0">
+    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center bg-white border-bottom-0 pt-4 pb-0 gap-3">
         <div>
             <h5 class="m-0" style="font-weight:700;"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i>Danh sách Hóa đơn</h5>
             <p class="text-muted" style="font-size:13px; margin:5px 0 0 0;">Quản lý hóa đơn và thanh toán</p>
         </div>
-        <div class="d-flex align-items-center">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <!-- Search Input -->
+            <div class="table-search-input m-0" style="width: 220px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" class="table-search-js" data-table="invoiceTable" placeholder="Tìm kiếm hóa đơn...">
+            </div>
+            
             <?php if (in_array($_SESSION['user']['role'], ['admin', 'cashier'])): ?>
             <a href="index.php?page=invoices&action=create" class="btn btn-primary" style="border-radius:20px; font-weight:500; padding: 6px 18px;">
                 <i class="fa-solid fa-plus me-2"></i>Tạo hóa đơn
@@ -74,8 +129,24 @@
         </div>
     </div>
     <div class="card-body">
+        <!-- Status Filter Tabs -->
+        <div class="d-flex justify-content-start gap-2 mb-3 bg-light p-1 rounded-3" style="width: fit-content;">
+            <button type="button" class="btn btn-sm btn-light active px-3 status-filter-btn" data-status="all" style="border-radius: 8px; font-size: 13px; font-weight: 500;">
+                Tất cả
+            </button>
+            <button type="button" class="btn btn-sm btn-light text-warning px-3 status-filter-btn" data-status="pending" style="border-radius: 8px; font-size: 13px; font-weight: 500;">
+                <i class="fa-solid fa-clock me-1"></i>Chờ thanh toán
+            </button>
+            <button type="button" class="btn btn-sm btn-light text-success px-3 status-filter-btn" data-status="paid" style="border-radius: 8px; font-size: 13px; font-weight: 500;">
+                <i class="fa-solid fa-circle-check me-1"></i>Đã thanh toán
+            </button>
+            <button type="button" class="btn btn-sm btn-light text-secondary px-3 status-filter-btn" data-status="cancelled" style="border-radius: 8px; font-size: 13px; font-weight: 500;">
+                <i class="fa-solid fa-circle-xmark me-1"></i>Đã hủy
+            </button>
+        </div>
+
         <div class="table-wrapper">
-            <table class="data-table">
+            <table class="data-table" id="invoiceTable">
                 <thead>
                     <tr>
                         <th>Mã HĐ</th>
@@ -91,10 +162,10 @@
                 </thead>
                 <tbody>
                     <?php if (empty($invoices)): ?>
-                        <tr><td colspan="9" class="text-center text-muted py-4">Chưa có hóa đơn nào</td></tr>
+                        <tr class="empty-row"><td colspan="9" class="text-center text-muted py-4">Chưa có hóa đơn nào</td></tr>
                     <?php else: ?>
                         <?php foreach ($invoices as $inv): ?>
-                        <tr>
+                        <tr data-row-status="<?= $inv['status'] ?>">
                             <td><strong>#<?= $inv['id'] ?></strong></td>
                             <td>
                                 <?= htmlspecialchars($inv['patient_name'] ?? '') ?>
@@ -351,5 +422,32 @@ document.addEventListener('DOMContentLoaded', function() {
             animationFrameId = requestAnimationFrame(tick);
         }
     }
+    // Invoice status filter logic
+    document.querySelectorAll('.status-filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Reset active state for all status buttons
+            document.querySelectorAll('.status-filter-btn').forEach(b => {
+                b.classList.remove('active');
+                b.classList.add('btn-light');
+            });
+            // Mark current button active
+            this.classList.add('active');
+            this.classList.remove('btn-light');
+            
+            const filterStatus = this.getAttribute('data-status');
+            const rows = document.querySelectorAll('#invoiceTable tbody tr');
+            
+            rows.forEach(row => {
+                if (row.classList.contains('empty-row')) return;
+                
+                const rowStatus = row.getAttribute('data-row-status');
+                if (filterStatus === 'all' || rowStatus === filterStatus) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
 });
 </script>

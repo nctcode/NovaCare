@@ -82,7 +82,7 @@ class ReportController {
         $stats['total_revenue'] = $stmt->fetch()['total'];
 
         // BN nội trú hiện tại
-        $stmt = $this->conn->query("SELECT COUNT(*) as total FROM admissions WHERE status = 'admitted'");
+        $stmt = $this->conn->query("SELECT COUNT(*) as total FROM admissions WHERE status = 'active' AND deleted_at IS NULL");
         $stats['current_inpatients'] = $stmt->fetch()['total'];
 
         // Thuốc tồn kho thấp

@@ -25,8 +25,16 @@ class InvoiceController {
     public function index() {
         $user = $_SESSION['user'];
 
+        $pendingDischarges = [];
         if ($user['role'] === 'admin' || $user['role'] === 'cashier') {
             $invoices = $this->invoiceModel->getAll();
+            require_once __DIR__ . '/../models/Admission.php';
+            $admissionModel = new Admission();
+            $pendingDischarges = $admissionModel->getPendingDischargeAdmissions();
+        } elseif ($user['role'] === 'doctor' || $user['role'] === 'nurse') {
+            $_SESSION['error'] = 'Bạn không có quyền truy cập danh sách hóa đơn.';
+            header('Location: index.php?page=dashboard');
+            exit;
         } elseif ($user['role'] === 'patient') {
             $patient = $this->patientModel->findByUserId($user['id']);
             $invoices = $patient ? $this->invoiceModel->getByPatientId($patient['id']) : [];
@@ -56,7 +64,9 @@ class InvoiceController {
         $medicines = $this->invoiceModel->getMedicines();
 
         $presetPrescriptionId = isset($_GET['prescription_id']) ? intval($_GET['prescription_id']) : 0;
-        $presetPatientId = 0;
+        $presetAdmissionId = isset($_GET['admission_id']) ? intval($_GET['admission_id']) : 0;
+        $presetPatientId = isset($_GET['patient_id']) ? intval($_GET['patient_id']) : 0;
+
         if ($presetPrescriptionId > 0) {
             $prescription = $this->prescriptionModel->findById($presetPrescriptionId);
             if ($prescription) {
@@ -70,12 +80,62 @@ class InvoiceController {
                 }
                 $presetPatientId = $prescription['patient_id'];
             }
+        } elseif ($presetAdmissionId > 0) {
+            require_once __DIR__ . '/../models/Admission.php';
+            $admissionModel = new Admission();
+            $admission = $admissionModel->findById($presetAdmissionId);
+            if ($admission) {
+                $presetPatientId = $admission['patient_id'];
+            }
         }
         
         $pageTitle = 'Tạo hóa đơn mới';
         require_once __DIR__ . '/../views/layout/header.php';
         require_once __DIR__ . '/../views/invoices/create.php';
         require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    // Lấy chi tiết ca nội trú đang chờ thanh toán (JSON)
+    public function getPendingAdmissionBill() {
+        Security::requireRole(['admin', 'cashier']);
+        $patientId = $_GET['patient_id'] ?? 0;
+        
+        require_once __DIR__ . '/../models/Admission.php';
+        $admissionModel = new Admission();
+        $admission = $admissionModel->getActiveWithDischargeOrder($patientId);
+        
+        if (!$admission) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Không tìm thấy ca nội trú chờ thanh toán cho bệnh nhân này.'
+            ]);
+            exit;
+        }
+
+        // Tính số ngày và chi phí tiền giường
+        $startDate = new DateTime($admission['admission_date']);
+        $endDate = $admission['discharge_ordered_at'] ? new DateTime($admission['discharge_ordered_at']) : new DateTime();
+        $days = $startDate->diff($endDate)->days;
+        if ($days == 0) $days = 1;
+        $roomCost = $days * ($admission['price_per_day'] ?? 0);
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'admission' => [
+                'id' => $admission['id'],
+                'room_id' => $admission['room_id'],
+                'room_number' => $admission['room_number'],
+                'bed_number' => $admission['bed_number'],
+                'price_per_day' => $admission['price_per_day'],
+                'days' => $days,
+                'room_cost' => $roomCost,
+                'admission_date' => $admission['admission_date'],
+                'discharge_ordered_at' => $admission['discharge_ordered_at']
+            ]
+        ]);
+        exit;
     }
 
     // Lưu hóa đơn
@@ -195,7 +255,7 @@ class InvoiceController {
                 header('Location: index.php?page=invoices');
                 exit;
             }
-        } elseif (!Security::hasRole(['admin', 'cashier'])) {
+        } elseif (!Security::hasRole(['admin', 'cashier', 'doctor', 'nurse'])) {
             $_SESSION['error'] = 'Bạn không có quyền xem hóa đơn này.';
             header('Location: index.php?page=invoices');
             exit;

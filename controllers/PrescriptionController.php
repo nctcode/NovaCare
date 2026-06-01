@@ -271,4 +271,74 @@ class PrescriptionController {
         header("Location: index.php?page=prescriptions&action=view&id=" . $id);
         exit;
     }
+
+    // Gợi ý thuốc bằng AI (AJAX Endpoint gọi từ Javascript)
+    public function suggestMedicineAI() {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $diagnosis = trim($input['diagnosis'] ?? '');
+        
+        if (empty($diagnosis)) {
+            echo json_encode(['success' => false, 'error' => 'Không có dữ liệu chẩn đoán']);
+            exit;
+        }
+
+        // Đảm bảo các hằng số cấu hình AI tồn tại trước khi khởi tạo Model
+        if (!defined('AI_SYSTEM_PROMPT')) define('AI_SYSTEM_PROMPT', 'Bạn là trợ lý AI y tế thông minh.');
+        if (!defined('AI_TEMPERATURE')) define('AI_TEMPERATURE', 0.2);
+
+        require_once __DIR__ . '/../models/BeeknoeeAI.php';
+        $ai = new BeeknoeeAI();
+        
+        if (!$ai->isConfigured()) {
+            echo json_encode(['success' => false, 'error' => 'API Key của BEEKNOEE chưa được cấu hình đúng trong env.php.']);
+            exit;
+        }
+
+        // Tạo câu lệnh y khoa chuyên sâu ép AI trả về chuẩn JSON
+        $prompt = "Bạn là một Dược sĩ lâm sàng cấp cao. Dựa vào chẩn đoán sau của bệnh nhân: '{$diagnosis}'. \n"
+                . "Hãy đề xuất phác đồ điều trị bằng thuốc tối ưu nhất.\n"
+                . "YÊU CẦU BẮT BUỘC: Bạn CHỈ ĐƯỢC PHÉP TRẢ VỀ kết quả theo ĐÚNG định dạng JSON sau, tuyệt đối KHÔNG giải thích thêm hay dùng định dạng markdown (như ```json):\n"
+                . "{\n"
+                . "  \"medicines\": [\n"
+                . "    {\n"
+                . "      \"name\": \"Tên thuốc (Kèm hàm lượng, VD: Amoxicillin 500mg)\",\n"
+                . "      \"type\": \"Phân loại (VD: Kháng sinh, Giảm đau...)\",\n"
+                . "      \"dosage\": \"Liều dùng 1 lần (VD: 1 viên, 10ml)\",\n"
+                . "      \"duration\": \"Thời gian dùng (VD: 5 ngày)\",\n"
+                . "      \"instructions\": \"Hướng dẫn chi tiết (VD: Uống sau khi ăn sáng)\"\n"
+                . "    }\n"
+                . "  ]\n"
+                . "}";
+
+        // Gọi hàm chat của BeeknoeeAI (đóng vai trò là system/user)
+        $result = $ai->chat($prompt);
+
+        if ($result['success']) {
+            $jsonString = $result['data'] ?? $result['raw'];
+            
+            // Dọn dẹp JSON phòng trường hợp AI chèn ký tự ```json 
+            $jsonString = preg_replace('/```json/i', '', $jsonString);
+            $jsonString = preg_replace('/```/', '', $jsonString);
+            $jsonString = trim($jsonString);
+
+            $parsed = json_decode($jsonString, true);
+            
+            if (json_last_error() === JSON_ERROR_NONE && isset($parsed['medicines'])) {
+                echo json_encode(['success' => true, 'medicines' => $parsed['medicines']]);
+            } else {
+                // Trả về mảng rỗng nếu không parse được
+                echo json_encode(['success' => false, 'error' => 'Lỗi dịch dữ liệu từ AI', 'raw' => $jsonString]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => $result['error']]);
+        }
+        exit;
+    }
 }

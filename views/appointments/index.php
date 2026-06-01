@@ -12,31 +12,54 @@
     </div>
 <?php endif; ?>
 
-<!-- Advanced Filter Bar -->
-<div class="filter-bar" data-aos="fade-up">
-    <span class="filter-label"><i class="fa-solid fa-filter me-1"></i>Lọc</span>
+<!-- Advanced Filter Bar (Redesigned) -->
+<div class="card border-0 shadow-sm mb-4" data-aos="fade-up" style="border-radius: 16px;">
+    <div class="card-body p-3">
+        <div class="row g-3 align-items-center">
+            <!-- Tìm kiếm -->
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="filterSearch" class="form-control border-start-0 ps-0" placeholder="Tìm tên bệnh nhân, bác sĩ...">
+                </div>
+            </div>
+            
+            <!-- Trạng thái -->
+            <div class="col-md-3">
+                <select id="filterStatus" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="pending">⏳ Chờ xác nhận</option>
+                    <option value="confirmed">✅ Đã xác nhận</option>
+                    <option value="completed">🏁 Hoàn thành</option>
+                    <option value="cancelled">❌ Đã hủy</option>
+                    <option value="emergency">🚨 Khẩn cấp</option>
+                </select>
+            </div>
 
-    <select id="filterStatus" class="filter-select">
-        <option value="">Tất cả trạng thái</option>
-        <option value="pending">⏳ Chờ xác nhận</option>
-        <option value="confirmed">✅ Đã xác nhận</option>
-        <option value="completed">🏁 Hoàn thành</option>
-        <option value="cancelled">❌ Đã hủy</option>
-        <option value="emergency">🚨 Khẩn cấp</option>
-    </select>
+            <!-- Từ ngày -->
+            <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-regular fa-calendar"></i></span>
+                    <input type="date" id="filterFrom" class="form-control border-start-0 ps-0" title="Từ ngày">
+                </div>
+            </div>
+            
+            <!-- Đến ngày -->
+            <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-regular fa-calendar"></i></span>
+                    <input type="date" id="filterTo" class="form-control border-start-0 ps-0" title="Đến ngày">
+                </div>
+            </div>
 
-    <div class="filter-divider"></div>
-
-    <label class="filter-label" style="margin:0;">Từ ngày</label>
-    <input type="date" id="filterFrom" class="filter-input">
-    <label class="filter-label" style="margin:0;">Đến ngày</label>
-    <input type="date" id="filterTo" class="filter-input">
-
-    <div class="filter-divider"></div>
-
-    <button class="btn-filter-clear" id="filterClear">
-        <i class="fa-solid fa-xmark"></i> Xóa bộ lọc
-    </button>
+            <!-- Nút thao tác -->
+            <div class="col-md-2 d-flex justify-content-end">
+                <button class="btn btn-light border text-danger w-100 fw-medium" id="filterClear">
+                    <i class="fa-solid fa-xmark me-1"></i> Xóa bộ lọc
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="content-card" data-aos="fade-up" style="border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.03);">

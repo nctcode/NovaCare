@@ -226,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Advanced Appointment Filter ──
     const filterStatus = document.getElementById('filterStatus');
+    const filterSearch = document.getElementById('filterSearch');
     const filterFrom   = document.getElementById('filterFrom');
     const filterTo     = document.getElementById('filterTo');
     const filterClear  = document.getElementById('filterClear');
@@ -234,28 +235,33 @@ document.addEventListener('DOMContentLoaded', function () {
     function applyFilter() {
         if (!filterTable) return;
         const status = filterStatus ? filterStatus.value.toLowerCase() : '';
+        const search = filterSearch ? filterSearch.value.toLowerCase().trim() : '';
         const from   = filterFrom  ? filterFrom.value  : '';
         const to     = filterTo    ? filterTo.value    : '';
 
         filterTable.querySelectorAll('tbody tr').forEach(row => {
             const rowStatus = (row.dataset.status || '').toLowerCase();
             const rowDate   = row.dataset.date || '';
+            const rowText   = row.textContent.toLowerCase();
 
             let show = true;
             if (status && rowStatus !== status) show = false;
-            if (from   && rowDate < from)        show = false;
-            if (to     && rowDate > to)           show = false;
+            if (from   && rowDate < from)       show = false;
+            if (to     && rowDate > to)         show = false;
+            if (search && !rowText.includes(search)) show = false;
 
             row.style.display = show ? '' : 'none';
         });
     }
 
     if (filterStatus) filterStatus.addEventListener('change', applyFilter);
+    if (filterSearch) filterSearch.addEventListener('input', applyFilter);
     if (filterFrom)   filterFrom.addEventListener('change', applyFilter);
     if (filterTo)     filterTo.addEventListener('change', applyFilter);
     if (filterClear) {
         filterClear.addEventListener('click', () => {
             if (filterStatus) filterStatus.value = '';
+            if (filterSearch) filterSearch.value = '';
             if (filterFrom)   filterFrom.value   = '';
             if (filterTo)     filterTo.value     = '';
             applyFilter();
@@ -343,6 +349,94 @@ function postAction(url) {
     document.body.appendChild(form);
     form.submit();
 }
+
+// ── Voice Recognition (Speech to Text) ──
+document.addEventListener('DOMContentLoaded', function() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        // Trình duyệt không hỗ trợ, ẩn các nút micro
+        document.querySelectorAll('.voice-input-btn').forEach(btn => btn.style.display = 'none');
+        return;
+    }
+
+    document.querySelectorAll('.voice-input-btn').forEach(btn => {
+        const targetId = btn.getAttribute('data-target');
+        const targetInput = document.getElementById(targetId);
+        if (!targetInput) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'vi-VN';
+        recognition.interimResults = true;
+        recognition.continuous = false;
+
+        let isRecording = false;
+        let originalHtml = btn.innerHTML;
+        let finalTranscript = '';
+
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                finalTranscript = '';
+                recognition.start();
+            }
+        });
+
+        recognition.onstart = function() {
+            isRecording = true;
+            btn.classList.remove('btn-outline-primary', 'text-muted');
+            btn.classList.add('btn-danger', 'text-white');
+            btn.innerHTML = '<i class="fa-solid fa-microphone-lines fa-fade me-1"></i> Đang nghe...';
+            targetInput.setAttribute('placeholder', 'Hệ thống đang nghe... hãy nói tiếng Việt');
+        };
+
+        recognition.onresult = function(event) {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            let cleanTranscript = (finalTranscript + interimTranscript).trim();
+            if(cleanTranscript) {
+                // Điền tạm thời vào input, nối với dữ liệu cũ
+                let currentValue = targetInput.getAttribute('data-original-val');
+                if (currentValue === null) {
+                    currentValue = targetInput.value;
+                    targetInput.setAttribute('data-original-val', currentValue);
+                }
+                
+                const separator = currentValue.trim().length > 0 ? '. ' : '';
+                targetInput.value = currentValue + separator + cleanTranscript;
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Lỗi nhận diện giọng nói:', event.error);
+            stopRecordingUI();
+            if (event.error !== 'no-speech') {
+                alert('Không thể nhận diện giọng nói. Lỗi: ' + event.error);
+            }
+        };
+
+        recognition.onend = function() {
+            stopRecordingUI();
+            targetInput.removeAttribute('data-original-val');
+        };
+
+        function stopRecordingUI() {
+            isRecording = false;
+            btn.classList.remove('btn-danger', 'text-white');
+            btn.classList.add('btn-outline-primary');
+            btn.innerHTML = originalHtml;
+            targetInput.setAttribute('placeholder', 'Mô tả tiền sử bệnh, dị ứng thuốc (nếu có)...');
+        }
+    });
+});
 </script>
 </body>
 </html>

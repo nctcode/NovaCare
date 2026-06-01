@@ -12,73 +12,79 @@
     </div>
 <?php endif; ?>
 
-<div class="content-card">
-    <div class="card-header">
-        <h5><i class="fa-solid fa-file-prescription me-2"></i>Danh sách Đơn thuốc</h5>
-        <div class="table-search-bar">
-            <div class="table-search-input">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" class="table-search-js" data-table="prescriptionTable" placeholder="Tìm kiếm...">
+<div class="card shadow-sm border-0 rounded-4 mb-4" data-aos="fade-up">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center bg-white border-bottom-0 pt-4 pb-0 px-4">
+        <div>
+            <h5 class="m-0 fw-bold text-primary"><i class="fa-solid fa-file-prescription me-2"></i>Danh sách Đơn thuốc</h5>
+            <p class="text-muted small mt-1 mb-0">Quản lý và cập nhật trạng thái cấp phát thuốc</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center mt-3 mt-md-0">
+            <div class="input-group shadow-sm" style="width: 250px; border-radius: 20px; overflow: hidden;">
+                <span class="input-group-text bg-white border-end-0 border-light-subtle"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" class="form-control border-start-0 border-light-subtle table-search-js shadow-none" data-table="prescriptionTable" placeholder="Tìm tên bệnh nhân...">
             </div>
+            
             <?php if (in_array($_SESSION['user']['role'], ['admin', 'pharmacist'])): ?>
-            <button class="btn btn-success ms-2" id="btnScanQRWebcamPrescription" style="border-radius:20px; font-weight:500; padding:6px 16px; display: inline-flex; align-items: center; justify-content: center;">
-                <i class="fa-solid fa-camera me-2"></i>Quét QR từ Camera
+            <button class="btn btn-success fw-medium shadow-sm" id="btnScanQRWebcamPrescription" style="border-radius:20px; padding:6px 16px;">
+                <i class="fa-solid fa-camera me-1"></i>Quét
             </button>
-            <button class="btn btn-outline-success ms-2" id="btnScanQRImagePrescription" style="border-radius:20px; font-weight:500; padding:6px 16px; display: inline-flex; align-items: center; justify-content: center;">
-                <i class="fa-solid fa-qrcode me-2"></i>Quét QR từ ảnh
+            <button class="btn btn-outline-success fw-medium bg-white" id="btnScanQRImagePrescription" style="border-radius:20px; padding:6px 16px;">
+                <i class="fa-solid fa-image me-1"></i>Ảnh
             </button>
             <input type="file" id="qrImageFileInputPrescription" accept="image/*" style="display:none;" />
             <?php endif; ?>
+            
             <?php if ($_SESSION['user']['role'] === 'doctor'): ?>
-            <a href="index.php?page=prescriptions&action=create" class="btn-action btn-add">
-                <i class="fa-solid fa-plus"></i> Tạo đơn thuốc
+            <a href="index.php?page=prescriptions&action=create" class="btn btn-primary fw-medium shadow-sm" style="border-radius:20px; padding:8px 20px;">
+                <i class="fa-solid fa-plus me-1"></i>Tạo đơn thuốc
             </a>
             <?php endif; ?>
         </div>
     </div>
-    <div class="card-body">
-        <div class="table-wrapper">
-            <table class="data-table" id="prescriptionTable">
-                <thead>
+    <div class="card-body p-4">
+        <div class="table-responsive" style="overflow-x: auto; white-space: nowrap;">
+            <table class="table table-hover align-middle mb-0" id="prescriptionTable">
+                <thead class="table-light">
                     <tr>
-                        <th>#</th>
-                        <th>Bệnh nhân</th>
-                        <th>Bác sĩ</th>
-                        <th>Chẩn đoán</th>
-                        <th>Ngày tạo</th>
-                        <th>Trạng thái</th>
-                        <th>Thao tác</th>
+                        <th class="text-center text-muted" width="5%">#</th>
+                        <th width="20%">Bệnh nhân</th>
+                        <th width="15%">Bác sĩ</th>
+                        <th width="30%">Chẩn đoán</th>
+                        <th width="10%">Ngày tạo</th>
+                        <th width="12%">Trạng thái</th>
+                        <th class="text-center" width="8%">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="border-top-0">
                     <?php if (empty($prescriptions)): ?>
-                        <tr><td colspan="7"><div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-file-prescription"></i></div><h6>Chưa có đơn thuốc</h6><p>Chưa có đơn thuốc nào được tạo.</p></div></td></tr>
+                        <tr><td colspan="7" class="text-center py-5"><div class="empty-state"><div class="empty-icon text-muted mb-3"><i class="fa-solid fa-file-prescription fa-3x"></i></div><h6 class="text-secondary fw-bold">Chưa có đơn thuốc</h6><p class="text-muted small">Chưa có đơn thuốc nào được tạo.</p></div></td></tr>
                     <?php else: ?>
                         <?php foreach ($prescriptions as $idx => $pr): ?>
                         <tr>
-                            <td><?= $idx + 1 ?></td>
-                            <td><strong><?= htmlspecialchars($pr['patient_name'] ?? '') ?></strong></td>
-                            <td><?= htmlspecialchars($pr['doctor_name'] ?? '') ?></td>
-                            <td><?= htmlspecialchars($pr['diagnosis'] ?? '') ?></td>
-                            <td><?= date('d/m/Y H:i', strtotime($pr['created_at'])) ?></td>
+                            <td class="text-center text-muted"><?= $idx + 1 ?></td>
+                            <td><strong class="text-dark"><?= htmlspecialchars($pr['patient_name'] ?? '') ?></strong></td>
+                            <td class="text-secondary"><?= htmlspecialchars($pr['doctor_name'] ?? '') ?></td>
+                            <td class="text-truncate text-secondary" style="max-width: 250px;" title="<?= htmlspecialchars($pr['diagnosis'] ?? '') ?>">
+                                <?= htmlspecialchars($pr['diagnosis'] ?? '') ?>
+                            </td>
+                            <td class="text-secondary"><i class="fa-regular fa-calendar text-muted me-1"></i><?= date('d/m/Y H:i', strtotime($pr['created_at'])) ?></td>
                             <td>
                                 <?php
                                  $status = $pr['status'] ?? 'draft';
                                  if ($status === 'draft') {
-                                     echo '<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Chưa thanh toán</span>';
+                                     echo '<span class="badge rounded-pill bg-warning text-dark px-3 py-2"><i class="fa-regular fa-clock me-1"></i>Chưa thu tiền</span>';
                                  } elseif ($status === 'paid') {
-                                     echo '<span class="badge bg-primary"><i class="bi bi-hourglass-split me-1"></i>Chờ giao thuốc</span>';
+                                     echo '<span class="badge rounded-pill bg-primary px-3 py-2"><i class="fa-solid fa-hourglass-half me-1"></i>Chờ giao thuốc</span>';
                                  } elseif ($status === 'dispensed') {
-                                     echo '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Đã giao thuốc</span>';
+                                     echo '<span class="badge rounded-pill bg-success px-3 py-2"><i class="fa-solid fa-check-double me-1"></i>Đã giao thuốc</span>';
                                  } elseif ($status === 'cancelled') {
-                                     echo '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>';
+                                     echo '<span class="badge rounded-pill bg-danger px-3 py-2"><i class="fa-solid fa-xmark me-1"></i>Đã hủy</span>';
                                  }
                                 ?>
                             </td>
-                            <td>
-                                <a href="index.php?page=prescriptions&action=view&id=<?= $pr['id'] ?>" 
-                                   class="btn-action btn-view">
-                                    <i class="bi bi-eye">Xem</i>
+                            <td class="text-center">
+                                <a href="index.php?page=prescriptions&action=view&id=<?= $pr['id'] ?>" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px; padding: 4px;" title="Xem chi tiết">
+                                    <i class="fa-solid fa-eye"></i>
                                 </a>
                             </td>
                         </tr>

@@ -12,22 +12,23 @@
     </div>
 <?php endif; ?>
 
-<div class="content-card" style="max-width: 800px; margin: 0 auto;">
-    <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom-0 pt-4 pb-0 no-print">
-        <div>
-            <h5 class="m-0" style="font-weight:700;"><i class="bi bi-file-earmark-medical-fill me-2 text-primary"></i>Chi tiết Đơn thuốc #<?= $prescription['id'] ?></h5>
+<div class="card shadow-sm border-0 rounded-4 mb-4 mx-auto" style="max-width: 900px;" data-aos="fade-up">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center bg-white border-bottom-0 pt-4 pb-3 px-4 no-print">
+        <div class="mb-3 mb-md-0">
+            <h4 class="m-0 text-primary fw-bold"><i class="fa-solid fa-file-prescription me-2"></i>Chi tiết Đơn thuốc #<?= $prescription['id'] ?></h4>
+            <p class="text-muted small mt-1 mb-0">Xem và in ấn đơn thuốc cho bệnh nhân.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="index.php?page=prescriptions" class="btn btn-outline-secondary" style="border-radius: 20px; font-weight: 500; padding: 6px 16px; font-size: 13px;">
+            <a href="index.php?page=prescriptions" class="btn btn-light border fw-medium rounded-pill shadow-sm px-4 py-2">
                 <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
             </a>
-            <button onclick="window.print()" class="btn btn-outline-primary" style="border-radius: 20px; font-weight: 500; padding: 6px 16px; font-size: 13px;">
+            <button onclick="window.print()" class="btn btn-primary fw-bold rounded-pill shadow-sm px-4 py-2">
                 <i class="fa-solid fa-print me-1"></i> In đơn thuốc
             </button>
         </div>
     </div>
     
-    <div class="card-body pt-3">
+    <div class="card-body px-4 pb-4 pt-3">
         <!-- Header chỉ hiển thị khi in -->
         <div class="print-only clinic-header mb-4 pb-2 border-bottom border-dark">
             <div class="row align-items-center">
@@ -132,22 +133,22 @@
         </div>
         <?php endif; ?>
 
-        <h6 class="mb-3 fw-bold"><i class="bi bi-capsule me-2 text-primary no-print"></i>Danh sách chỉ định thuốc</h6>
-        <div class="table-wrapper mb-4">
-            <table class="data-table">
-                <thead>
+        <h6 class="mb-3 fw-bold"><i class="fa-solid fa-capsules me-2 text-primary no-print"></i>Danh sách chỉ định thuốc</h6>
+        <div class="table-responsive mb-4" style="overflow-x: auto; white-space: nowrap;">
+            <table class="table table-hover table-bordered align-middle mb-0">
+                <thead class="table-light">
                     <tr>
-                        <th>#</th>
-                        <th>Tên thuốc / Hàm lượng</th>
-                        <th>Liều lượng</th>
-                        <th>Thời gian</th>
-                        <th>Hướng dẫn sử dụng</th>
-                        <th style="text-align: center;">Số lượng</th>
-                        <th style="text-align: right;">Đơn giá</th>
-                        <th style="text-align: right;">Thành tiền</th>
+                        <th class="text-center text-muted" width="5%">#</th>
+                        <th width="20%">Tên thuốc / Hàm lượng</th>
+                        <th width="12%">Liều lượng</th>
+                        <th width="12%">Thời gian</th>
+                        <th width="25%">Hướng dẫn sử dụng</th>
+                        <th class="text-center" width="8%">Số lượng</th>
+                        <th class="text-end" width="10%">Đơn giá</th>
+                        <th class="text-end" width="12%">Thành tiền</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="border-top-0">
                     <?php $total = 0; ?>
                     <?php foreach ($items as $idx => $item): ?>
                     <?php 
@@ -157,19 +158,21 @@
                     $total += $amount;
                     ?>
                     <tr>
-                        <td><?= $idx + 1 ?></td>
-                        <td><strong><?= htmlspecialchars($item['medicine_name']) ?></strong></td>
-                        <td><?= htmlspecialchars($item['dosage'] ?? '') ?></td>
-                        <td><?= htmlspecialchars($item['duration'] ?? '') ?></td>
-                        <td><?= htmlspecialchars($item['instructions'] ?? '') ?></td>
-                        <td style="text-align: center;"><?= $qty ?></td>
-                        <td style="text-align: right;"><?= number_format($price, 0, ',', '.') ?>đ</td>
-                        <td style="text-align: right; font-weight: 600;"><?= number_format($amount, 0, ',', '.') ?>đ</td>
+                        <td class="text-center text-muted"><?= $idx + 1 ?></td>
+                        <td><strong class="text-dark"><?= htmlspecialchars($item['medicine_name']) ?></strong></td>
+                        <td class="text-secondary"><?= htmlspecialchars($item['dosage'] ?? '') ?></td>
+                        <td class="text-secondary"><?= htmlspecialchars($item['duration'] ?? '') ?></td>
+                        <td class="text-truncate text-secondary" style="max-width: 250px;" title="<?= htmlspecialchars($item['instructions'] ?? '') ?>">
+                            <?= htmlspecialchars($item['instructions'] ?? '') ?>
+                        </td>
+                        <td class="text-center fw-medium"><?= $qty ?></td>
+                        <td class="text-end text-secondary"><?= number_format($price, 0, ',', '.') ?>đ</td>
+                        <td class="text-end fw-bold text-dark"><?= number_format($amount, 0, ',', '.') ?>đ</td>
                     </tr>
                     <?php endforeach; ?>
-                    <tr style="background: rgba(30, 60, 114, 0.05);">
-                        <td colspan="7" class="text-end fw-bold">Tổng cộng:</td>
-                        <td style="text-align: right; font-weight: 700;" class="text-primary"><?= number_format($total, 0, ',', '.') ?>đ</td>
+                    <tr class="table-light">
+                        <td colspan="7" class="text-end fw-bold text-dark border-end-0">Tổng cộng:</td>
+                        <td class="text-end fw-bold text-primary fs-6 border-start-0"><?= number_format($total, 0, ',', '.') ?>đ</td>
                     </tr>
                 </tbody>
             </table>

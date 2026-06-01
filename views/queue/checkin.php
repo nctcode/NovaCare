@@ -42,6 +42,49 @@
                             <h6 class="text-uppercase text-secondary text-xs font-weight-bolder mb-3"><i class="fas fa-user-injured me-2"></i>1. Chọn Bệnh Nhân</h6>
                             
                             <div class="row g-3">
+                                <!-- Quick QR Scanner Card (Multi-mode) -->
+                                <div class="col-md-12 mb-2 p-3 rounded-3 border" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-color: #bbf7d0 !important;">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                        <label class="form-label text-success mb-0 fw-bold" style="font-size:12.5px;"><i class="fa-solid fa-qrcode me-1"></i>Quét nhanh mã QR BHYT / CCCD</label>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-success btn-xs active" id="btn_checkin_reader" onclick="switchCheckinQRMode('reader')"><i class="fa-solid fa-barcode me-1"></i>Đầu đọc</button>
+                                            <button type="button" class="btn btn-outline-success btn-xs" id="btn_checkin_camera" onclick="switchCheckinQRMode('camera')"><i class="fa-solid fa-camera me-1"></i>Camera</button>
+                                            <button type="button" class="btn btn-outline-success btn-xs" id="btn_checkin_file" onclick="switchCheckinQRMode('file')"><i class="fa-solid fa-image me-1"></i>Tải ảnh</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mode: Reader -->
+                                    <div id="checkin_qr_reader_section" class="checkin-qr-section">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-success-subtle text-success border-success-subtle"><i class="fa-solid fa-barcode"></i></span>
+                                            <input type="text" id="checkin_qr_input_reader" class="form-control border-success-subtle" placeholder="Đặt con trỏ chuột vào đây và Quét mã QR..." style="font-size: 13px; background: rgba(240, 253, 244, 0.3);">
+                                        </div>
+                                    </div>
+
+                                    <!-- Mode: Camera -->
+                                    <div id="checkin_qr_camera_section" class="checkin-qr-section" style="display:none;">
+                                        <div class="d-flex flex-column align-items-center justify-content-center border rounded-3 p-2 bg-dark position-relative" style="min-height: 180px;">
+                                            <div id="checkin_camera_view" style="width: 100%; max-width: 320px;"></div>
+                                            <div class="mt-2 d-flex gap-2">
+                                                <button type="button" class="btn btn-success btn-xs px-3" id="btn_checkin_start_cam" onclick="startCheckinCamera()"><i class="fa-solid fa-play me-1"></i>Bắt đầu</button>
+                                                <button type="button" class="btn btn-secondary btn-xs px-3" id="btn_checkin_stop_cam" onclick="stopCheckinCamera()" style="display:none;"><i class="fa-solid fa-stop me-1"></i>Dừng</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mode: File -->
+                                    <div id="checkin_qr_file_section" class="checkin-qr-section" style="display:none;">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-success-subtle text-success border-success-subtle"><i class="fa-solid fa-upload"></i></span>
+                                            <input type="file" id="checkin_qr_file_input" class="form-control border-success-subtle" accept="image/*">
+                                        </div>
+                                    </div>
+
+                                    <div id="checkin_qr_status" class="text-xs mt-1 fw-semibold text-secondary" style="font-size:11px;">
+                                        <i class="fa-solid fa-circle-info me-1"></i>Hỗ trợ quét qua đầu đọc mã vạch cầm tay từ ứng dụng VssID, thẻ BHYT hoặc CCCD.
+                                    </div>
+                                </div>
+
                                 <div class="col-md-12">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <label for="patient_id" class="form-label text-sm fw-bold text-dark mb-0">Bệnh nhân <span class="text-danger">*</span></label>
@@ -162,6 +205,7 @@
     }
 </style>
 
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Bootstrap validation
@@ -199,6 +243,180 @@ document.addEventListener('DOMContentLoaded', function() {
     if (patientSelect.selectedIndex > 0) {
         patientSelect.dispatchEvent(new Event('change'));
     }
+
+    // --- MULTI-MODE QR CODE SCANNER (READER, CAMERA, FILE) ---
+    const checkinQrInputReader = document.getElementById('checkin_qr_input_reader');
+    const checkinQrFile = document.getElementById('checkin_qr_file_input');
+    const checkinQrStatus = document.getElementById('checkin_qr_status');
+    let html5QrCode = null;
+
+    function cleanString(str) {
+        return str ? str.trim() : '';
+    }
+
+    function removeDiacritics(str) {
+        return str.normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '')
+                  .replace(/đ/g, 'd')
+                  .replace(/Đ/g, 'd')
+                  .toLowerCase();
+    }
+
+    function handleQRScan(rawValue) {
+        if (!rawValue || !rawValue.includes('|')) return;
+        
+        const parts = rawValue.split('|');
+        let scannedInsurance = '';
+        let scannedName = '';
+        
+        // CCCD has parts[0] as 12 digit number, parts[2] as name
+        const isCCCD = /^\d{12}$/.test(parts[0]);
+        
+        if (isCCCD) {
+            scannedName = cleanString(parts[2]);
+        } else {
+            // BHYT: GD4797918800045|Nguyễn Văn A|15/08/1992|...
+            scannedInsurance = cleanString(parts[0]);
+            scannedName = cleanString(parts[1]);
+        }
+
+        let found = false;
+        // Search in patient select options
+        for (let i = 0; i < patientSelect.options.length; i++) {
+            const opt = patientSelect.options[i];
+            const optInsurance = opt.getAttribute('data-insurance') || '';
+            const optText = opt.textContent || '';
+            
+            // Match BHYT number or loose match Name
+            const matchInsurance = scannedInsurance && optInsurance.toUpperCase() === scannedInsurance.toUpperCase();
+            const matchName = scannedName && removeDiacritics(optText).includes(removeDiacritics(scannedName));
+            
+            if (matchInsurance || matchName) {
+                patientSelect.selectedIndex = i;
+                patientSelect.dispatchEvent(new Event('change'));
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            const selectedOptText = patientSelect.options[patientSelect.selectedIndex].textContent.trim();
+            checkinQrStatus.className = "text-xs mt-1 fw-bold text-success animate__animated animate__pulse";
+            checkinQrStatus.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i>Đã chọn bệnh nhân: <strong class="text-dark">${selectedOptText}</strong>`;
+        } else {
+            checkinQrStatus.className = "text-xs mt-1 fw-bold text-danger";
+            checkinQrStatus.innerHTML = `<i class="fa-solid fa-circle-exclamation me-1"></i>Không khớp BHYT/Họ tên quét được: <strong class="text-dark">${scannedInsurance || scannedName}</strong>`;
+        }
+        checkinQrInputReader.value = ''; // clear
+    }
+
+    // Keydown for reader
+    if (checkinQrInputReader) {
+        checkinQrInputReader.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQRScan(this.value);
+            }
+        });
+
+        checkinQrInputReader.addEventListener('change', function() {
+            handleQRScan(this.value);
+        });
+    }
+
+    // File Input Scanning
+    if (checkinQrFile) {
+        checkinQrFile.addEventListener('change', function(e) {
+            if (e.target.files.length === 0) return;
+            const file = e.target.files[0];
+            
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("checkin_camera_view");
+            }
+            
+            checkinQrStatus.className = "text-xs mt-1 fw-bold text-primary";
+            checkinQrStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Đang phân tích hình ảnh...`;
+            
+            html5QrCode.scanFile(file, true)
+                .then(decodedText => {
+                    handleQRScan(decodedText);
+                    checkinQrFile.value = '';
+                })
+                .catch(err => {
+                    console.error("Lỗi quét file ảnh:", err);
+                    checkinQrStatus.className = "text-xs mt-1 fw-bold text-danger";
+                    checkinQrStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Không tìm thấy mã QR hợp lệ trong ảnh.`;
+                    checkinQrFile.value = '';
+                });
+        });
+    }
+
+    // Global toggle and start/stop controls for Camera
+    window.switchCheckinQRMode = function(mode) {
+        stopCheckinCamera();
+        
+        document.querySelectorAll('.checkin-qr-section').forEach(el => el.style.display = 'none');
+        document.getElementById('btn_checkin_reader').classList.remove('active');
+        document.getElementById('btn_checkin_camera').classList.remove('active');
+        document.getElementById('btn_checkin_file').classList.remove('active');
+
+        if (mode === 'reader') {
+            document.getElementById('checkin_qr_reader_section').style.display = 'block';
+            document.getElementById('btn_checkin_reader').classList.add('active');
+            checkinQrStatus.className = "text-xs mt-1 fw-semibold text-secondary";
+            checkinQrStatus.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Hỗ trợ quét qua đầu đọc mã vạch cầm tay từ ứng dụng VssID, thẻ BHYT hoặc CCCD.';
+            checkinQrInputReader.focus();
+        } else if (mode === 'camera') {
+            document.getElementById('checkin_qr_camera_section').style.display = 'block';
+            document.getElementById('btn_checkin_camera').classList.add('active');
+            checkinQrStatus.className = "text-xs mt-1 fw-semibold text-secondary";
+            checkinQrStatus.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Sử dụng webcam thiết bị để quét trực tiếp.';
+        } else if (mode === 'file') {
+            document.getElementById('checkin_qr_file_section').style.display = 'block';
+            document.getElementById('btn_checkin_file').classList.add('active');
+            checkinQrStatus.className = "text-xs mt-1 fw-semibold text-secondary";
+            checkinQrStatus.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Tải lên ảnh chụp mã QR từ điện thoại hoặc máy tính.';
+        }
+    };
+
+    window.startCheckinCamera = function() {
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("checkin_camera_view");
+        }
+        
+        document.getElementById('btn_checkin_start_cam').style.display = 'none';
+        document.getElementById('btn_checkin_stop_cam').style.display = 'inline-block';
+        
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+        
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText, decodedResult) => {
+                handleQRScan(decodedText);
+                stopCheckinCamera();
+            },
+            (errorMessage) => {}
+        ).catch(err => {
+            console.error("Camera error:", err);
+            checkinQrStatus.className = "text-xs mt-1 fw-bold text-danger";
+            checkinQrStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Không thể khởi động camera. Hãy cấp quyền camera.`;
+            document.getElementById('btn_checkin_start_cam').style.display = 'inline-block';
+            document.getElementById('btn_checkin_stop_cam').style.display = 'none';
+        });
+    };
+
+    window.stopCheckinCamera = function() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('btn_checkin_start_cam').style.display = 'inline-block';
+                document.getElementById('btn_checkin_stop_cam').style.display = 'none';
+            }).catch(err => console.error("Stop camera error:", err));
+        } else {
+            document.getElementById('btn_checkin_start_cam').style.display = 'inline-block';
+            document.getElementById('btn_checkin_stop_cam').style.display = 'none';
+        }
+    };
 
     // Dynamically filter rooms based on department
     const deptSelect = document.getElementById('department_id');

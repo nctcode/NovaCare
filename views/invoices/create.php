@@ -12,6 +12,51 @@
             <!-- 1. Thông tin chung -->
             <div class="info-box mb-4">
                 <div class="row g-3">
+                    <!-- Quick QR Scanner Card (Multi-mode) -->
+                    <div class="col-md-12 mb-1">
+                        <div class="p-3 rounded-3 border" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-color: #bbf7d0 !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                <label class="form-label text-success mb-0 fw-bold" style="font-size:12.5px;"><i class="fa-solid fa-qrcode me-1"></i>Quét nhanh mã QR BHYT / CCCD</label>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-success btn-xs active" id="btn_invoice_reader" onclick="switchInvoiceQRMode('reader')"><i class="fa-solid fa-barcode me-1"></i>Đầu đọc</button>
+                                    <button type="button" class="btn btn-outline-success btn-xs" id="btn_invoice_camera" onclick="switchInvoiceQRMode('camera')"><i class="fa-solid fa-camera me-1"></i>Camera</button>
+                                    <button type="button" class="btn btn-outline-success btn-xs" id="btn_invoice_file" onclick="switchInvoiceQRMode('file')"><i class="fa-solid fa-image me-1"></i>Tải ảnh</button>
+                                </div>
+                            </div>
+
+                            <!-- Mode: Reader -->
+                            <div id="invoice_qr_reader_section" class="invoice-qr-section">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success-subtle text-success border-success-subtle"><i class="fa-solid fa-barcode"></i></span>
+                                    <input type="text" id="invoice_qr_input_reader" class="form-control border-success-subtle" placeholder="Đặt con trỏ chuột vào đây và Quét mã QR..." style="font-size: 13px; background: rgba(240, 253, 244, 0.3);">
+                                </div>
+                            </div>
+
+                            <!-- Mode: Camera -->
+                            <div id="invoice_qr_camera_section" class="invoice-qr-section" style="display:none;">
+                                <div class="d-flex flex-column align-items-center justify-content-center border rounded-3 p-2 bg-dark position-relative" style="min-height: 180px;">
+                                    <div id="invoice_camera_view" style="width: 100%; max-width: 320px;"></div>
+                                    <div class="mt-2 d-flex gap-2">
+                                        <button type="button" class="btn btn-success btn-xs px-3" id="btn_invoice_start_cam" onclick="startInvoiceCamera()"><i class="fa-solid fa-play me-1"></i>Bắt đầu</button>
+                                        <button type="button" class="btn btn-secondary btn-xs px-3" id="btn_invoice_stop_cam" onclick="stopInvoiceCamera()" style="display:none;"><i class="fa-solid fa-stop me-1"></i>Dừng</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mode: File -->
+                            <div id="invoice_qr_file_section" class="invoice-qr-section" style="display:none;">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success-subtle text-success border-success-subtle"><i class="fa-solid fa-upload"></i></span>
+                                    <input type="file" id="invoice_qr_file_input" class="form-control border-success-subtle" accept="image/*">
+                                </div>
+                            </div>
+
+                            <div id="invoice_qr_status" class="text-xs mt-1 fw-semibold text-secondary" style="font-size:11px;">
+                                <i class="fa-solid fa-circle-info me-1"></i>Hỗ trợ tự động điền thông tin thẻ BHYT & chọn Bệnh nhân khi dùng đầu đọc mã vạch.
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="col-md-4">
                         <label class="form-label mb-1">Bệnh nhân <span class="text-danger">*</span></label>
                         <select name="patient_id" id="patientSelect" class="form-select select2" required>
@@ -345,6 +390,7 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 // Services & Medicines data from PHP
 const servicesData = <?= json_encode($services) ?>;
@@ -732,6 +778,185 @@ document.addEventListener('DOMContentLoaded', function() {
             placeholder: '-- Tìm và chọn bệnh nhân --'
         });
     }
+
+    // --- MULTI-MODE QR CODE SCANNER (READER, CAMERA, FILE) ---
+    const invoiceQrInputReader = document.getElementById('invoice_qr_input_reader');
+    const invoiceQrFile = document.getElementById('invoice_qr_file_input');
+    const invoiceQrStatus = document.getElementById('invoice_qr_status');
+    const patientSelect = document.getElementById('patientSelect');
+    let html5QrCode = null;
+
+    function cleanString(str) {
+        return str ? str.trim() : '';
+    }
+
+    function removeDiacritics(str) {
+        return str.normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '')
+                  .replace(/đ/g, 'd')
+                  .replace(/Đ/g, 'd')
+                  .toLowerCase();
+    }
+
+    function handleInvoiceQRScan(rawValue) {
+        if (!rawValue || !rawValue.includes('|')) return;
+        
+        const parts = rawValue.split('|');
+        let scannedInsurance = '';
+        let scannedName = '';
+        
+        // CCCD has parts[0] as 12 digit number, parts[2] as name
+        const isCCCD = /^\d{12}$/.test(parts[0]);
+        
+        if (isCCCD) {
+            scannedName = cleanString(parts[2]);
+        } else {
+            // BHYT: GD4797918800045|Nguyễn Văn A|15/08/1992|...
+            scannedInsurance = cleanString(parts[0]);
+            scannedName = cleanString(parts[1]);
+        }
+
+        let found = false;
+        // Search in select options
+        for (let i = 0; i < patientSelect.options.length; i++) {
+            const opt = patientSelect.options[i];
+            const optInsurance = opt.getAttribute('data-insurance') || '';
+            const optText = opt.textContent || '';
+            
+            // Match BHYT number or loose match Name
+            const matchInsurance = scannedInsurance && optInsurance.toUpperCase() === scannedInsurance.toUpperCase();
+            const matchName = scannedName && removeDiacritics(optText).includes(removeDiacritics(scannedName));
+            
+            if (matchInsurance || matchName) {
+                if (typeof jQuery !== 'undefined') {
+                    $('#patientSelect').val(opt.value).trigger('change');
+                } else {
+                    patientSelect.value = opt.value;
+                    patientSelect.dispatchEvent(new Event('change'));
+                }
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            const selectedOptText = patientSelect.options[patientSelect.selectedIndex].textContent.trim();
+            invoiceQrStatus.className = "text-xs mt-1 fw-bold text-success animate__animated animate__pulse";
+            invoiceQrStatus.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i>Đã chọn bệnh nhân: <strong class="text-dark">${selectedOptText}</strong>`;
+        } else {
+            invoiceQrStatus.className = "text-xs mt-1 fw-bold text-danger";
+            invoiceQrStatus.innerHTML = `<i class="fa-solid fa-circle-exclamation me-1"></i>Không khớp BHYT/Họ tên quét được: <strong class="text-dark">${scannedInsurance || scannedName}</strong>`;
+        }
+        invoiceQrInputReader.value = ''; // clear
+    }
+
+    // Keydown for reader
+    if (invoiceQrInputReader) {
+        invoiceQrInputReader.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleInvoiceQRScan(this.value);
+            }
+        });
+
+        invoiceQrInputReader.addEventListener('change', function() {
+            handleInvoiceQRScan(this.value);
+        });
+    }
+
+    // File Input Scanning
+    if (invoiceQrFile) {
+        invoiceQrFile.addEventListener('change', function(e) {
+            if (e.target.files.length === 0) return;
+            const file = e.target.files[0];
+            
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("invoice_camera_view");
+            }
+            
+            invoiceQrStatus.className = "text-xs mt-1 fw-bold text-primary";
+            invoiceQrStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Đang phân tích hình ảnh...`;
+            
+            html5QrCode.scanFile(file, true)
+                .then(decodedText => {
+                    handleInvoiceQRScan(decodedText);
+                    invoiceQrFile.value = '';
+                })
+                .catch(err => {
+                    console.error("Lỗi quét file ảnh:", err);
+                    invoiceQrStatus.className = "text-xs mt-1 fw-bold text-danger";
+                    invoiceQrStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Không tìm thấy mã QR hợp lệ trong ảnh.`;
+                    invoiceQrFile.value = '';
+                });
+        });
+    }
+
+    // Global toggle and start/stop controls for Camera
+    window.switchInvoiceQRMode = function(mode) {
+        stopInvoiceCamera();
+        
+        document.querySelectorAll('.invoice-qr-section').forEach(el => el.style.display = 'none');
+        document.getElementById('btn_invoice_reader').classList.remove('active');
+        document.getElementById('btn_invoice_camera').classList.remove('active');
+        document.getElementById('btn_invoice_file').classList.remove('active');
+
+        if (mode === 'reader') {
+            document.getElementById('invoice_qr_reader_section').style.display = 'block';
+            document.getElementById('btn_invoice_reader').classList.add('active');
+            invoiceQrStatus.className = "text-xs mt-1 fw-semibold text-secondary";
+            invoiceQrStatus.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Hỗ trợ tự động điền thông tin thẻ BHYT & chọn Bệnh nhân khi dùng đầu đọc mã vạch.';
+            invoiceQrInputReader.focus();
+        } else if (mode === 'camera') {
+            document.getElementById('invoice_qr_camera_section').style.display = 'block';
+            document.getElementById('btn_invoice_camera').classList.add('active');
+            invoiceQrStatus.className = "text-xs mt-1 fw-semibold text-secondary";
+            invoiceQrStatus.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Sử dụng webcam thiết bị để quét trực tiếp.';
+        } else if (mode === 'file') {
+            document.getElementById('invoice_qr_file_section').style.display = 'block';
+            document.getElementById('btn_invoice_file').classList.add('active');
+            invoiceQrStatus.className = "text-xs mt-1 fw-semibold text-secondary";
+            invoiceQrStatus.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Tải lên ảnh chụp mã QR từ điện thoại hoặc máy tính.';
+        }
+    };
+
+    window.startInvoiceCamera = function() {
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("invoice_camera_view");
+        }
+        
+        document.getElementById('btn_invoice_start_cam').style.display = 'none';
+        document.getElementById('btn_invoice_stop_cam').style.display = 'inline-block';
+        
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+        
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText, decodedResult) => {
+                handleInvoiceQRScan(decodedText);
+                stopInvoiceCamera();
+            },
+            (errorMessage) => {}
+        ).catch(err => {
+            console.error("Camera error:", err);
+            invoiceQrStatus.className = "text-xs mt-1 fw-bold text-danger";
+            invoiceQrStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Không thể khởi động camera. Hãy cấp quyền camera.`;
+            document.getElementById('btn_invoice_start_cam').style.display = 'inline-block';
+            document.getElementById('btn_invoice_stop_cam').style.display = 'none';
+        });
+    };
+
+    window.stopInvoiceCamera = function() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('btn_invoice_start_cam').style.display = 'inline-block';
+                document.getElementById('btn_invoice_stop_cam').style.display = 'none';
+            }).catch(err => console.error("Stop camera error:", err));
+        } else {
+            document.getElementById('btn_invoice_start_cam').style.display = 'inline-block';
+            document.getElementById('btn_invoice_stop_cam').style.display = 'none';
+        }
+    };
 
     if (presetPatientId > 0) {
         if (typeof jQuery !== 'undefined') {

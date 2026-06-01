@@ -233,6 +233,72 @@ class QueueController {
     }
 
     /**
+     * Trang theo dõi số thứ tự của Bệnh nhân (Cần đăng nhập)
+     */
+    public function myTicket() {
+        Security::requireRole(['patient']);
+        $user = $_SESSION['user'];
+
+        require_once __DIR__ . '/../models/Patient.php';
+        $patientModel = new Patient();
+        $patient = $patientModel->findByUserId($user['id']);
+
+        $ticket = null;
+        $aheadCount = 0;
+        $calledTickets = $this->queueModel->getCurrentCalled();
+
+        if ($patient) {
+            $ticket = $this->queueModel->getByPatientId($patient['id']);
+            if ($ticket && $ticket['status'] === 'waiting') {
+                $aheadCount = $this->queueModel->countAhead(
+                    $ticket['ticket_number'],
+                    $ticket['department_id']
+                );
+            }
+        }
+
+        $pageTitle = 'Số thứ tự của tôi';
+        require_once __DIR__ . '/../views/layout/header.php';
+        require_once __DIR__ . '/../views/queue/my_ticket.php';
+        require_once __DIR__ . '/../views/layout/footer.php';
+    }
+
+    /**
+     * API JSON - Dữ liệu realtime số thứ tự của Bệnh nhân (polling)
+     */
+    public function myTicketData() {
+        Security::requireRole(['patient']);
+        $user = $_SESSION['user'];
+
+        require_once __DIR__ . '/../models/Patient.php';
+        $patientModel = new Patient();
+        $patient = $patientModel->findByUserId($user['id']);
+
+        $ticket = null;
+        $aheadCount = 0;
+        $calledTickets = $this->queueModel->getCurrentCalled();
+
+        if ($patient) {
+            $ticket = $this->queueModel->getByPatientId($patient['id']);
+            if ($ticket && $ticket['status'] === 'waiting') {
+                $aheadCount = $this->queueModel->countAhead(
+                    $ticket['ticket_number'],
+                    $ticket['department_id']
+                );
+            }
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ticket'       => $ticket,
+            'ahead_count'  => $aheadCount,
+            'called'       => $calledTickets,
+            'timestamp'    => date('H:i:s'),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
      * Màn hình hiển thị số thứ tự (Public - không cần đăng nhập)
      */
     public function display() {

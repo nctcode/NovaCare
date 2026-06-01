@@ -110,7 +110,7 @@ foreach ($devices as $d) {
                         <th>Khoa sử dụng</th>
                         <th>Ngày mua</th>
                         <th>Trạng thái</th>
-                        <?php if ($user['role'] === 'admin'): ?>
+                        <?php if (in_array($user['role'], ['admin', 'technician'])): ?>
                         <th style="width: 150px; text-align: center;">Thao tác</th>
                         <?php endif; ?>
                     </tr>
@@ -164,7 +164,7 @@ foreach ($devices as $d) {
                                 </span>
                             <?php endif; ?>
                         </td>
-                        <?php if ($user['role'] === 'admin'): ?>
+                        <?php if (in_array($user['role'], ['admin', 'technician'])): ?>
                         <td>
                             <div class="d-flex justify-content-center align-items-center gap-2">
                                 <div class="dropdown d-inline">
@@ -189,10 +189,12 @@ foreach ($devices as $d) {
                                         </li>
                                     </ul>
                                 </div>
+                                <?php if ($user['role'] === 'admin'): ?>
                                 <button onclick="confirmDelete('index.php?page=devices&action=delete&id=<?= $d['id'] ?>', '<?= htmlspecialchars($d['name']) ?>')" 
                                         class="btn-action btn-delete" title="Xóa thiết bị" style="border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-trash" style="font-size: 12px;"></i>
                                 </button>
+                                <?php endif; ?>
                             </div>
                         </td>
                         <?php endif; ?>

@@ -674,6 +674,12 @@ $breadcrumb  = $sectionGroups[$currentPage] ?? 'NovaCare';
                 <i class="fa-solid fa-flask-vial"></i> <span>Chỉ định CLS</span>
             </a>
         </li>
+        <li class="menu-label">Thiết bị & Máy móc</li>
+        <li>
+            <a href="index.php?page=devices" class="<?= $currentPage === 'devices' ? 'active' : '' ?>">
+                <i class="fa-solid fa-laptop-medical"></i> <span>Quản lý thiết bị</span>
+            </a>
+        </li>
 
         <?php elseif ($user['role'] === 'director'): ?>
         <li class="menu-label">Điều hành & Giám sát</li>

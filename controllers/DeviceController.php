@@ -22,7 +22,7 @@ class DeviceController {
 
     // Danh sách thiết bị
     public function index() {
-        Security::requireRole(['admin', 'director']);
+        Security::requireRole(['admin', 'director', 'technician']);
         $sql = "SELECT md.*, dep.name as department_name 
                 FROM medical_devices md 
                 LEFT JOIN departments dep ON md.department_id = dep.id 
@@ -86,7 +86,7 @@ class DeviceController {
 
     // Cập nhật trạng thái (POST only)
     public function updateStatus() {
-        Security::requireRole('admin');
+        Security::requireRole(['admin', 'technician']);
         Security::requirePost('index.php?page=devices');
         Security::requireCsrf();
 

@@ -35,15 +35,19 @@ if (in_array($page, $publicPages)) {
     exit;
 }
 
-// --- Login page ---
-if ($page === 'login') {
+// --- Auth pages (login, register) ---
+if ($page === 'login' || $page === 'register') {
     if (isset($_SESSION['user'])) {
         header('Location: index.php?page=dashboard');
         exit;
     }
     require_once __DIR__ . '/controllers/AuthController.php';
     $controller = new AuthController();
-    $controller->index();
+    if ($page === 'register') {
+        $controller->register();
+    } else {
+        $controller->index();
+    }
     exit;
 }
 

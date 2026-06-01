@@ -213,7 +213,6 @@
             </div>
         </div>
 
-        <!-- Action Buttons -->
         <?php 
         if ($user): 
         ?>
@@ -224,7 +223,7 @@
                         <?= Security::csrfField(); ?>
                         <input type="hidden" name="id" value="<?= $prescription['id'] ?>">
                         <h6 class="fw-bold mb-2 text-dark"><i class="fa-solid fa-prescription-bottle-medical me-2 text-success"></i>Tiến hành kiểm tra & Giao thuốc</h6>
-                        <p class="text-muted small mb-3">Vui lòng lấy đủ số lượng thuốc chỉ định trên danh sách trước khi nhấn nút giao thuốc dưới đây.</p>
+                        <p class="text-muted small mb-3">Vui lòng lấy đủ số lượng thuốc chỉ định trên danh sách trước khi nhấn nút giao thuốc dưới đây. Việc này sẽ trực tiếp trừ số lượng trong kho vật lý.</p>
                         <div class="text-end">
                             <button type="submit" class="btn btn-success px-4 py-2" style="border-radius: 24px; font-weight: 600; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);">
                                 <i class="fa-solid fa-truck-ramp-box me-1"></i> Xác nhận đã giao thuốc

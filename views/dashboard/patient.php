@@ -29,7 +29,34 @@
     <div class="col-12" data-aos="fade-up">
         <div class="d-flex flex-wrap gap-2">
             <a href="index.php?page=appointments&action=create" class="btn btn-primary" style="border-radius:20px; padding:8px 24px; font-weight:500; font-size:14px;"><i class="fa-solid fa-calendar-plus me-2"></i>Đặt lịch khám mới</a>
+            <a href="index.php?page=queue&action=myTicket" class="btn btn-outline-primary" style="border-radius:20px; padding:8px 24px; font-weight:500; font-size:14px;"><i class="fa-solid fa-ticket me-2"></i>Theo dõi số thứ tự</a>
             <a href="index.php?page=ai-assistant" class="btn btn-outline-info" style="border-radius:20px; padding:8px 24px; font-weight:500; font-size:14px;"><i class="fa-solid fa-robot me-2"></i>Trợ lý AI Diagnosis</a>
+        </div>
+    </div>
+</div>
+
+<!-- Widget: Số thứ tự hôm nay (Real-time) -->
+<div class="row mb-4" data-aos="fade-up" id="queue-widget-row" style="display:none!important;">
+    <div class="col-12">
+        <div id="queue-widget" class="d-flex align-items-center justify-content-between p-3 px-4"
+             style="border-radius:16px; border:none; background:linear-gradient(135deg,#0f172a,#1e3a5f); color:#fff; box-shadow:0 4px 20px rgba(14,77,146,0.3);">
+            <div class="d-flex align-items-center gap-3">
+                <div style="font-size:2.2rem; font-weight:900; color:#38bdf8; font-variant-numeric:tabular-nums; min-width:70px; text-align:center;" id="qdash-number">----</div>
+                <div>
+                    <div style="font-weight:700; font-size:15px;">Số thứ tự của bạn hôm nay</div>
+                    <div id="qdash-status" style="font-size:12px; color:#94a3b8; margin-top:2px;">Đang tải...</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-center" id="qdash-ahead-block">
+                    <div style="font-size:1.4rem; font-weight:900; color:#fbbf24;" id="qdash-ahead">-</div>
+                    <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;">Người trước</div>
+                </div>
+                <a href="index.php?page=queue&action=myTicket"
+                   class="btn btn-sm btn-light" style="border-radius:20px; font-weight:600; font-size:13px;">
+                    <i class="fa-solid fa-arrow-right me-1"></i>Chi tiết
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -151,3 +178,93 @@
         </div>
     </div>
 </div>
+</div>
+
+<script>
+(function () {
+    const STATUS_LABELS = {
+        waiting:     'Đang chờ',
+        called:      '🔔 Đang được gọi! Đến phòng khám ngay!',
+        in_progress: '🩺 Đang khám',
+        completed:   'Đã hoàn thành',
+    };
+
+    function pad(n, size = 4) {
+        let s = String(n);
+        while (s.length < size) s = '0' + s;
+        return s;
+    }
+
+    async function pollQueueWidget() {
+        try {
+            const res = await fetch('index.php?page=queue&action=myTicketData');
+            if (!res.ok) return;
+            const data = await res.json();
+
+            const row    = document.getElementById('queue-widget-row');
+            const numEl  = document.getElementById('qdash-number');
+            const statEl = document.getElementById('qdash-status');
+            const ahdEl  = document.getElementById('qdash-ahead');
+            const ahdBlk = document.getElementById('qdash-ahead-block');
+
+            if (!data.ticket) {
+                // No active ticket today — hide widget
+                if (row) row.style.setProperty('display', 'none', 'important');
+                return;
+            }
+
+            // Show widget
+            if (row) row.style.removeProperty('display');
+
+            const t = data.ticket;
+            numEl.textContent  = pad(t.ticket_number);
+            statEl.textContent = STATUS_LABELS[t.status] || t.status;
+
+            // Highlight widget red/blue when called
+            const widget = document.getElementById('queue-widget');
+            if (t.status === 'called' || t.status === 'in_progress') {
+                widget.style.background = 'linear-gradient(135deg,#0c4a6e,#0284c7)';
+                widget.style.boxShadow  = '0 4px 24px rgba(56,189,248,0.45)';
+                statEl.style.color = '#38bdf8';
+                statEl.style.fontWeight = '700';
+
+                // Browser Notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    if (!window._queueNotifSent) {
+                        window._queueNotifSent = true;
+                        new Notification('🔔 NovaCare – Đến lượt của bạn!', {
+                            body: `Số ${pad(t.ticket_number)} – Vui lòng đến ${t.room_name || 'phòng khám'} ngay.`,
+                        });
+                    }
+                }
+            } else {
+                widget.style.background = 'linear-gradient(135deg,#0f172a,#1e3a5f)';
+                widget.style.boxShadow  = '0 4px 20px rgba(14,77,146,0.3)';
+                statEl.style.color = '#94a3b8';
+                statEl.style.fontWeight = '400';
+                window._queueNotifSent = false;
+            }
+
+            // Ahead count
+            if (t.status === 'waiting') {
+                ahdBlk.style.display = 'block';
+                ahdEl.textContent = data.ahead_count ?? '-';
+            } else {
+                ahdBlk.style.display = 'none';
+            }
+
+        } catch (e) {
+            console.warn('[NovaCare] Queue widget poll error:', e);
+        }
+    }
+
+    // Request notification permission on page load
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    // Poll immediately then every 10 seconds
+    pollQueueWidget();
+    setInterval(pollQueueWidget, 10000);
+})();
+</script>

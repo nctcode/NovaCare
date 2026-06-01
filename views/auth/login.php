@@ -71,6 +71,11 @@
                     <span class="badge text-white" style="background-color: #e83e8c;">Thu ngân</span> thungan@benhvien.com<br>
                     <span class="badge text-white" style="background-color: #fd7e14;">Ban giám đốc</span> giamdoc@benhvien.com
                 </small>
+            <div class="mt-4 text-center">
+                <span style="color:var(--gray-400);">Chưa có tài khoản?</span>
+                <a href="index.php?page=register" style="color:var(--primary);font-weight:600;margin-left:5px;">
+                    Đăng ký ngay
+                </a>
             </div>
 
             <div class="mt-3 text-center">

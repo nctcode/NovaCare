@@ -234,8 +234,8 @@ class PrescriptionController {
             if (!$prescription) {
                 throw new Exception('Không tìm thấy đơn thuốc.');
             }
-            if ($prescription['status'] !== 'approved') {
-                throw new Exception('Đơn thuốc chưa được Dược sĩ duyệt. Vui lòng duyệt trước khi giao thuốc.');
+            if ($prescription['status'] !== 'paid') {
+                throw new Exception('Đơn thuốc chưa được thanh toán. Vui lòng thanh toán trước khi giao thuốc.');
             }
 
             $this->prescriptionModel->updateStatus($id, 'dispensed');

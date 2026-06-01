@@ -156,28 +156,227 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
                 <i class="fa-solid fa-print me-2"></i>In hóa đơn
             </button>
             <?php if ($invoice['status'] === 'pending'): ?>
-                <a href="index.php?page=invoices&action=payVNPay&id=<?= $invoice['id'] ?>" class="btn btn-primary text-white" style="border-radius:20px; font-weight:600; background: linear-gradient(135deg, #0ea5e9, #2563eb); border:none;">
-                    <i class="fa-solid fa-credit-card me-2"></i>Thanh toán VNPay Sandbox
-                </a>
                 
                 <?php if (in_array($_SESSION['user']['role'], ['admin', 'cashier', 'receptionist'])): ?>
-                    <div class="dropdown">
-                        <button class="btn btn-success dropdown-toggle" style="border-radius:20px; font-weight:500;" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-check me-2"></i>Thanh toán quầy
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=cash')">💵 Tiền mặt</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=card')">💳 Thẻ ngân hàng</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=momo')">📱 MoMo</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=vnpay')">🏦 VNPay Quầy</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=transfer')">🔄 Chuyển khoản</a></li>
-                        </ul>
-                    </div>
+                    <button type="button" class="btn btn-success" style="border-radius:20px; font-weight:500;" data-bs-toggle="modal" data-bs-target="#paymentMethodModal">
+                        <i class="fa-solid fa-check me-2"></i>Xác nhận thanh toán
+                    </button>
                     <a href="index.php?page=invoices&action=cancel&id=<?= $invoice['id'] ?>" class="btn btn-outline-danger" style="border-radius:20px; font-weight:500;" onclick="return confirm('Bạn chắc chắn muốn hủy hóa đơn này?')">
                         <i class="fa-solid fa-ban me-2"></i>Hủy hóa đơn
                     </a>
                 <?php endif; ?>
             <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php
+// Tính số tiền cần trả
+$payAmount = $invoice['patient_payment'] > 0 ? $invoice['patient_payment'] : $invoice['final_amount'];
+$payAmountFormatted = number_format($payAmount, 0, ',', '.');
+$invoiceDesc = "HD" . $invoice['id'] . " NovaCare Hospital";
+
+// MoMo QR format: 2|99|SĐT|||0|0|SốTiền|MôTả|transfer_myqr
+// Khi quét bằng app MoMo -> tự động mở màn hình chuyển tiền với số tiền đã điền sẵn
+$qrDataMomo = "2|99|0909123456|||0|0|" . intval($payAmount) . "|" . $invoiceDesc . "|transfer_myqr";
+
+// VietQR (VNPay) - Sử dụng API img.vietqr.io để sinh QR chuẩn ngân hàng
+// Khi quét bằng bất kỳ app ngân hàng nào -> tự hiện số tiền cần thanh toán
+$vietqrBank = "MB";  // Ngân hàng MB Bank (demo)
+$vietqrAccount = "0909123456";  // Số tài khoản demo
+$vietqrTemplate = "compact2";
+$vietqrAmount = intval($payAmount);
+$vietqrDesc = urlencode($invoiceDesc);
+$vietqrName = urlencode("BENH VIEN NOVACARE");
+$vietqrImgUrl = "https://img.vietqr.io/image/{$vietqrBank}-{$vietqrAccount}-{$vietqrTemplate}.png?amount={$vietqrAmount}&addInfo={$vietqrDesc}&accountName={$vietqrName}";
+?>
+
+<!-- ==================== MODAL CHỌN PHƯƠNG THỨC THANH TOÁN ==================== -->
+<div class="modal fade" id="paymentMethodModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:20px; border:none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" style="font-size:1.25rem;"><i class="fa-solid fa-wallet me-2 text-primary"></i>Chọn phương thức thanh toán</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-3">
+                <p class="text-muted mb-4" style="font-size:0.95rem;">Hóa đơn <span class="fw-bold text-dark">#<?= $invoice['id'] ?></span> - Bệnh nhân cần trả: <span class="fw-bold text-danger fs-5"><?= $payAmountFormatted ?>đ</span>.</p>
+                
+                <div class="d-grid gap-3">
+                    <button type="button" class="btn btn-outline-light text-start d-flex align-items-center justify-content-between p-3 payment-method-btn" onclick="selectPaymentMethod('cash')">
+                        <span class="fw-bold text-dark"><i class="fa-solid fa-money-bill-wave me-2 text-success fs-5 align-middle"></i>Tiền mặt</span>
+                        <i class="fa-solid fa-chevron-right text-muted"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-light text-start d-flex align-items-center justify-content-between p-3 payment-method-btn" onclick="selectPaymentMethod('card')">
+                        <span class="fw-bold text-dark"><i class="fa-solid fa-credit-card me-2 text-primary fs-5 align-middle"></i>Thẻ ngân hàng (POS)</span>
+                        <i class="fa-solid fa-chevron-right text-muted"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-light text-start d-flex align-items-center justify-content-between p-3 payment-method-btn" onclick="selectPaymentMethod('momo')">
+                        <span class="fw-bold text-dark"><img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" width="24" class="me-2 rounded shadow-sm">Ví MoMo (Quét QR)</span>
+                        <i class="fa-solid fa-chevron-right text-muted"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-light text-start d-flex align-items-center justify-content-between p-3 payment-method-btn" onclick="selectPaymentMethod('vnpay')">
+                        <span class="fw-bold text-dark"><img src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418196384.png" width="24" class="me-2 rounded shadow-sm bg-white p-1">VNPay / VietQR</span>
+                        <i class="fa-solid fa-chevron-right text-muted"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-light text-start d-flex align-items-center justify-content-between p-3 payment-method-btn" onclick="selectPaymentMethod('transfer')">
+                        <span class="fw-bold text-dark"><i class="fa-solid fa-money-bill-transfer me-2 text-info fs-5 align-middle"></i>Chuyển khoản thủ công</span>
+                        <i class="fa-solid fa-chevron-right text-muted"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+.payment-method-btn {
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    background: white;
+    transition: all 0.2s ease;
+}
+.payment-method-btn:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+</style>
+
+<?php
+// Tính số tiền cần trả
+$payAmount = $invoice['patient_payment'] > 0 ? $invoice['patient_payment'] : $invoice['final_amount'];
+$payAmountFormatted = number_format($payAmount, 0, ',', '.');
+$invoiceDesc = "HD" . $invoice['id'] . " NovaCare Hospital";
+
+// MoMo QR format: 2|99|SĐT|||0|0|SốTiền|MôTả|transfer_myqr
+// Khi quét bằng app MoMo -> tự động mở màn hình chuyển tiền với số tiền đã điền sẵn
+$qrDataMomo = "2|99|0909123456|||0|0|" . intval($payAmount) . "|" . $invoiceDesc . "|transfer_myqr";
+
+// VietQR (VNPay) - Sử dụng API img.vietqr.io để sinh QR chuẩn ngân hàng
+// Khi quét bằng bất kỳ app ngân hàng nào -> tự hiện số tiền cần thanh toán
+$vietqrBank = "MB";  // Ngân hàng MB Bank (demo)
+$vietqrAccount = "0909123456";  // Số tài khoản demo
+$vietqrTemplate = "compact2";
+$vietqrAmount = intval($payAmount);
+$vietqrDesc = urlencode($invoiceDesc);
+$vietqrName = urlencode("BENH VIEN NOVACARE");
+$vietqrImgUrl = "https://img.vietqr.io/image/{$vietqrBank}-{$vietqrAccount}-{$vietqrTemplate}.png?amount={$vietqrAmount}&addInfo={$vietqrDesc}&accountName={$vietqrName}";
+?>
+
+<!-- ==================== MODAL QR THANH TOÁN ==================== -->
+<div class="modal fade" id="qrPaymentModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content" style="border:none; border-radius:24px; overflow:hidden;">
+            
+            <!-- MoMo Header -->
+            <div id="qrHeader-momo" class="qr-modal-header" style="display:none; background: linear-gradient(135deg, #a50064 0%, #d8247e 50%, #ff6b9d 100%); padding: 28px 24px 20px;">
+                <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+                    <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" width="48" height="48" style="border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <div class="text-white text-start">
+                        <h5 class="mb-0 fw-bold">Thanh toán MoMo</h5>
+                        <small style="opacity:0.85;">Mở app MoMo → Quét mã QR</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VNPay Header -->
+            <div id="qrHeader-vnpay" class="qr-modal-header" style="display:none; background: linear-gradient(135deg, #005baa 0%, #0071ce 50%, #0095ff 100%); padding: 28px 24px 20px;">
+                <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+                    <img src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418196384.png" width="48" height="48" style="border-radius:12px; background:white; padding:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <div class="text-white text-start">
+                        <h5 class="mb-0 fw-bold">Thanh toán VNPay</h5>
+                        <small style="opacity:0.85;">Mở app Ngân hàng → Quét mã VietQR</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body text-center" style="padding: 30px 24px;">
+                <!-- Thông tin hóa đơn -->
+                <div class="mb-4" style="background: #f8fafc; border-radius: 16px; padding: 16px;">
+                    <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:14px;">
+                        <span class="text-muted">Mã hóa đơn:</span>
+                        <span class="fw-bold">#<?= $invoice['id'] ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:14px;">
+                        <span class="text-muted">Bệnh nhân:</span>
+                        <span class="fw-bold"><?= htmlspecialchars($invoice['patient_name']) ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:14px;">
+                        <span class="text-muted">Người thụ hưởng:</span>
+                        <span class="fw-bold text-primary">BENH VIEN NOVACARE</span>
+                    </div>
+                    <hr class="my-2" style="border-color:#e2e8f0;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold" style="font-size:15px;">Số tiền cần trả:</span>
+                        <span class="fw-bold" style="font-size:22px; color:#e11d48;" id="qrPayAmount"><?= $payAmountFormatted ?>đ</span>
+                    </div>
+                </div>
+
+                <!-- QR Code MoMo -->
+                <div class="qr-code-wrapper mb-3" id="qrCodeContainer">
+                    <div class="qr-code-frame" id="qrFrame-momo" style="display:none; border: 3px solid #a50064; border-radius: 20px; padding: 16px; position:relative; background:white;">
+                        <img src="https://quickchart.io/qr?text=<?= urlencode($qrDataMomo) ?>&size=240&margin=1" 
+                             alt="MoMo QR" class="qr-img" style="border-radius:8px; width:240px; height:240px;">
+                        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border-radius:12px; padding:6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" width="36" height="36" style="border-radius:8px;">
+                        </div>
+                        <div class="mt-2" style="font-size:11px; color:#a50064; font-weight:600;">
+                            <i class="fa-solid fa-mobile-screen me-1"></i> Mở MoMo → Quét QR → Số tiền tự động hiện
+                        </div>
+                    </div>
+
+                    <!-- QR Code VNPay (VietQR chuẩn ngân hàng) -->
+                    <div class="qr-code-frame" id="qrFrame-vnpay" style="display:none; border: 3px solid #005baa; border-radius: 20px; padding: 16px; position:relative; background:white;">
+                        <img src="<?= $vietqrImgUrl ?>" 
+                             alt="VietQR VNPay" class="qr-img" style="border-radius:8px; width:240px; height:auto; min-height:240px;"
+                             onerror="this.onerror=null; this.src='https://quickchart.io/qr?text=<?= urlencode("https://me.momo.vn/novacare?a=" . intval($payAmount)) ?>&size=240&margin=1';">
+                        <div class="mt-2" style="font-size:11px; color:#005baa; font-weight:600;">
+                            <i class="fa-solid fa-building-columns me-1"></i> Mở App Ngân hàng → Quét VietQR → Số tiền tự động hiện
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trạng thái chờ -->
+                <div id="qrWaitingStatus" class="mb-3">
+                    <div class="d-flex align-items-center justify-content-center gap-2" style="color:#64748b; font-size:14px;">
+                        <div class="spinner-border spinner-border-sm" role="status" id="qrSpinner"></div>
+                        <span>Đang chờ bệnh nhân quét mã thanh toán...</span>
+                    </div>
+                    <div class="mt-2" style="font-size:12px; color:#94a3b8;">
+                        Mã QR sẽ hết hạn sau: <span id="qrCountdown" class="fw-bold text-danger">05:00</span>
+                    </div>
+                </div>
+
+                <!-- Trạng thái thành công (ẩn ban đầu) -->
+                <div id="qrSuccessStatus" style="display:none;" class="mb-3">
+                    <div class="qr-success-animation">
+                        <div class="qr-success-checkmark">
+                            <i class="fa-solid fa-circle-check" style="font-size:64px; color:#10b981;"></i>
+                        </div>
+                        <h5 class="fw-bold mt-3" style="color:#10b981;">Thanh toán thành công!</h5>
+                        <p class="text-muted mb-0" style="font-size:14px;">Giao dịch đã được xác nhận</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer justify-content-center border-0" style="padding: 0 24px 28px; gap:12px;" id="qrModalFooter">
+                <button type="button" class="btn btn-lg" id="btnSimulateSuccess" style="border-radius:16px; font-weight:600; padding: 12px 28px; font-size:15px;" onclick="simulatePaymentSuccess()">
+                    <i class="fa-solid fa-check-circle me-2"></i>Giả lập thanh toán thành công
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg" id="btnChangeMethod" style="border-radius:16px; font-weight:500; padding: 12px 28px; font-size:15px;" onclick="changePaymentMethod()">
+                    <i class="fa-solid fa-rotate me-2"></i>Đổi phương thức
+                </button>
+            </div>
+
+            <!-- Footer sau khi thành công (ẩn ban đầu) -->
+            <div class="modal-footer justify-content-center border-0" style="padding: 0 24px 28px; display:none;" id="qrSuccessFooter">
+                <button type="button" class="btn btn-success btn-lg" style="border-radius:16px; font-weight:600; padding: 12px 36px; font-size:15px;" onclick="confirmQRPayment()">
+                    <i class="fa-solid fa-check me-2"></i>Xác nhận & Đóng
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -247,5 +446,161 @@ $methodLabels = ['cash'=>'💵 Tiền mặt','card'=>'💳 Thẻ','momo'=>'📱 
     box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
     display: inline-block;
 }
+
+/* ===== QR Payment Modal Styles ===== */
+#qrPaymentModal .modal-content {
+    box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+}
+#qrPaymentModal .qr-code-frame {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+}
+#qrPaymentModal .qr-code-frame:hover {
+    transform: scale(1.03);
+}
+#qrPaymentModal .qr-img {
+    transition: all 0.3s ease;
+}
+#btnSimulateSuccess {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    transition: all 0.3s ease;
+}
+#btnSimulateSuccess:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.45);
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+}
+.qr-success-animation {
+    animation: qrSuccessPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes qrSuccessPop {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes qrPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+}
+.qr-success-checkmark {
+    animation: qrPulse 1.5s ease infinite;
+    display: inline-block;
+    border-radius: 50%;
+}
 </style>
+
+<script>
+// ===== QR Payment Logic =====
+let currentQRMethod = '';
+let countdownInterval = null;
+let countdownSeconds = 300; // 5 phút
+
+function openQRPayment(method) {
+    currentQRMethod = method;
+    countdownSeconds = 300;
+
+    // Ẩn tất cả header & frame
+    document.querySelectorAll('.qr-modal-header').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.qr-code-frame').forEach(el => el.style.display = 'none');
+
+    // Hiện header & frame tương ứng
+    document.getElementById('qrHeader-' + method).style.display = 'block';
+    document.getElementById('qrFrame-' + method).style.display = 'inline-block';
+
+    // Reset trạng thái
+    document.getElementById('qrWaitingStatus').style.display = 'block';
+    document.getElementById('qrSuccessStatus').style.display = 'none';
+    document.getElementById('qrModalFooter').style.display = 'flex';
+    document.getElementById('qrSuccessFooter').style.display = 'none';
+    document.getElementById('qrCodeContainer').style.display = 'block';
+
+    // Bắt đầu đếm ngược
+    startCountdown();
+
+    // Mở modal
+    var modal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
+    modal.show();
+}
+
+function startCountdown() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    updateCountdownDisplay();
+    countdownInterval = setInterval(function() {
+        countdownSeconds--;
+        if (countdownSeconds <= 0) {
+            clearInterval(countdownInterval);
+            document.getElementById('qrCountdown').textContent = 'Hết hạn!';
+            document.getElementById('qrCountdown').style.color = '#dc2626';
+        } else {
+            updateCountdownDisplay();
+        }
+    }, 1000);
+}
+
+function updateCountdownDisplay() {
+    var m = Math.floor(countdownSeconds / 60);
+    var s = countdownSeconds % 60;
+    document.getElementById('qrCountdown').textContent = 
+        String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function simulatePaymentSuccess() {
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // Ẩn QR + chờ, hiện thành công
+    document.getElementById('qrCodeContainer').style.display = 'none';
+    document.getElementById('qrWaitingStatus').style.display = 'none';
+    document.getElementById('qrSuccessStatus').style.display = 'block';
+    document.getElementById('qrModalFooter').style.display = 'none';
+    document.getElementById('qrSuccessFooter').style.display = 'flex';
+}
+
+function confirmQRPayment() {
+    // Gọi API đánh dấu đã thanh toán
+    postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=' + currentQRMethod);
+}
+
+function selectPaymentMethod(method) {
+    // Đóng modal chọn phương thức
+    var pmModalEl = document.getElementById('paymentMethodModal');
+    var pmModal = bootstrap.Modal.getInstance(pmModalEl);
+    if (pmModal) pmModal.hide();
+
+    if (method === 'momo' || method === 'vnpay') {
+        // Đợi modal cũ đóng rồi mở modal QR
+        setTimeout(() => {
+            openQRPayment(method);
+        }, 400);
+    } else {
+        // Phương thức thường
+        var methodNames = {'cash':'Tiền mặt', 'card':'Thẻ ngân hàng (POS)', 'transfer':'Chuyển khoản thủ công'};
+        if (confirm('Xác nhận thanh toán hóa đơn này bằng ' + methodNames[method] + '?')) {
+            postAction('index.php?page=invoices&action=markPaid&id=<?= $invoice['id'] ?>&method=' + method);
+        }
+    }
+}
+
+function changePaymentMethod() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    // Đóng modal QR hiện tại
+    var modalEl = document.getElementById('qrPaymentModal');
+    var modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    // Mở lại modal chọn phương thức thanh toán
+    setTimeout(function() {
+        var pmModal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
+        pmModal.show();
+    }, 400);
+}
+
+// Cleanup khi modal đóng
+document.getElementById('qrPaymentModal')?.addEventListener('hidden.bs.modal', function() {
+    if (countdownInterval) clearInterval(countdownInterval);
+});
+</script>
 

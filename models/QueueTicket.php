@@ -304,6 +304,48 @@ class QueueTicket {
     }
 
     /**
+     * Lấy số thứ tự hôm nay của một bệnh nhân cụ thể
+     */
+    public function getByPatientId($patientId) {
+        $sql = "SELECT qt.*,
+                    dep.name as department_name,
+                    du.name as doctor_name,
+                    er.room_name
+                FROM queue_tickets qt
+                LEFT JOIN departments dep ON qt.department_id = dep.id
+                LEFT JOIN doctors d ON qt.doctor_id = d.id
+                LEFT JOIN users du ON d.user_id = du.id
+                LEFT JOIN examination_rooms er ON qt.examination_room_id = er.id
+                WHERE qt.patient_id = :patient_id
+                  AND qt.queue_date = CURDATE()
+                  AND qt.status NOT IN ('cancelled','completed')
+                ORDER BY qt.ticket_number ASC
+                LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':patient_id', $patientId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
+    /**
+     * Đếm số người đứng trước bệnh nhân trong hàng chờ (cùng khoa, status = waiting)
+     */
+    public function countAhead($ticketNumber, $departmentId = null) {
+        $sql = "SELECT COUNT(*) as cnt FROM queue_tickets
+                WHERE queue_date = CURDATE()
+                  AND status = 'waiting'
+                  AND ticket_number < :ticket_number";
+        $params = [':ticket_number' => $ticketNumber];
+        if ($departmentId) {
+            $sql .= " AND department_id = :dept_id";
+            $params[':dept_id'] = $departmentId;
+        }
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetch()['cnt'];
+    }
+
+    /**
      * Lấy danh sách khoa (cho dropdown)
      */
     public function getDepartments() {

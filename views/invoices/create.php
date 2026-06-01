@@ -12,10 +12,10 @@
             <!-- 1. Thông tin chung -->
             <div class="info-box mb-4">
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label mb-1">Bệnh nhân <span class="text-danger">*</span></label>
-                        <select name="patient_id" id="patientSelect" class="form-select" required>
-                            <option value="">-- Chọn bệnh nhân --</option>
+                        <select name="patient_id" id="patientSelect" class="form-select select2" required>
+                            <option value="">-- Tìm và chọn bệnh nhân --</option>
                             <?php foreach ($patients as $p): ?>
                                 <option value="<?= $p['id'] ?>" data-insurance="<?= htmlspecialchars($p['insurance_number'] ?? '') ?>"><?= htmlspecialchars($p['name']) ?> (SĐT: <?= htmlspecialchars($p['phone'] ?? '') ?>)</option>
                             <?php endforeach; ?>
@@ -30,7 +30,7 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label mb-1">Mã số BHYT</label>
                         <input type="text" name="insurance_number" id="insuranceNumber" class="form-control" placeholder="Tự động điền hoặc nhập tay">
                     </div>
@@ -49,17 +49,6 @@
                     <div class="col-md-2">
                         <label class="form-label mb-1">Giảm giá (VNĐ)</label>
                         <input type="number" name="discount" class="form-control" value="0" min="0" id="discountInput" onchange="recalc()">
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="form-label mb-1">Phương thức thanh toán</label>
-                        <select name="payment_method" class="form-select">
-                            <option value="cash">💵 Tiền mặt</option>
-                            <option value="card">💳 Thẻ ngân hàng</option>
-                            <option value="momo">📱 MoMo</option>
-                            <option value="vnpay">🏦 VNPay</option>
-                            <option value="transfer">🔄 Chuyển khoản</option>
-                        </select>
                     </div>
                 </div>
             </div>
@@ -149,6 +138,7 @@
     </div>
 </div>
 
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -205,6 +195,40 @@
     border-color: #3b82f6;
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
     background-color: #ffffff;
+}
+
+/* Custom Select2 Styling */
+.select2-container .select2-selection--single {
+    height: 43px;
+    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-weight: 500;
+    color: #1e293b;
+    font-size: 14px;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 41px;
+    right: 12px;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #1e293b;
+    line-height: 41px;
+}
+.select2-container--open .select2-selection--single {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+.select2-dropdown {
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+.select2-search__field {
+    border-radius: 8px !important;
 }
 
 /* Custom Table Style */
@@ -304,6 +328,8 @@
 }
 </style>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 // Services & Medicines data from PHP
 const servicesData = <?= json_encode($services) ?>;
@@ -435,13 +461,11 @@ function recalc() {
 document.getElementById('discountInput').addEventListener('input', recalc);
 
 // Patient selection change handler (AJAX load unpaid prescriptions)
-document.getElementById('patientSelect').addEventListener('change', function() {
-    const patientId = this.value;
+function handlePatientChange(patientId, selectedOption) {
     const container = document.getElementById('prescriptionContainer');
     const select = document.getElementById('prescriptionSelect');
     
     // Auto fill insurance number
-    const selectedOption = this.options[this.selectedIndex];
     const insuranceNum = selectedOption ? selectedOption.getAttribute('data-insurance') : '';
     const insuranceInput = document.getElementById('insuranceNumber');
     const insuranceRateSelect = document.getElementById('insuranceRate');
@@ -489,7 +513,18 @@ document.getElementById('patientSelect').addEventListener('change', function() {
             addRow();
             recalc();
         });
-});
+}
+
+// Map the change event to handle patient selection changes
+if (typeof jQuery !== 'undefined') {
+    $('#patientSelect').on('change', function() {
+        handlePatientChange(this.value, this.options[this.selectedIndex]);
+    });
+} else {
+    document.getElementById('patientSelect').addEventListener('change', function() {
+        handlePatientChange(this.value, this.options[this.selectedIndex]);
+    });
+}
 
 // Prescription selection change handler
 document.getElementById('prescriptionSelect').addEventListener('change', function() {
@@ -569,10 +604,22 @@ function addPrescriptionItemRow(item) {
 
 // Auto init page if preset variables exist or add default row
 document.addEventListener('DOMContentLoaded', function() {
+    // Init Select2 for patient search
+    if (typeof jQuery !== 'undefined') {
+        $('#patientSelect').select2({
+            width: '100%',
+            placeholder: '-- Tìm và chọn bệnh nhân --'
+        });
+    }
+
     if (presetPatientId > 0) {
-        const patientSelect = document.getElementById('patientSelect');
-        patientSelect.value = presetPatientId;
-        patientSelect.dispatchEvent(new Event('change'));
+        if (typeof jQuery !== 'undefined') {
+            $('#patientSelect').val(presetPatientId).trigger('change');
+        } else {
+            const patientSelect = document.getElementById('patientSelect');
+            patientSelect.value = presetPatientId;
+            patientSelect.dispatchEvent(new Event('change'));
+        }
     } else {
         addRow();
     }

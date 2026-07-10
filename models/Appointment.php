@@ -212,6 +212,78 @@ class Appointment {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Lấy lịch hẹn của bệnh nhân phục vụ API (hỗ trợ phân trang & lọc)
+    public function getPatientAppointmentsForApi($patientId, $filters = []) {
+        $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+        $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+        if ($limit > 50) $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT a.id, a.doctor_id, a.appointment_date, a.reason, a.status,
+                       du.name as doctor_name, d.specialty, dep.name as department_name
+                FROM appointments a
+                JOIN doctors d ON a.doctor_id = d.id
+                JOIN users du ON d.user_id = du.id
+                LEFT JOIN departments dep ON d.department_id = dep.id
+                WHERE a.patient_id = :patient_id AND a.deleted_at IS NULL";
+
+        $params = [':patient_id' => $patientId];
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND a.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        if (!empty($filters['from_date'])) {
+            $sql .= " AND DATE(a.appointment_date) >= :from_date";
+            $params[':from_date'] = $filters['from_date'];
+        }
+
+        if (!empty($filters['to_date'])) {
+            $sql .= " AND DATE(a.appointment_date) <= :to_date";
+            $params[':to_date'] = $filters['to_date'];
+        }
+
+        $sql .= " ORDER BY a.appointment_date DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Đếm tổng số lịch hẹn cho meta
+        $countSql = "SELECT COUNT(*) as total FROM appointments a WHERE a.patient_id = :patient_id AND a.deleted_at IS NULL";
+        if (!empty($filters['status'])) {
+            $countSql .= " AND a.status = :status";
+        }
+        if (!empty($filters['from_date'])) {
+            $countSql .= " AND DATE(a.appointment_date) >= :from_date";
+        }
+        if (!empty($filters['to_date'])) {
+            $countSql .= " AND DATE(a.appointment_date) <= :to_date";
+        }
+        $countStmt = $this->conn->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->fetch()['total'];
+
+        return [
+            'data' => $appointments,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
+    }
+
     // Đếm lịch hẹn theo ngày
     public function countByDate($date) {
         $sql = "SELECT COUNT(*) as total FROM appointments WHERE DATE(appointment_date) = :date AND deleted_at IS NULL";

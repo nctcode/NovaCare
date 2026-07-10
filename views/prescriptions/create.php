@@ -44,7 +44,7 @@
         </div>
 
         <!-- ====== AI GỢI Ý THUỐC ====== -->
-        <div class="mb-4 rounded-3 border" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); overflow:hidden;">
+        <div class="mb-4 rounded-3 border d-none" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); overflow:hidden;">
             <div class="p-3 d-flex justify-content-between align-items-center cursor-pointer" id="toggleAiMedicineBtn" style="cursor: pointer;">
                 <div>
                     <h6 class="mb-1 text-success fw-bold"><i class="fa-solid fa-robot me-2"></i>AI Trợ lý Dược sĩ (Beta)</h6>

@@ -2,10 +2,10 @@
 -- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Máy chủ: db:3306
--- Thời gian đã tạo: Th5 31, 2026 lúc 10:50 AM
--- Phiên bản máy phục vụ: 8.0.46
--- Phiên bản PHP: 8.3.26
+-- Host: 127.0.0.1:3306
+-- Generation Time: Jul 04, 2026 at 01:37 PM
+-- Server version: 8.4.7
+-- PHP Version: 8.3.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,17 +18,18 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Cơ sở dữ liệu: `hospital_management`
+-- Database: `hospital_management`
 --
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `admissions`
+-- Table structure for table `admissions`
 --
 
-CREATE TABLE `admissions` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `admissions`;
+CREATE TABLE IF NOT EXISTS `admissions` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int DEFAULT NULL,
   `doctor_id` int DEFAULT NULL,
   `bed_id` int DEFAULT NULL,
@@ -36,28 +37,40 @@ CREATE TABLE `admissions` (
   `discharge_date` datetime DEFAULT NULL,
   `diagnosis` text,
   `status` enum('pending','active','discharged','transferred') DEFAULT 'pending',
+  `discharge_ordered` tinyint(1) DEFAULT '0',
+  `discharge_ordered_at` datetime DEFAULT NULL,
   `notes` text,
   `created_by` int DEFAULT NULL,
   `updated_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `patient_id` (`patient_id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `bed_id` (`bed_id`),
+  KEY `status` (`status`),
+  KEY `fk_adm_created_by` (`created_by`),
+  KEY `fk_adm_updated_by` (`updated_by`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `admissions`
+-- Dumping data for table `admissions`
 --
 
-INSERT INTO `admissions` (`id`, `patient_id`, `doctor_id`, `bed_id`, `admission_date`, `discharge_date`, `diagnosis`, `status`, `notes`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 4, 1, 1, '2026-03-13 17:00:00', '2026-03-18 10:00:00', 'Suy tim độ II (NYHA) - Cần theo dõi ECG liên tục', 'discharged', 'Theo dõi nhịp tim 24h. Hạn chế muối và nước. Báo BS khi SpO2 < 92%.', NULL, NULL, '2026-03-13 17:00:00', '2026-05-02 17:12:27', NULL),
-(2, 6, 1, 4, '2026-05-06 10:00:00', '2026-05-27 16:39:30', 'Cơn nhịp nhanh trên thất', 'discharged', 'Theo dõi đáp ứng thuốc chống loạn nhịp', NULL, 5, '2026-05-06 10:00:00', '2026-05-27 16:39:30', NULL),
-(3, 12, 5, 8, '2026-05-08 14:00:00', NULL, 'Tăng huyết áp kháng trị, chuẩn bị mổ', 'active', 'Kiểm soát HA bằng đường tĩnh mạch trước mổ', NULL, NULL, '2026-05-08 14:00:00', '2026-05-02 17:12:27', NULL),
-(5, 6, 1, 2, '2026-05-29 09:43:00', NULL, 'Suy nhược cơ thể nghiêm trọng cần truyền dịch', 'active', '', 2, 5, '2026-05-29 09:43:01', '2026-05-29 09:43:55', NULL),
-(6, 6, 1, 3, '2026-05-31 03:40:00', '2026-05-31 03:42:56', 'nhức đầu', 'discharged', '', 2, 5, '2026-05-31 03:39:48', '2026-05-31 03:42:56', NULL);
+INSERT INTO `admissions` (`id`, `patient_id`, `doctor_id`, `bed_id`, `admission_date`, `discharge_date`, `diagnosis`, `status`, `discharge_ordered`, `discharge_ordered_at`, `notes`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 4, 1, 1, '2026-03-13 17:00:00', '2026-03-18 10:00:00', 'Suy tim độ II (NYHA) - Cần theo dõi ECG liên tục', 'discharged', 0, NULL, 'Theo dõi nhịp tim 24h. Hạn chế muối và nước. Báo BS khi SpO2 < 92%.', NULL, NULL, '2026-03-13 17:00:00', '2026-05-02 17:12:27', NULL),
+(2, 6, 1, 4, '2026-05-06 10:00:00', '2026-05-27 16:39:30', 'Cơn nhịp nhanh trên thất', 'discharged', 0, NULL, 'Theo dõi đáp ứng thuốc chống loạn nhịp', NULL, 5, '2026-05-06 10:00:00', '2026-05-27 16:39:30', NULL),
+(3, 12, 5, 8, '2026-05-08 14:00:00', '2026-06-01 07:29:35', 'Tăng huyết áp kháng trị, chuẩn bị mổ', 'discharged', 0, NULL, 'Kiểm soát HA bằng đường tĩnh mạch trước mổ', NULL, 5, '2026-05-08 14:00:00', '2026-06-01 07:29:35', NULL),
+(5, 6, 1, 2, '2026-05-29 09:43:00', '2026-06-01 09:04:20', 'Suy nhược cơ thể nghiêm trọng cần truyền dịch', 'discharged', 1, '2026-06-01 08:26:10', '', 2, 29, '2026-05-29 09:43:01', '2026-06-01 09:04:20', NULL),
+(6, 6, 1, 3, '2026-05-31 03:40:00', '2026-05-31 03:42:56', 'nhức đầu', 'discharged', 0, NULL, '', 2, 5, '2026-05-31 03:39:48', '2026-05-31 03:42:56', NULL),
+(7, 6, 1, 4, '2026-06-01 09:02:00', NULL, 'aaa', 'active', 1, '2026-06-01 09:03:13', 'aaa', 2, 2, '2026-06-01 09:01:47', '2026-06-01 09:03:13', NULL),
+(8, 6, 1, 8, '2026-06-01 09:37:00', NULL, 'aaa', 'active', 1, '2026-06-01 09:41:26', '', 2, 2, '2026-06-01 09:37:31', '2026-06-01 09:41:26', NULL);
 
 --
--- Bẫy `admissions`
+-- Triggers `admissions`
 --
+DROP TRIGGER IF EXISTS `trg_admission_after_insert`;
 DELIMITER $$
 CREATE TRIGGER `trg_admission_after_insert` AFTER INSERT ON `admissions` FOR EACH ROW BEGIN
     IF NEW.bed_id IS NOT NULL THEN
@@ -66,6 +79,7 @@ CREATE TRIGGER `trg_admission_after_insert` AFTER INSERT ON `admissions` FOR EAC
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_admission_after_update`;
 DELIMITER $$
 CREATE TRIGGER `trg_admission_after_update` AFTER UPDATE ON `admissions` FOR EACH ROW BEGIN
     IF NEW.status = 'discharged' AND OLD.status = 'active' AND NEW.bed_id IS NOT NULL THEN
@@ -74,6 +88,7 @@ CREATE TRIGGER `trg_admission_after_update` AFTER UPDATE ON `admissions` FOR EAC
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_admission_before_insert`;
 DELIMITER $$
 CREATE TRIGGER `trg_admission_before_insert` BEFORE INSERT ON `admissions` FOR EACH ROW BEGIN
     IF NEW.bed_id IS NOT NULL AND NEW.status = 'active' THEN
@@ -88,11 +103,53 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `appointments`
+-- Table structure for table `api_refresh_tokens`
 --
 
-CREATE TABLE `appointments` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `api_refresh_tokens`;
+CREATE TABLE IF NOT EXISTS `api_refresh_tokens` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `refresh_token_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `device_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `expires_at` timestamp NOT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `replaced_by_token_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `refresh_token_hash` (`refresh_token_hash`),
+  KEY `idx_art_user_id` (`user_id`),
+  KEY `idx_art_hash` (`refresh_token_hash`),
+  KEY `idx_art_expires_at` (`expires_at`),
+  KEY `idx_art_revoked_at` (`revoked_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `api_refresh_tokens`
+--
+
+INSERT INTO `api_refresh_tokens` (`id`, `user_id`, `refresh_token_hash`, `device_name`, `user_agent`, `ip_address`, `expires_at`, `revoked_at`, `last_used_at`, `created_at`, `updated_at`, `replaced_by_token_id`) VALUES
+(1, 33, 'fd3c131dfd6f114f638b8c26ec4f094f74e607eaaa7c1e896d1e59222c5c26f0', 'Unknown Device', '', '::1', '2026-08-03 05:22:49', NULL, NULL, '2026-07-04 12:22:49', '2026-07-04 12:22:49', NULL),
+(2, 33, '668f9a469aa6fc9f87e8728252451390f217633c240613c6bfdcc4c390c5946f', 'Test PHP Client', '', '::1', '2026-08-03 05:22:49', NULL, NULL, '2026-07-04 12:22:49', '2026-07-04 12:22:49', NULL),
+(3, 34, '1310b05001ff7bdc90822fc02eb4f09868712b1f6421559a4aa6783fc00e3f4a', 'Unknown Device', '', '::1', '2026-08-03 05:23:16', '2026-07-04 12:23:16', NULL, '2026-07-04 12:23:16', '2026-07-04 12:23:16', NULL),
+(4, 34, 'a493b12137007c65c3a47258d023df34dfc4ad0e982ce2ca6e029196486ec747', 'Test PHP Client', '', '::1', '2026-08-03 05:23:16', '2026-07-04 05:23:16', '2026-07-04 05:23:16', '2026-07-04 12:23:16', '2026-07-04 12:23:16', NULL),
+(5, 34, 'a0b630504c0b197b01f24616cf649c95ceaf3bd02d26e4709410e0bc5095c162', 'Test PHP Client', '', '::1', '2026-08-03 05:23:16', '2026-07-04 12:23:16', NULL, '2026-07-04 12:23:16', '2026-07-04 12:23:16', 4),
+(20, 49, '962326dda1b2ad5b01e49ebf4769e9997601f4c5d4ca3a56541ed412249184a6', 'Unknown Device', '', '::1', '2026-08-03 06:33:27', NULL, NULL, '2026-07-04 13:33:27', '2026-07-04 13:33:27', NULL),
+(21, 50, 'be316edb426fa5270a2c4d2fe65dad220f88426bc78ac6cc5a112e7b1a883ce9', 'Unknown Device', '', '::1', '2026-08-03 06:33:27', NULL, NULL, '2026-07-04 13:33:27', '2026-07-04 13:33:27', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `appointments`
+--
+
+DROP TABLE IF EXISTS `appointments`;
+CREATE TABLE IF NOT EXISTS `appointments` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int DEFAULT NULL,
   `doctor_id` int DEFAULT NULL,
   `appointment_date` datetime DEFAULT NULL,
@@ -102,11 +159,22 @@ CREATE TABLE `appointments` (
   `updated_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_doc_appt` (`doctor_id`,`appointment_date`),
+  KEY `patient_id` (`patient_id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `appointment_date` (`appointment_date`),
+  KEY `status` (`status`),
+  KEY `doctor_status` (`doctor_id`,`status`),
+  KEY `fk_appt_created_by` (`created_by`),
+  KEY `fk_appt_updated_by` (`updated_by`),
+  KEY `idx_apt_doc_date_status` (`doctor_id`,`appointment_date`,`status`),
+  KEY `idx_apt_pat_date_status` (`patient_id`,`appointment_date`,`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `appointments`
+-- Dumping data for table `appointments`
 --
 
 INSERT INTO `appointments` (`id`, `patient_id`, `doctor_id`, `appointment_date`, `reason`, `status`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
@@ -129,11 +197,12 @@ INSERT INTO `appointments` (`id`, `patient_id`, `doctor_id`, `appointment_date`,
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `audit_logs`
+-- Table structure for table `audit_logs`
 --
 
-CREATE TABLE `audit_logs` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `audit_logs`;
+CREATE TABLE IF NOT EXISTS `audit_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,
   `action` varchar(50) NOT NULL,
   `log_type` varchar(50) DEFAULT 'data_change',
@@ -142,11 +211,14 @@ CREATE TABLE `audit_logs` (
   `old_values` json DEFAULT NULL,
   `new_values` json DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `table_name` (`table_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=415 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `audit_logs`
+-- Dumping data for table `audit_logs`
 --
 
 INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `log_type`, `table_name`, `record_id`, `old_values`, `new_values`, `ip_address`, `created_at`) VALUES
@@ -457,41 +529,152 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `log_type`, `table_name`, `
 (305, 5, 'UPDATE', 'data_change', 'admissions', 6, '{\"status\": \"pending\"}', '{\"bed_id\": \"3\", \"status\": \"active\"}', '172.18.0.1', '2026-05-31 03:40:26'),
 (306, 5, 'UPDATE', 'data_change', 'admissions', 6, '{\"status\": \"active\"}', '{\"status\": \"discharged\"}', '172.18.0.1', '2026-05-31 03:42:56'),
 (307, 12, 'LOGIN', 'auth', 'users', 12, NULL, '{\"email\": \"letan@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:45:20'),
-(308, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:52:40');
+(308, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-05-31 03:52:40'),
+(309, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-06-01 07:27:21'),
+(310, 5, 'UPDATE', 'data_change', 'admissions', 3, '{\"status\": \"active\"}', '{\"status\": \"discharged\"}', '172.18.0.1', '2026-06-01 07:29:35'),
+(311, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-06-01 07:37:46'),
+(312, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-06-01 07:38:56'),
+(313, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-06-01 08:24:32'),
+(314, 2, 'UPDATE', 'data_change', 'admissions', 5, '{\"discharge_ordered\": 0}', '{\"discharge_ordered\": 1}', '172.18.0.1', '2026-06-01 08:26:10'),
+(315, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-06-01 08:26:34'),
+(316, 29, 'INSERT', 'data_change', 'invoices', 14, NULL, '{\"total\": \"1003500\", \"patient_id\": \"6\"}', '172.18.0.1', '2026-06-01 08:29:26'),
+(317, 29, 'INSERT', 'data_change', 'invoices', 14, NULL, '{\"patient_id\": \"6\", \"final_amount\": 1003500}', '172.18.0.1', '2026-06-01 08:29:26'),
+(318, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-06-01 08:38:01'),
+(319, 2, 'INSERT', 'data_change', 'admissions', 7, NULL, '{\"bed_id\": null, \"patient_id\": \"6\"}', '172.18.0.1', '2026-06-01 09:01:47'),
+(320, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-06-01 09:02:30'),
+(321, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-06-01 09:02:30'),
+(322, 5, 'UPDATE', 'data_change', 'admissions', 7, '{\"status\": \"pending\"}', '{\"bed_id\": \"4\", \"status\": \"active\"}', '172.18.0.1', '2026-06-01 09:02:42'),
+(323, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-06-01 09:02:58'),
+(324, 2, 'UPDATE', 'data_change', 'admissions', 7, '{\"discharge_ordered\": 0}', '{\"discharge_ordered\": 1}', '172.18.0.1', '2026-06-01 09:03:13'),
+(325, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-06-01 09:03:35'),
+(326, 29, 'INSERT', 'data_change', 'invoices', 15, NULL, '{\"total\": \"1003500\", \"patient_id\": \"6\"}', '172.18.0.1', '2026-06-01 09:04:15'),
+(327, 29, 'INSERT', 'data_change', 'invoices', 15, NULL, '{\"patient_id\": \"6\", \"final_amount\": 1003500}', '172.18.0.1', '2026-06-01 09:04:15'),
+(328, 29, 'UPDATE', 'data_change', 'prescriptions', 19, '{\"status\": \"draft\"}', '{\"status\": \"paid\"}', '172.18.0.1', '2026-06-01 09:04:20'),
+(329, 29, 'UPDATE', 'data_change', 'admissions', 5, '{\"status\": \"active\"}', '{\"status\": \"discharged\"}', '172.18.0.1', '2026-06-01 09:04:20'),
+(330, 29, 'UPDATE', 'data_change', 'invoices', 15, '{\"status\": \"pending\"}', '{\"method\": \"cash\", \"status\": \"paid\"}', '172.18.0.1', '2026-06-01 09:04:20'),
+(331, 29, 'UPDATE', 'data_change', 'invoices', 15, NULL, '{\"method\": \"cash\", \"status\": \"paid\"}', '172.18.0.1', '2026-06-01 09:04:20'),
+(332, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-06-01 09:37:03'),
+(333, 2, 'INSERT', 'data_change', 'admissions', 8, NULL, '{\"bed_id\": null, \"patient_id\": \"6\"}', '172.18.0.1', '2026-06-01 09:37:31'),
+(334, 5, 'LOGIN', 'auth', 'users', 5, NULL, '{\"email\": \"nurse1@benhvien.com\"}', '172.18.0.1', '2026-06-01 09:37:41'),
+(335, 5, 'UPDATE', 'data_change', 'admissions', 8, '{\"status\": \"pending\"}', '{\"bed_id\": \"8\", \"status\": \"active\"}', '172.18.0.1', '2026-06-01 09:37:56'),
+(336, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-06-01 09:41:06'),
+(337, 2, 'UPDATE', 'data_change', 'admissions', 8, '{\"discharge_ordered\": 0}', '{\"discharge_ordered\": 1}', '172.18.0.1', '2026-06-01 09:41:26'),
+(338, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-06-01 10:00:10'),
+(339, 29, 'INSERT', 'data_change', 'invoices', 16, NULL, '{\"total\": \"142500\", \"patient_id\": \"1\"}', '172.18.0.1', '2026-06-01 11:15:27'),
+(340, 29, 'INSERT', 'data_change', 'invoices', 16, NULL, '{\"patient_id\": \"1\", \"final_amount\": 142500}', '172.18.0.1', '2026-06-01 11:15:27'),
+(341, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:16:41'),
+(342, 7, 'LOGIN', 'auth', 'users', 7, NULL, '{\"email\": \"benhnhan1@gmail.com\"}', '172.18.0.1', '2026-06-01 11:18:22'),
+(343, 12, 'LOGIN', 'auth', 'users', 12, NULL, '{\"email\": \"letan@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:18:51'),
+(344, 1, 'LOGIN', 'auth', 'users', 1, NULL, '{\"email\": \"admin@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:19:12'),
+(345, 2, 'LOGIN', 'auth', 'users', 2, NULL, '{\"email\": \"doctor1@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:20:41'),
+(346, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:45:24'),
+(347, 13, 'LOGIN', 'auth', 'users', 13, NULL, '{\"email\": \"duocsi@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:47:45'),
+(348, 1, 'LOGIN', 'auth', 'users', 1, NULL, '{\"email\": \"admin@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:48:05'),
+(349, 13, 'LOGIN', 'auth', 'users', 13, NULL, '{\"email\": \"duocsi@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:48:17'),
+(350, 29, 'LOGIN', 'auth', 'users', 29, NULL, '{\"email\": \"thungan@benhvien.com\"}', '172.18.0.1', '2026-06-01 11:51:30'),
+(351, 7, 'LOGIN', 'auth', 'users', 7, NULL, '{\"email\": \"benhnhan1@gmail.com\"}', '::1', '2026-07-03 09:25:31'),
+(352, NULL, 'INSERT', 'data_change', 'patients', 17, NULL, '{\"name\": \"Nguyen Van Test\", \"email\": \"apitest1783167769@gmail.com\"}', '::1', '2026-07-04 12:22:49'),
+(353, 33, 'INSERT', 'data_change', 'users', 33, NULL, '{\"name\": \"Nguyen Van Test\", \"email\": \"apitest1783167769@gmail.com\"}', '::1', '2026-07-04 12:22:49'),
+(354, 33, 'LOGIN', 'auth', 'users', 33, NULL, '{\"email\": \"apitest1783167769@gmail.com\"}', '::1', '2026-07-04 12:22:49'),
+(355, NULL, 'UPDATE', 'data_change', 'patients', 17, '{\"name\": \"Nguyen Van Test\", \"email\": \"apitest1783167769@gmail.com\"}', '{\"name\": \"Nguyen Van Test Updated\", \"email\": \"apitest1783167769@gmail.com\"}', '::1', '2026-07-04 12:22:49'),
+(356, 33, 'UPDATE', 'data_change', 'patients', 17, '{\"name\": \"Nguyen Van Test\", \"phone\": \"0920033949\"}', '{\"name\": \"Nguyen Van Test Updated\", \"phone\": \"0920033949\"}', '::1', '2026-07-04 12:22:49'),
+(357, NULL, 'INSERT', 'data_change', 'patients', 18, NULL, '{\"name\": \"Nguyen Van Test\", \"email\": \"apitest1783167795@gmail.com\"}', '::1', '2026-07-04 12:23:16'),
+(358, 34, 'INSERT', 'data_change', 'users', 34, NULL, '{\"name\": \"Nguyen Van Test\", \"email\": \"apitest1783167795@gmail.com\"}', '::1', '2026-07-04 12:23:16'),
+(359, 34, 'LOGIN', 'auth', 'users', 34, NULL, '{\"email\": \"apitest1783167795@gmail.com\"}', '::1', '2026-07-04 12:23:16'),
+(360, NULL, 'UPDATE', 'data_change', 'patients', 18, '{\"name\": \"Nguyen Van Test\", \"email\": \"apitest1783167795@gmail.com\"}', '{\"name\": \"Nguyen Van Test Updated\", \"email\": \"apitest1783167795@gmail.com\"}', '::1', '2026-07-04 12:23:16'),
+(361, 34, 'UPDATE', 'data_change', 'patients', 18, '{\"name\": \"Nguyen Van Test\", \"phone\": \"0960350908\"}', '{\"name\": \"Nguyen Van Test Updated\", \"phone\": \"0960350908\"}', '::1', '2026-07-04 12:23:16'),
+(362, 34, 'LOGOUT', 'auth', 'users', 34, NULL, NULL, '::1', '2026-07-04 12:23:16'),
+(363, 7, 'LOGIN', 'auth', 'users', 7, NULL, '{\"email\": \"benhnhan1@gmail.com\"}', '::1', '2026-07-04 12:25:44'),
+(364, NULL, 'INSERT', 'data_change', 'patients', 19, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170290@gmail.com\"}', '::1', '2026-07-04 13:04:50'),
+(365, 35, 'INSERT', 'data_change', 'users', 35, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170290@gmail.com\"}', '::1', '2026-07-04 13:04:50'),
+(366, NULL, 'INSERT', 'data_change', 'patients', 20, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170290@gmail.com\"}', '::1', '2026-07-04 13:04:51'),
+(367, 36, 'INSERT', 'data_change', 'users', 36, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170290@gmail.com\"}', '::1', '2026-07-04 13:04:51'),
+(368, NULL, 'INSERT', 'data_change', 'patients', 21, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170387@gmail.com\"}', '::1', '2026-07-04 13:06:27'),
+(369, 37, 'INSERT', 'data_change', 'users', 37, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170387@gmail.com\"}', '::1', '2026-07-04 13:06:27'),
+(370, NULL, 'INSERT', 'data_change', 'patients', 22, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170387@gmail.com\"}', '::1', '2026-07-04 13:06:27');
+INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `log_type`, `table_name`, `record_id`, `old_values`, `new_values`, `ip_address`, `created_at`) VALUES
+(371, 38, 'INSERT', 'data_change', 'users', 38, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170387@gmail.com\"}', '::1', '2026-07-04 13:06:27'),
+(372, 37, 'INSERT', 'data_change', 'appointments', 16, NULL, '{\"reason\": \"Đau ngực nhẹ cần khám tim mạch.\", \"doctor_id\": 1, \"patient_id\": 21, \"appointment_date\": \"2026-07-06 08:00:00\"}', '::1', '2026-07-04 13:06:28'),
+(373, 37, 'UPDATE', 'data_change', 'appointments', 16, '{\"status\": \"pending\"}', '{\"status\": \"cancelled\"}', '::1', '2026-07-04 13:06:28'),
+(374, NULL, 'INSERT', 'data_change', 'patients', 23, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170407@gmail.com\"}', '::1', '2026-07-04 13:06:48'),
+(375, 39, 'INSERT', 'data_change', 'users', 39, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170407@gmail.com\"}', '::1', '2026-07-04 13:06:48'),
+(376, NULL, 'INSERT', 'data_change', 'patients', 24, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170407@gmail.com\"}', '::1', '2026-07-04 13:06:48'),
+(377, 40, 'INSERT', 'data_change', 'users', 40, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170407@gmail.com\"}', '::1', '2026-07-04 13:06:48'),
+(378, NULL, 'INSERT', 'data_change', 'patients', 25, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170449@gmail.com\"}', '::1', '2026-07-04 13:07:29'),
+(379, 41, 'INSERT', 'data_change', 'users', 41, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783170449@gmail.com\"}', '::1', '2026-07-04 13:07:29'),
+(380, NULL, 'INSERT', 'data_change', 'patients', 26, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170449@gmail.com\"}', '::1', '2026-07-04 13:07:30'),
+(381, 42, 'INSERT', 'data_change', 'users', 42, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783170449@gmail.com\"}', '::1', '2026-07-04 13:07:30'),
+(382, 41, 'INSERT', 'data_change', 'appointments', 18, NULL, '{\"reason\": \"Đau ngực nhẹ cần khám tim mạch.\", \"doctor_id\": 1, \"patient_id\": 25, \"appointment_date\": \"2026-07-06 08:00:00\"}', '::1', '2026-07-04 13:07:30'),
+(383, 41, 'UPDATE', 'data_change', 'appointments', 18, '{\"status\": \"pending\"}', '{\"status\": \"cancelled\"}', '::1', '2026-07-04 13:07:30'),
+(384, NULL, 'INSERT', 'data_change', 'patients', 27, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783171260@gmail.com\"}', '::1', '2026-07-04 13:21:00'),
+(385, 43, 'INSERT', 'data_change', 'users', 43, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783171260@gmail.com\"}', '::1', '2026-07-04 13:21:00'),
+(386, NULL, 'INSERT', 'data_change', 'patients', 28, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783171260@gmail.com\"}', '::1', '2026-07-04 13:21:00'),
+(387, 44, 'INSERT', 'data_change', 'users', 44, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783171260@gmail.com\"}', '::1', '2026-07-04 13:21:00'),
+(388, 43, 'INSERT', 'data_change', 'appointments', 19, NULL, '{\"reason\": \"Đau ngực nhẹ cần khám tim mạch.\", \"doctor_id\": 1, \"patient_id\": 27, \"appointment_date\": \"2026-07-06 08:00:00\"}', '::1', '2026-07-04 13:21:00'),
+(389, 43, 'UPDATE', 'data_change', 'appointments', 19, '{\"status\": \"pending\"}', '{\"status\": \"cancelled\"}', '::1', '2026-07-04 13:21:01'),
+(390, NULL, 'INSERT', 'data_change', 'patients', 29, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783171886@gmail.com\"}', '::1', '2026-07-04 13:31:27'),
+(391, 45, 'INSERT', 'data_change', 'users', 45, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783171886@gmail.com\"}', '::1', '2026-07-04 13:31:27'),
+(392, NULL, 'INSERT', 'data_change', 'patients', 30, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783171886@gmail.com\"}', '::1', '2026-07-04 13:31:27'),
+(393, 46, 'INSERT', 'data_change', 'users', 46, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783171886@gmail.com\"}', '::1', '2026-07-04 13:31:27'),
+(394, 45, 'INSERT', 'data_change', 'appointments', 20, NULL, '{\"reason\": \"Đau ngực nhẹ cần khám tim mạch.\", \"doctor_id\": 1, \"patient_id\": 29, \"appointment_date\": \"2026-07-06 08:00:00\"}', '::1', '2026-07-04 13:31:27'),
+(395, 45, 'UPDATE', 'data_change', 'appointments', 20, '{\"status\": \"pending\"}', '{\"status\": \"cancelled\"}', '::1', '2026-07-04 13:31:27'),
+(396, NULL, 'INSERT', 'data_change', 'patients', 31, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783171940@gmail.com\"}', '::1', '2026-07-04 13:32:20'),
+(397, 47, 'INSERT', 'data_change', 'users', 47, NULL, '{\"name\": \"Bệnh Nhân A\", \"email\": \"patA1783171940@gmail.com\"}', '::1', '2026-07-04 13:32:20'),
+(398, NULL, 'INSERT', 'data_change', 'patients', 32, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783171940@gmail.com\"}', '::1', '2026-07-04 13:32:20'),
+(399, 48, 'INSERT', 'data_change', 'users', 48, NULL, '{\"name\": \"Bệnh Nhân B\", \"email\": \"patB1783171940@gmail.com\"}', '::1', '2026-07-04 13:32:20'),
+(400, 47, 'INSERT', 'data_change', 'appointments', 21, NULL, '{\"reason\": \"Đau ngực nhẹ cần khám tim mạch.\", \"doctor_id\": 1, \"patient_id\": 31, \"appointment_date\": \"2026-07-06 08:00:00\"}', '::1', '2026-07-04 13:32:21'),
+(401, 47, 'UPDATE', 'data_change', 'appointments', 21, '{\"status\": \"pending\"}', '{\"status\": \"cancelled\"}', '::1', '2026-07-04 13:32:21'),
+(402, NULL, 'INSERT', 'data_change', 'patients', 33, NULL, '{\"name\": \"Bệnh Nhân A 2B\", \"email\": \"patA_2b_1783172007@gmail.com\"}', '::1', '2026-07-04 13:33:27'),
+(403, 49, 'INSERT', 'data_change', 'users', 49, NULL, '{\"name\": \"Bệnh Nhân A 2B\", \"email\": \"patA_2b_1783172007@gmail.com\"}', '::1', '2026-07-04 13:33:27'),
+(404, NULL, 'INSERT', 'data_change', 'patients', 34, NULL, '{\"name\": \"Bệnh Nhân B 2B\", \"email\": \"patB_2b_1783172007@gmail.com\"}', '::1', '2026-07-04 13:33:27'),
+(405, 50, 'INSERT', 'data_change', 'users', 50, NULL, '{\"name\": \"Bệnh Nhân B 2B\", \"email\": \"patB_2b_1783172007@gmail.com\"}', '::1', '2026-07-04 13:33:27'),
+(406, 49, 'INSERT', 'data_change', 'payment_transactions', 1, NULL, '{\"amount\": 150000, \"provider\": \"vnpay\", \"invoice_id\": 17, \"transaction_ref\": \"17_1783172007\"}', '::1', '2026-07-04 13:33:27'),
+(407, 49, 'UPDATE', 'data_change', 'invoices', 17, '{\"status\": \"pending\"}', '{\"status\": \"paid\"}', '::1', '2026-07-04 13:33:27'),
+(408, NULL, 'INSERT', 'data_change', 'patients', 35, NULL, '{\"name\": \"Bệnh Nhân A 2B\", \"email\": \"patA_2b_1783172110@gmail.com\"}', '::1', '2026-07-04 13:35:11'),
+(409, 51, 'INSERT', 'data_change', 'users', 51, NULL, '{\"name\": \"Bệnh Nhân A 2B\", \"email\": \"patA_2b_1783172110@gmail.com\"}', '::1', '2026-07-04 13:35:11'),
+(410, NULL, 'INSERT', 'data_change', 'patients', 36, NULL, '{\"name\": \"Bệnh Nhân B 2B\", \"email\": \"patB_2b_1783172110@gmail.com\"}', '::1', '2026-07-04 13:35:11'),
+(411, 52, 'INSERT', 'data_change', 'users', 52, NULL, '{\"name\": \"Bệnh Nhân B 2B\", \"email\": \"patB_2b_1783172110@gmail.com\"}', '::1', '2026-07-04 13:35:11'),
+(412, 51, 'INSERT', 'data_change', 'payment_transactions', 2, NULL, '{\"amount\": 150000, \"provider\": \"vnpay\", \"invoice_id\": 18, \"transaction_ref\": \"18_1783172111\"}', '::1', '2026-07-04 13:35:11'),
+(413, 51, 'UPDATE', 'data_change', 'invoices', 18, '{\"status\": \"pending\"}', '{\"status\": \"paid\"}', '::1', '2026-07-04 13:35:11'),
+(414, 51, 'DELETE', 'data_change', 'chat_histories', 35, '{\"info\": \"Bệnh nhân tự xóa lịch sử AI chat\"}', NULL, '::1', '2026-07-04 13:35:24');
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `beds`
+-- Table structure for table `beds`
 --
 
-CREATE TABLE `beds` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `beds`;
+CREATE TABLE IF NOT EXISTS `beds` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `room_id` int DEFAULT NULL,
   `bed_number` varchar(20) DEFAULT NULL,
-  `status` enum('available','occupied','maintenance') DEFAULT 'available'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `status` enum('available','occupied','maintenance') DEFAULT 'available',
+  PRIMARY KEY (`id`),
+  KEY `room_id` (`room_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `beds`
+-- Dumping data for table `beds`
 --
 
 INSERT INTO `beds` (`id`, `room_id`, `bed_number`, `status`) VALUES
 (1, 1, 'G1', 'occupied'),
-(2, 1, 'G2', 'occupied'),
+(2, 1, 'G2', 'available'),
 (3, 2, 'G1', 'available'),
-(4, 2, 'G2', 'available'),
+(4, 2, 'G2', 'occupied'),
 (5, 3, 'G1', 'available'),
 (6, 3, 'G2', 'available'),
 (7, 4, 'G1', 'available'),
-(8, 4, 'G2', 'available'),
+(8, 4, 'G2', 'occupied'),
 (9, 5, 'G1', 'available'),
 (10, 5, 'G2', 'available'),
 (11, 5, 'G3', 'available');
 
 --
--- Bẫy `beds`
+-- Triggers `beds`
 --
+DROP TRIGGER IF EXISTS `trg_bed_after_update`;
 DELIMITER $$
 CREATE TRIGGER `trg_bed_after_update` AFTER UPDATE ON `beds` FOR EACH ROW BEGIN
     DECLARE total_beds INT;
@@ -513,17 +696,47 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `departments`
+-- Table structure for table `chat_histories`
 --
 
-CREATE TABLE `departments` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `chat_histories`;
+CREATE TABLE IF NOT EXISTS `chat_histories` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `patient_id` int NOT NULL,
+  `sender` varchar(20) NOT NULL,
+  `message` text NOT NULL,
+  `provider` varchar(50) DEFAULT NULL,
+  `model` varchar(50) DEFAULT NULL,
+  `intent` varchar(100) DEFAULT NULL,
+  `urgency_level` varchar(20) DEFAULT NULL,
+  `department_suggestion` varchar(100) DEFAULT NULL,
+  `raw_response` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_chat_user` (`user_id`),
+  KEY `idx_chat_patient` (`patient_id`),
+  KEY `idx_chat_created` (`created_at`),
+  KEY `idx_chat_deleted` (`deleted_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `departments`
+--
+
+DROP TABLE IF EXISTS `departments`;
+CREATE TABLE IF NOT EXISTS `departments` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
-  `description` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `description` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `departments`
+-- Dumping data for table `departments`
 --
 
 INSERT INTO `departments` (`id`, `name`, `description`) VALUES
@@ -537,21 +750,25 @@ INSERT INTO `departments` (`id`, `name`, `description`) VALUES
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `doctors`
+-- Table structure for table `doctors`
 --
 
-CREATE TABLE `doctors` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `doctors`;
+CREATE TABLE IF NOT EXISTS `doctors` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,
   `department_id` int DEFAULT NULL,
   `specialty` varchar(100) DEFAULT NULL,
   `experience_years` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `is_head` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `is_head` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `doctors`
+-- Dumping data for table `doctors`
 --
 
 INSERT INTO `doctors` (`id`, `user_id`, `department_id`, `specialty`, `experience_years`, `deleted_at`, `is_head`) VALUES
@@ -565,17 +782,21 @@ INSERT INTO `doctors` (`id`, `user_id`, `department_id`, `specialty`, `experienc
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `doctor_departments`
+-- Table structure for table `doctor_departments`
 --
 
-CREATE TABLE `doctor_departments` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `doctor_departments`;
+CREATE TABLE IF NOT EXISTS `doctor_departments` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `doctor_id` int NOT NULL,
-  `department_id` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `department_id` int NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_doc_dept` (`doctor_id`,`department_id`),
+  KEY `fk_dd_dept` (`department_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `doctor_departments`
+-- Dumping data for table `doctor_departments`
 --
 
 INSERT INTO `doctor_departments` (`id`, `doctor_id`, `department_id`) VALUES
@@ -589,18 +810,22 @@ INSERT INTO `doctor_departments` (`id`, `doctor_id`, `department_id`) VALUES
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `doctor_shifts`
+-- Table structure for table `doctor_shifts`
 --
 
-CREATE TABLE `doctor_shifts` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `doctor_shifts`;
+CREATE TABLE IF NOT EXISTS `doctor_shifts` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `doctor_id` int DEFAULT NULL,
   `shift_id` int DEFAULT NULL,
-  `status` enum('pending','approved','rejected','assigned') DEFAULT 'pending'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `status` enum('pending','approved','rejected','assigned') DEFAULT 'pending',
+  PRIMARY KEY (`id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `shift_id` (`shift_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `doctor_shifts`
+-- Dumping data for table `doctor_shifts`
 --
 
 INSERT INTO `doctor_shifts` (`id`, `doctor_id`, `shift_id`, `status`) VALUES
@@ -616,19 +841,21 @@ INSERT INTO `doctor_shifts` (`id`, `doctor_id`, `shift_id`, `status`) VALUES
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `equipment`
+-- Table structure for table `equipment`
 --
 
-CREATE TABLE `equipment` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `equipment`;
+CREATE TABLE IF NOT EXISTS `equipment` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `equipment_name` varchar(150) NOT NULL,
   `quantity` int DEFAULT '0',
   `status` enum('available','maintenance') DEFAULT 'available',
-  `description` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `description` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `equipment`
+-- Dumping data for table `equipment`
 --
 
 INSERT INTO `equipment` (`id`, `equipment_name`, `quantity`, `status`, `description`) VALUES
@@ -640,21 +867,25 @@ INSERT INTO `equipment` (`id`, `equipment_name`, `quantity`, `status`, `descript
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `examination_rooms`
+-- Table structure for table `examination_rooms`
 --
 
-CREATE TABLE `examination_rooms` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `examination_rooms`;
+CREATE TABLE IF NOT EXISTS `examination_rooms` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `room_name` varchar(50) NOT NULL,
   `department_id` int DEFAULT NULL,
   `doctor_id` int DEFAULT NULL,
   `capacity` int DEFAULT '1',
   `status` enum('active','inactive','maintenance') DEFAULT 'active',
-  `notes` varchar(200) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `notes` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `department_id` (`department_id`),
+  KEY `doctor_id` (`doctor_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `examination_rooms`
+-- Dumping data for table `examination_rooms`
 --
 
 INSERT INTO `examination_rooms` (`id`, `room_name`, `department_id`, `doctor_id`, `capacity`, `status`, `notes`) VALUES
@@ -667,18 +898,20 @@ INSERT INTO `examination_rooms` (`id`, `room_name`, `department_id`, `doctor_id`
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `icd10_codes`
+-- Table structure for table `icd10_codes`
 --
 
-CREATE TABLE `icd10_codes` (
+DROP TABLE IF EXISTS `icd10_codes`;
+CREATE TABLE IF NOT EXISTS `icd10_codes` (
   `code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `name` varchar(255) NOT NULL,
   `name_en` varchar(255) DEFAULT NULL,
-  `category` varchar(100) DEFAULT NULL
+  `category` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `icd10_codes`
+-- Dumping data for table `icd10_codes`
 --
 
 INSERT INTO `icd10_codes` (`code`, `name`, `name_en`, `category`) VALUES
@@ -721,11 +954,12 @@ INSERT INTO `icd10_codes` (`code`, `name`, `name_en`, `category`) VALUES
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `invoices`
+-- Table structure for table `invoices`
 --
 
-CREATE TABLE `invoices` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `invoices`;
+CREATE TABLE IF NOT EXISTS `invoices` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int DEFAULT NULL,
   `appointment_id` int DEFAULT NULL,
   `admission_id` int DEFAULT NULL,
@@ -747,11 +981,21 @@ CREATE TABLE `invoices` (
   `updated_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `patient_id` (`patient_id`),
+  KEY `appointment_id` (`appointment_id`),
+  KEY `status` (`status`),
+  KEY `created_at` (`created_at`),
+  KEY `fk_inv_admission` (`admission_id`),
+  KEY `fk_inv_creator` (`created_by`),
+  KEY `fk_inv_updated_by` (`updated_by`),
+  KEY `fk_invoices_prescriptions` (`prescription_id`),
+  KEY `idx_inv_pat` (`patient_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `invoices`
+-- Dumping data for table `invoices`
 --
 
 INSERT INTO `invoices` (`id`, `patient_id`, `appointment_id`, `admission_id`, `prescription_id`, `insurance_number`, `insurance_rate`, `insurance_coverage`, `patient_payment`, `total_amount`, `discount`, `final_amount`, `payment_method`, `vnpay_txn_ref`, `vnpay_transaction_no`, `vnpay_response_code`, `status`, `notes`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
@@ -766,16 +1010,21 @@ INSERT INTO `invoices` (`id`, `patient_id`, `appointment_id`, `admission_id`, `p
 (9, 1, NULL, NULL, 10, NULL, 0.00, 0.00, 0.00, 37500.00, 0.00, 37500.00, 'cash', NULL, NULL, NULL, 'paid', 'Test invoice for prescription', 1, 1, '2026-05-25 09:29:12', '2026-05-25 09:29:12', NULL),
 (10, 6, NULL, NULL, 12, NULL, 0.00, 0.00, 0.00, 3500.00, 0.00, 3500.00, 'cash', NULL, NULL, NULL, 'paid', '', 12, 12, '2026-05-25 10:13:18', '2026-05-25 10:29:46', NULL),
 (12, 6, NULL, NULL, 16, NULL, 0.00, 0.00, 5000.00, 5000.00, 0.00, 5000.00, 'vnpay', '12_1780043493', NULL, NULL, 'paid', '', 29, 29, '2026-05-29 08:31:21', '2026-05-29 08:31:44', NULL),
-(13, 6, NULL, NULL, 17, NULL, 0.00, 0.00, 4500.00, 4500.00, 0.00, 4500.00, 'momo', '13_1780044227', NULL, NULL, 'paid', '', 29, 29, '2026-05-29 08:43:32', '2026-05-29 08:44:05', NULL);
+(13, 6, NULL, NULL, 17, NULL, 0.00, 0.00, 4500.00, 4500.00, 0.00, 4500.00, 'momo', '13_1780044227', NULL, NULL, 'paid', '', 29, 29, '2026-05-29 08:43:32', '2026-05-29 08:44:05', NULL),
+(14, 6, NULL, 5, 19, NULL, 0.00, 0.00, 1003500.00, 1003500.00, 0.00, 1003500.00, 'cash', NULL, NULL, NULL, 'pending', '', 29, 29, '2026-06-01 08:29:26', '2026-06-01 08:29:26', NULL),
+(15, 6, NULL, 5, 19, NULL, 0.00, 0.00, 1003500.00, 1003500.00, 0.00, 1003500.00, 'cash', NULL, NULL, NULL, 'paid', '', 29, 29, '2026-06-01 09:04:15', '2026-06-01 09:04:20', NULL),
+(16, 1, NULL, NULL, 1, 'GD4797931300001', 80.00, 114000.00, 28500.00, 142500.00, 0.00, 142500.00, 'cash', NULL, NULL, NULL, 'pending', '', 29, 29, '2026-06-01 11:15:27', '2026-06-01 11:15:27', NULL),
+(17, 33, NULL, NULL, NULL, NULL, 0.00, 0.00, 0.00, 150000.00, 0.00, 150000.00, 'vnpay', '17_1783172007', '12345678', '00', 'paid', NULL, NULL, NULL, '2026-07-04 13:33:27', '2026-07-04 13:33:27', NULL);
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `invoice_items`
+-- Table structure for table `invoice_items`
 --
 
-CREATE TABLE `invoice_items` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `invoice_items`;
+CREATE TABLE IF NOT EXISTS `invoice_items` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `invoice_id` int DEFAULT NULL,
   `service_id` int DEFAULT NULL,
   `medicine_id` int DEFAULT NULL,
@@ -783,11 +1032,16 @@ CREATE TABLE `invoice_items` (
   `description` varchar(255) DEFAULT NULL,
   `quantity` int DEFAULT '1',
   `unit_price` decimal(12,2) DEFAULT NULL,
-  `amount` decimal(12,2) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `amount` decimal(12,2) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `invoice_id` (`invoice_id`),
+  KEY `service_id` (`service_id`),
+  KEY `medicine_id` (`medicine_id`),
+  KEY `room_id` (`room_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `invoice_items`
+-- Dumping data for table `invoice_items`
 --
 
 INSERT INTO `invoice_items` (`id`, `invoice_id`, `service_id`, `medicine_id`, `room_id`, `description`, `quantity`, `unit_price`, `amount`) VALUES
@@ -806,16 +1060,23 @@ INSERT INTO `invoice_items` (`id`, `invoice_id`, `service_id`, `medicine_id`, `r
 (13, 5, NULL, NULL, NULL, 'Phí sinh hoạt khác', 1, 425000.00, 425000.00),
 (14, 10, NULL, 8, NULL, 'Omeprazole 20mg', 1, 3500.00, 3500.00),
 (16, 12, NULL, 2, NULL, 'Amoxicillin 500mg', 1, 5000.00, 5000.00),
-(17, 13, NULL, 6, NULL, 'Enalapril 5mg', 1, 4500.00, 4500.00);
+(17, 13, NULL, 6, NULL, 'Enalapril 5mg', 1, 4500.00, 4500.00),
+(18, 14, NULL, NULL, 1, 'Tiền giường G2 (Phòng P101 - 2 ngày)', 2, 500000.00, 1000000.00),
+(19, 14, NULL, 3, NULL, 'Aspirin 81mg', 1, 3500.00, 3500.00),
+(20, 15, NULL, NULL, 1, 'Tiền giường G2 (Phòng P101 - 2 ngày)', 2, 500000.00, 1000000.00),
+(21, 15, NULL, 3, NULL, 'Aspirin 81mg', 1, 3500.00, 3500.00),
+(22, 16, NULL, 1, NULL, 'Paracetamol 500mg', 15, 2500.00, 37500.00),
+(23, 16, NULL, 3, NULL, 'Aspirin 81mg', 30, 3500.00, 105000.00);
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `lab_orders`
+-- Table structure for table `lab_orders`
 --
 
-CREATE TABLE `lab_orders` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `lab_orders`;
+CREATE TABLE IF NOT EXISTS `lab_orders` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int NOT NULL,
   `doctor_id` int NOT NULL,
   `appointment_id` int DEFAULT NULL,
@@ -826,11 +1087,16 @@ CREATE TABLE `lab_orders` (
   `notes` text,
   `created_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `patient_id` (`patient_id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `appointment_id` (`appointment_id`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `lab_orders`
+-- Dumping data for table `lab_orders`
 --
 
 INSERT INTO `lab_orders` (`id`, `patient_id`, `doctor_id`, `appointment_id`, `order_type`, `test_name`, `priority`, `status`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
@@ -840,11 +1106,12 @@ INSERT INTO `lab_orders` (`id`, `patient_id`, `doctor_id`, `appointment_id`, `or
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `lab_results`
+-- Table structure for table `lab_results`
 --
 
-CREATE TABLE `lab_results` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `lab_results`;
+CREATE TABLE IF NOT EXISTS `lab_results` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `lab_order_id` int NOT NULL,
   `technician_id` int NOT NULL,
   `result_text` text,
@@ -854,11 +1121,14 @@ CREATE TABLE `lab_results` (
   `conclusion` enum('normal','abnormal','critical') DEFAULT 'normal',
   `completed_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `image_path` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `image_path` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `lab_order_id` (`lab_order_id`),
+  KEY `technician_id` (`technician_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `lab_results`
+-- Dumping data for table `lab_results`
 --
 
 INSERT INTO `lab_results` (`id`, `lab_order_id`, `technician_id`, `result_text`, `result_value`, `normal_range`, `unit`, `conclusion`, `completed_at`, `created_at`, `image_path`) VALUES
@@ -867,20 +1137,23 @@ INSERT INTO `lab_results` (`id`, `lab_order_id`, `technician_id`, `result_text`,
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `medical_devices`
+-- Table structure for table `medical_devices`
 --
 
-CREATE TABLE `medical_devices` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `medical_devices`;
+CREATE TABLE IF NOT EXISTS `medical_devices` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(150) DEFAULT NULL,
   `device_code` varchar(100) DEFAULT NULL,
   `status` enum('available','in_use','maintenance') DEFAULT 'available',
   `department_id` int DEFAULT NULL,
-  `purchase_date` date DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `purchase_date` date DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `department_id` (`department_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `medical_devices`
+-- Dumping data for table `medical_devices`
 --
 
 INSERT INTO `medical_devices` (`id`, `name`, `device_code`, `status`, `department_id`, `purchase_date`) VALUES
@@ -893,11 +1166,12 @@ INSERT INTO `medical_devices` (`id`, `name`, `device_code`, `status`, `departmen
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `medical_records`
+-- Table structure for table `medical_records`
 --
 
-CREATE TABLE `medical_records` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `medical_records`;
+CREATE TABLE IF NOT EXISTS `medical_records` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int DEFAULT NULL,
   `doctor_id` int DEFAULT NULL,
   `appointment_id` int DEFAULT NULL,
@@ -909,11 +1183,20 @@ CREATE TABLE `medical_records` (
   `updated_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `patient_id` (`patient_id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `appointment_id` (`appointment_id`),
+  KEY `created_at` (`created_at`),
+  KEY `fk_mr_created_by` (`created_by`),
+  KEY `fk_mr_updated_by` (`updated_by`),
+  KEY `fk_medical_records_icd10` (`icd10_code`),
+  KEY `idx_mr_pat` (`patient_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `medical_records`
+-- Dumping data for table `medical_records`
 --
 
 INSERT INTO `medical_records` (`id`, `patient_id`, `doctor_id`, `appointment_id`, `icd10_code`, `diagnosis`, `treatment`, `notes`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
@@ -930,8 +1213,9 @@ INSERT INTO `medical_records` (`id`, `patient_id`, `doctor_id`, `appointment_id`
 (12, 6, 1, NULL, NULL, 'Viêm phế quản cấp cơ địa dị ứng.', 'Augmentin 1g: 02 viên/ngày (chia 2 lần sáng/tối, sau ăn).', 'Uống nhiều nước ấm', 2, NULL, '2026-05-29 08:58:58', '2026-05-29 08:58:58', NULL);
 
 --
--- Bẫy `medical_records`
+-- Triggers `medical_records`
 --
+DROP TRIGGER IF EXISTS `trg_medical_records_after_update`;
 DELIMITER $$
 CREATE TRIGGER `trg_medical_records_after_update` AFTER UPDATE ON `medical_records` FOR EACH ROW BEGIN
     INSERT INTO `audit_logs` (`user_id`, `action`, `table_name`, `record_id`, `old_values`, `new_values`)
@@ -950,21 +1234,23 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `medicines`
+-- Table structure for table `medicines`
 --
 
-CREATE TABLE `medicines` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `medicines`;
+CREATE TABLE IF NOT EXISTS `medicines` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(150) NOT NULL,
   `description` text,
   `quantity` int DEFAULT '0',
   `reserved` int DEFAULT '0',
   `expiry_date` date DEFAULT NULL,
-  `price` decimal(10,2) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `price` decimal(10,2) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `medicines`
+-- Dumping data for table `medicines`
 --
 
 INSERT INTO `medicines` (`id`, `name`, `description`, `quantity`, `reserved`, `expiry_date`, `price`) VALUES
@@ -980,46 +1266,64 @@ INSERT INTO `medicines` (`id`, `name`, `description`, `quantity`, `reserved`, `e
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `notifications`
+-- Table structure for table `notifications`
 --
 
-CREATE TABLE `notifications` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `notifications`;
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,
   `title` varchar(200) DEFAULT NULL,
   `message` text,
   `status` enum('unread','read') DEFAULT 'unread',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `type` varchar(50) DEFAULT 'general',
+  `read_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `status` (`status`),
+  KEY `idx_noti_type` (`type`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `notifications`
+-- Dumping data for table `notifications`
 --
 
-INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `status`, `created_at`) VALUES
-(1, 7, 'Nhắc lịch khám', 'Bạn có lịch khám vào ngày 10/03/2026 lúc 09:00 với BS. Nguyễn Văn An (Tim mạch).', 'unread', '2026-03-09 08:00:00'),
-(2, 8, 'Xác nhận lịch khám', 'Lịch khám của bạn ngày 11/03/2026 với BS. Trần Thị Bình (Thần kinh) đã được đặt thành công.', 'unread', '2026-03-05 08:36:41'),
-(3, 9, 'Kết quả xét nghiệm', 'Kết quả xét nghiệm máu ngày 12/03/2026 của bạn đã có. Vui lòng liên hệ lễ tân để nhận kết quả.', 'read', '2026-03-13 09:00:00'),
-(4, 2, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-29 10:36:43'),
-(5, 14, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 1/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-29 10:52:19'),
-(6, 5, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Điều dưỡng trưởng chỉ định trực.', 'unread', '2026-05-29 11:11:30'),
-(7, 3, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-30 20:20:03');
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `status`, `created_at`, `type`, `read_at`) VALUES
+(1, 7, 'Nhắc lịch khám', 'Bạn có lịch khám vào ngày 10/03/2026 lúc 09:00 với BS. Nguyễn Văn An (Tim mạch).', 'unread', '2026-03-09 08:00:00', 'general', NULL),
+(2, 8, 'Xác nhận lịch khám', 'Lịch khám của bạn ngày 11/03/2026 với BS. Trần Thị Bình (Thần kinh) đã được đặt thành công.', 'unread', '2026-03-05 08:36:41', 'general', NULL),
+(3, 9, 'Kết quả xét nghiệm', 'Kết quả xét nghiệm máu ngày 12/03/2026 của bạn đã có. Vui lòng liên hệ lễ tân để nhận kết quả.', 'read', '2026-03-13 09:00:00', 'general', NULL),
+(4, 2, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-29 10:36:43', 'general', NULL),
+(5, 14, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 1/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-29 10:52:19', 'general', NULL),
+(6, 5, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Điều dưỡng trưởng chỉ định trực.', 'unread', '2026-05-29 11:11:30', 'general', NULL),
+(7, 3, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-05-30 20:20:03', 'general', NULL),
+(8, 5, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Điều dưỡng trưởng chỉ định trực.', 'unread', '2026-06-01 07:27:22', 'general', NULL),
+(9, 2, '🌙 Nhắc nhở ca trực đêm', 'Lưu ý: Bạn mới chỉ đăng ký 0/2 ca trực đêm tối thiểu cho tuần này. Vui lòng vào phân hệ ca trực để đăng ký thêm để tránh bị Trưởng khoa chỉ định trực.', 'unread', '2026-06-01 08:24:32', 'general', NULL),
+(10, 17, 'Hóa đơn mới chờ thanh toán', 'Bạn có hóa đơn mới #14 trị giá 1.003.500 VNĐ cần thanh toán.', 'unread', '2026-06-01 08:29:26', 'general', NULL),
+(11, 17, 'Hóa đơn mới chờ thanh toán', 'Bạn có hóa đơn mới #15 trị giá 1.003.500 VNĐ cần thanh toán.', 'unread', '2026-06-01 09:04:15', 'general', NULL),
+(12, 17, 'Thanh toán thành công', 'Hóa đơn #15 đã được thanh toán thành công qua hình thức CASH.', 'unread', '2026-06-01 09:04:20', 'general', NULL),
+(13, 7, 'Hóa đơn mới chờ thanh toán', 'Bạn có hóa đơn mới #16 trị giá 28.500 VNĐ cần thanh toán.', 'unread', '2026-06-01 11:15:27', 'general', NULL),
+(18, 49, 'Thanh toán thành công', 'Hóa đơn mã INV-000017 trị giá 150,000 VND đã được thanh toán thành công qua cổng VNPay.', 'unread', '2026-07-04 13:33:27', 'payment', NULL);
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `nurses`
+-- Table structure for table `nurses`
 --
 
-CREATE TABLE `nurses` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `nurses`;
+CREATE TABLE IF NOT EXISTS `nurses` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,
   `department_id` int DEFAULT NULL,
-  `is_head` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `is_head` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `nurses`
+-- Dumping data for table `nurses`
 --
 
 INSERT INTO `nurses` (`id`, `user_id`, `department_id`, `is_head`) VALUES
@@ -1030,24 +1334,29 @@ INSERT INTO `nurses` (`id`, `user_id`, `department_id`, `is_head`) VALUES
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `nurse_shifts`
+-- Table structure for table `nurse_shifts`
 --
 
-CREATE TABLE `nurse_shifts` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `nurse_shifts`;
+CREATE TABLE IF NOT EXISTS `nurse_shifts` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `nurse_id` int NOT NULL,
   `shift_id` int NOT NULL,
-  `status` enum('pending','approved','rejected','assigned') DEFAULT 'pending'
+  `status` enum('pending','approved','rejected','assigned') DEFAULT 'pending',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_nurse_shift` (`nurse_id`,`shift_id`),
+  KEY `fk_ns_shift` (`shift_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `nursing_records`
+-- Table structure for table `nursing_records`
 --
 
-CREATE TABLE `nursing_records` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `nursing_records`;
+CREATE TABLE IF NOT EXISTS `nursing_records` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `admission_id` int NOT NULL,
   `nurse_id` int NOT NULL,
   `record_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1059,26 +1368,34 @@ CREATE TABLE `nursing_records` (
   `spo2` int DEFAULT NULL,
   `care_notes` text,
   `medication_given` text,
-  `diet_notes` varchar(200) DEFAULT NULL
+  `diet_notes` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `admission_id` (`admission_id`),
+  KEY `nurse_id` (`nurse_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `online_meetings`
+-- Table structure for table `online_meetings`
 --
 
-CREATE TABLE `online_meetings` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `online_meetings`;
+CREATE TABLE IF NOT EXISTS `online_meetings` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `appointment_id` int DEFAULT NULL,
   `meeting_id` varchar(100) DEFAULT NULL,
   `meeting_link` varchar(255) DEFAULT NULL,
   `start_time` datetime DEFAULT NULL,
-  `status` enum('scheduled','completed','cancelled') DEFAULT 'scheduled'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `status` enum('scheduled','completed','cancelled') DEFAULT 'scheduled',
+  PRIMARY KEY (`id`),
+  KEY `appointment_id` (`appointment_id`),
+  KEY `meeting_id` (`meeting_id`),
+  KEY `start_time` (`start_time`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `online_meetings`
+-- Dumping data for table `online_meetings`
 --
 
 INSERT INTO `online_meetings` (`id`, `appointment_id`, `meeting_id`, `meeting_link`, `start_time`, `status`) VALUES
@@ -1093,11 +1410,12 @@ INSERT INTO `online_meetings` (`id`, `appointment_id`, `meeting_id`, `meeting_li
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `patients`
+-- Table structure for table `patients`
 --
 
-CREATE TABLE `patients` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `patients`;
+CREATE TABLE IF NOT EXISTS `patients` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,
   `date_of_birth` date DEFAULT NULL,
   `gender` enum('male','female','other') DEFAULT NULL,
@@ -1106,11 +1424,14 @@ CREATE TABLE `patients` (
   `medical_history` text,
   `emergency_contact` varchar(100) DEFAULT NULL,
   `insurance_number` varchar(50) DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `date_of_birth` (`date_of_birth`)
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `patients`
+-- Dumping data for table `patients`
 --
 
 INSERT INTO `patients` (`id`, `user_id`, `date_of_birth`, `gender`, `address`, `blood_type`, `medical_history`, `emergency_contact`, `insurance_number`, `deleted_at`) VALUES
@@ -1129,25 +1450,35 @@ INSERT INTO `patients` (`id`, `user_id`, `date_of_birth`, `gender`, `address`, `
 (13, 24, '1970-04-19', 'female', '9 Lê Duẩn, Q.1, TP.HCM', 'B+', 'Thoái hóa khớp gối 2 bên.', NULL, NULL, NULL),
 (14, 26, '2005-07-14', 'male', 'TP Hồ Chí Minh, Việt Nam', 'A+', 'Viêm Gan B', NULL, NULL, NULL),
 (15, 31, '2004-07-28', 'male', 'TP Hồ Chí Minh, Việt Nam', 'B-', 'Lao phổi', NULL, NULL, NULL),
-(16, 32, '2005-06-03', 'female', 'TP Hồ Chí Minh, Việt Nam', 'A+', 'ho lao', NULL, NULL, NULL);
+(16, 32, '2005-06-03', 'female', 'TP Hồ Chí Minh, Việt Nam', 'A+', 'ho lao', NULL, NULL, NULL),
+(17, 33, '1995-12-25', 'male', '123 Test Street, Hanoi', 'AB+', NULL, NULL, NULL, NULL),
+(18, 34, '1995-12-25', 'male', '123 Test Street, Hanoi', 'AB+', NULL, NULL, NULL, NULL),
+(33, 49, NULL, 'other', NULL, NULL, NULL, NULL, NULL, NULL),
+(34, 50, NULL, 'other', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `patient_services`
+-- Table structure for table `patient_services`
 --
 
-CREATE TABLE `patient_services` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `patient_services`;
+CREATE TABLE IF NOT EXISTS `patient_services` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int DEFAULT NULL,
   `service_id` int DEFAULT NULL,
   `doctor_id` int DEFAULT NULL,
   `service_date` date DEFAULT NULL,
-  `result` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `result` text,
+  PRIMARY KEY (`id`),
+  KEY `patient_id` (`patient_id`),
+  KEY `service_id` (`service_id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `service_date` (`service_date`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `patient_services`
+-- Dumping data for table `patient_services`
 --
 
 INSERT INTO `patient_services` (`id`, `patient_id`, `service_id`, `doctor_id`, `service_date`, `result`) VALUES
@@ -1158,22 +1489,63 @@ INSERT INTO `patient_services` (`id`, `patient_id`, `service_id`, `doctor_id`, `
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `prescriptions`
+-- Table structure for table `payment_transactions`
 --
 
-CREATE TABLE `prescriptions` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `payment_transactions`;
+CREATE TABLE IF NOT EXISTS `payment_transactions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `invoice_id` int NOT NULL,
+  `patient_id` int NOT NULL,
+  `provider` varchar(50) NOT NULL,
+  `transaction_ref` varchar(100) NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
+  `request_payload` text,
+  `response_payload` text,
+  `paid_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_provider_ref` (`provider`,`transaction_ref`),
+  KEY `idx_pay_invoice` (`invoice_id`),
+  KEY `idx_pay_patient` (`patient_id`),
+  KEY `idx_pay_status` (`status`),
+  KEY `idx_pay_created` (`created_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `payment_transactions`
+--
+
+INSERT INTO `payment_transactions` (`id`, `invoice_id`, `patient_id`, `provider`, `transaction_ref`, `amount`, `status`, `request_payload`, `response_payload`, `paid_at`, `created_at`, `updated_at`) VALUES
+(1, 17, 33, 'vnpay', '17_1783172007', 150000.00, 'success', '{\"return_url\":\"http:\\/\\/localhost\\/NovaCare\\/api\\/v1\\/payments\\/vnpay\\/return\",\"ip_address\":\"::1\"}', '{\"vnp_TxnRef\":\"17_1783172007\",\"vnp_Amount\":\"15000000\",\"vnp_ResponseCode\":\"00\",\"vnp_TransactionNo\":\"12345678\",\"vnp_PayDate\":\"20260704133327\",\"vnp_SecureHash\":\"78001b252797be7bb0fb9fd259b04e68db2e4c9cc8da0d8dd7d9bf23127aa79e8215672090db0c4b91b0356083031329052db5dc325a97da6c773dfddaad29e2\"}', '2026-07-04 20:33:27', '2026-07-04 13:33:27', '2026-07-04 13:33:27');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `prescriptions`
+--
+
+DROP TABLE IF EXISTS `prescriptions`;
+CREATE TABLE IF NOT EXISTS `prescriptions` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `medical_record_id` int DEFAULT NULL,
   `doctor_id` int DEFAULT NULL,
   `approved_by` int DEFAULT NULL,
   `approved_at` datetime DEFAULT NULL,
   `pharmacist_notes` text,
   `status` enum('draft','paid','approved','dispensed','cancelled') DEFAULT 'draft',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `medical_record_id` (`medical_record_id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `fk_pres_approved_by` (`approved_by`),
+  KEY `idx_pr_mr` (`medical_record_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `prescriptions`
+-- Dumping data for table `prescriptions`
 --
 
 INSERT INTO `prescriptions` (`id`, `medical_record_id`, `doctor_id`, `approved_by`, `approved_at`, `pharmacist_notes`, `status`, `created_at`) VALUES
@@ -1193,26 +1565,30 @@ INSERT INTO `prescriptions` (`id`, `medical_record_id`, `doctor_id`, `approved_b
 (16, 10, 1, 13, '2026-05-29 08:33:27', '', 'dispensed', '2026-05-29 08:00:25'),
 (17, 11, 1, 13, '2026-05-29 08:46:59', '', 'dispensed', '2026-05-29 08:42:19'),
 (18, 11, 1, NULL, NULL, NULL, 'dispensed', '2026-05-29 08:56:24'),
-(19, 12, 1, NULL, NULL, NULL, 'draft', '2026-05-29 08:59:14');
+(19, 12, 1, NULL, NULL, NULL, 'paid', '2026-05-29 08:59:14');
 
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `prescription_items`
+-- Table structure for table `prescription_items`
 --
 
-CREATE TABLE `prescription_items` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `prescription_items`;
+CREATE TABLE IF NOT EXISTS `prescription_items` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `prescription_id` int DEFAULT NULL,
   `medicine_id` int DEFAULT NULL,
   `quantity` int DEFAULT '1',
   `dosage` varchar(100) DEFAULT NULL,
   `duration` varchar(100) DEFAULT NULL,
-  `instructions` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `instructions` text,
+  PRIMARY KEY (`id`),
+  KEY `prescription_id` (`prescription_id`),
+  KEY `medicine_id` (`medicine_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `prescription_items`
+-- Dumping data for table `prescription_items`
 --
 
 INSERT INTO `prescription_items` (`id`, `prescription_id`, `medicine_id`, `quantity`, `dosage`, `duration`, `instructions`) VALUES
@@ -1239,11 +1615,12 @@ INSERT INTO `prescription_items` (`id`, `prescription_id`, `medicine_id`, `quant
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `queue_tickets`
+-- Table structure for table `queue_tickets`
 --
 
-CREATE TABLE `queue_tickets` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `queue_tickets`;
+CREATE TABLE IF NOT EXISTS `queue_tickets` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int NOT NULL,
   `ticket_number` int NOT NULL,
   `department_id` int DEFAULT NULL,
@@ -1259,11 +1636,22 @@ CREATE TABLE `queue_tickets` (
   `completed_at` datetime DEFAULT NULL,
   `insurance_verified` tinyint(1) DEFAULT '0',
   `notes` varchar(200) DEFAULT NULL,
-  `created_by` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `created_by` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ticket_date` (`ticket_number`,`queue_date`),
+  KEY `fk_qt_patient` (`patient_id`),
+  KEY `fk_qt_dept` (`department_id`),
+  KEY `fk_qt_doctor` (`doctor_id`),
+  KEY `fk_qt_exroom` (`examination_room_id`),
+  KEY `fk_qt_appt` (`appointment_id`),
+  KEY `fk_qt_creator` (`created_by`),
+  KEY `idx_queue_date_status` (`queue_date`,`status`),
+  KEY `idx_department_date` (`department_id`,`queue_date`),
+  KEY `idx_qt_pat_date` (`patient_id`,`queue_date`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `queue_tickets`
+-- Dumping data for table `queue_tickets`
 --
 
 INSERT INTO `queue_tickets` (`id`, `patient_id`, `ticket_number`, `department_id`, `doctor_id`, `examination_room_id`, `appointment_id`, `status`, `priority`, `queue_date`, `check_in_at`, `called_at`, `started_at`, `completed_at`, `insurance_verified`, `notes`, `created_by`) VALUES
@@ -1280,24 +1668,27 @@ INSERT INTO `queue_tickets` (`id`, `patient_id`, `ticket_number`, `department_id
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `rooms`
+-- Table structure for table `rooms`
 --
 
-CREATE TABLE `rooms` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `rooms`;
+CREATE TABLE IF NOT EXISTS `rooms` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `room_number` varchar(20) NOT NULL,
   `department_id` int DEFAULT NULL,
   `room_type` enum('standard','vip','icu') DEFAULT 'standard',
   `price_per_day` decimal(12,2) DEFAULT '0.00',
-  `status` enum('available','full','maintenance') DEFAULT 'available'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `status` enum('available','full','maintenance') DEFAULT 'available',
+  PRIMARY KEY (`id`),
+  KEY `department_id` (`department_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `rooms`
+-- Dumping data for table `rooms`
 --
 
 INSERT INTO `rooms` (`id`, `room_number`, `department_id`, `room_type`, `price_per_day`, `status`) VALUES
-(1, 'P101', 1, 'standard', 500000.00, 'full'),
+(1, 'P101', 1, 'standard', 500000.00, 'available'),
 (2, 'P102', 1, 'vip', 1500000.00, 'available'),
 (3, 'P201', 2, 'standard', 500000.00, 'available'),
 (4, 'P202', 4, 'icu', 3000000.00, 'available'),
@@ -1306,18 +1697,20 @@ INSERT INTO `rooms` (`id`, `room_number`, `department_id`, `room_type`, `price_p
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `services`
+-- Table structure for table `services`
 --
 
-CREATE TABLE `services` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `services`;
+CREATE TABLE IF NOT EXISTS `services` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `service_name` varchar(150) DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
-  `description` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `description` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `services`
+-- Dumping data for table `services`
 --
 
 INSERT INTO `services` (`id`, `service_name`, `price`, `description`) VALUES
@@ -1331,11 +1724,12 @@ INSERT INTO `services` (`id`, `service_name`, `price`, `description`) VALUES
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `shifts`
+-- Table structure for table `shifts`
 --
 
-CREATE TABLE `shifts` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `shifts`;
+CREATE TABLE IF NOT EXISTS `shifts` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `shift_date` date DEFAULT NULL,
   `shift_type` enum('day','night') DEFAULT NULL,
   `department_id` int DEFAULT NULL,
@@ -1344,11 +1738,14 @@ CREATE TABLE `shifts` (
   `end_time` time DEFAULT NULL,
   `required_doctors` int DEFAULT '0',
   `required_nurses` int DEFAULT '0',
-  `notes` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `shift_date` (`shift_date`),
+  KEY `department_id` (`department_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `shifts`
+-- Dumping data for table `shifts`
 --
 
 INSERT INTO `shifts` (`id`, `shift_date`, `shift_type`, `department_id`, `name`, `start_time`, `end_time`, `required_doctors`, `required_nurses`, `notes`) VALUES
@@ -1378,18 +1775,22 @@ INSERT INTO `shifts` (`id`, `shift_date`, `shift_type`, `department_id`, `name`,
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `technicians`
+-- Table structure for table `technicians`
 --
 
-CREATE TABLE `technicians` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `technicians`;
+CREATE TABLE IF NOT EXISTS `technicians` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `department_id` int DEFAULT NULL,
-  `specialty` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `specialty` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `technicians`
+-- Dumping data for table `technicians`
 --
 
 INSERT INTO `technicians` (`id`, `user_id`, `department_id`, `specialty`) VALUES
@@ -1398,11 +1799,12 @@ INSERT INTO `technicians` (`id`, `user_id`, `department_id`, `specialty`) VALUES
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `users`
+-- Table structure for table `users`
 --
 
-CREATE TABLE `users` (
-  `id` int NOT NULL,
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
@@ -1411,11 +1813,15 @@ CREATE TABLE `users` (
   `status` enum('active','locked','suspended') DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `phone` (`phone`),
+  KEY `role` (`role`)
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `users`
+-- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `phone`, `role`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
@@ -1449,502 +1855,18 @@ INSERT INTO `users` (`id`, `name`, `email`, `password`, `phone`, `role`, `status
 (29, 'Thu ngân Lê Thị Hương', 'thungan@benhvien.com', '$2y$10$ZZQDi1BIQpZ3ueCU2VKA2.EuTd20pFix1wxAaqWxggozeXSNFVk4e', '0912345678', 'cashier', 'active', '2026-05-27 15:09:11', '2026-05-27 17:13:37', NULL),
 (30, 'Phan Tấn Trung', 'phantantrung@gmail.com', '$2y$12$w7TfYBfOdTm8MYcgAFSSLeI338aXnkHh.nWiwH6v2GesrldO0NXmW', '21321321', 'doctor', 'active', '2026-05-27 16:12:40', '2026-05-27 16:12:40', NULL),
 (31, 'Nguyễn Chí Thuận', 'thuanngu@gmail.com', '$2y$12$NnvBY9Efa3dr0XR5c8uJh.94bHlantTOMKZv929pw8WJcBtqoYd3C', '0817331018', 'patient', 'active', '2026-05-28 09:13:24', '2026-05-28 09:13:24', NULL),
-(32, 'Nguyễn Chí Thuận 1', 'thuangu1@gmail.com', '$2y$12$owSSBnPVt2yTr32ZiswtFepxsLVGzNiDIyqV6aFxML2z7GG.6sWD.', '21321321', 'patient', 'active', '2026-05-28 09:24:24', '2026-05-28 09:24:24', NULL);
+(32, 'Nguyễn Chí Thuận 1', 'thuangu1@gmail.com', '$2y$12$owSSBnPVt2yTr32ZiswtFepxsLVGzNiDIyqV6aFxML2z7GG.6sWD.', '21321321', 'patient', 'active', '2026-05-28 09:24:24', '2026-05-28 09:24:24', NULL),
+(33, 'Nguyen Van Test Updated', 'apitest1783167769@gmail.com', '$2y$12$74lAYz9uN2mJXSmWzk2ao.KbBuCahhmkgAK0jc73TJKPk04evGG2C', '0920033949', 'patient', 'active', '2026-07-04 12:22:49', '2026-07-04 12:22:49', NULL),
+(34, 'Nguyen Van Test Updated', 'apitest1783167795@gmail.com', '$2y$12$0qShVVwtK9NTtLNPcBTsrua/xByhh/rdnw0oKDwmAFB1PhTfrbZ1C', '0960350908', 'patient', 'active', '2026-07-04 12:23:16', '2026-07-04 12:23:16', NULL),
+(49, 'Bệnh Nhân A 2B', 'patA_2b_1783172007@gmail.com', '$2y$12$Wky0qk2/LbyHvo3.8Mb0suJcmvELAeIj74pmKOjRrdPWHVKSfWHE2', '0911982147', 'patient', 'active', '2026-07-04 13:33:27', '2026-07-04 13:33:27', NULL),
+(50, 'Bệnh Nhân B 2B', 'patB_2b_1783172007@gmail.com', '$2y$12$z0zThQq/f0nZvwAf2AfzQ.dVwMomT1GPbmugkTBHVfxlwb0QTevcO', '0977067134', 'patient', 'active', '2026-07-04 13:33:27', '2026-07-04 13:33:27', NULL);
 
 --
--- Chỉ mục cho các bảng đã đổ
+-- Constraints for dumped tables
 --
 
 --
--- Chỉ mục cho bảng `admissions`
---
-ALTER TABLE `admissions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `patient_id` (`patient_id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `bed_id` (`bed_id`),
-  ADD KEY `status` (`status`),
-  ADD KEY `fk_adm_created_by` (`created_by`),
-  ADD KEY `fk_adm_updated_by` (`updated_by`);
-
---
--- Chỉ mục cho bảng `appointments`
---
-ALTER TABLE `appointments`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_doc_appt` (`doctor_id`,`appointment_date`),
-  ADD KEY `patient_id` (`patient_id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `appointment_date` (`appointment_date`),
-  ADD KEY `status` (`status`),
-  ADD KEY `doctor_status` (`doctor_id`,`status`),
-  ADD KEY `fk_appt_created_by` (`created_by`),
-  ADD KEY `fk_appt_updated_by` (`updated_by`);
-
---
--- Chỉ mục cho bảng `audit_logs`
---
-ALTER TABLE `audit_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `table_name` (`table_name`);
-
---
--- Chỉ mục cho bảng `beds`
---
-ALTER TABLE `beds`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `room_id` (`room_id`);
-
---
--- Chỉ mục cho bảng `departments`
---
-ALTER TABLE `departments`
-  ADD PRIMARY KEY (`id`);
-
---
--- Chỉ mục cho bảng `doctors`
---
-ALTER TABLE `doctors`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `department_id` (`department_id`);
-
---
--- Chỉ mục cho bảng `doctor_departments`
---
-ALTER TABLE `doctor_departments`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_doc_dept` (`doctor_id`,`department_id`),
-  ADD KEY `fk_dd_dept` (`department_id`);
-
---
--- Chỉ mục cho bảng `doctor_shifts`
---
-ALTER TABLE `doctor_shifts`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `shift_id` (`shift_id`);
-
---
--- Chỉ mục cho bảng `equipment`
---
-ALTER TABLE `equipment`
-  ADD PRIMARY KEY (`id`);
-
---
--- Chỉ mục cho bảng `examination_rooms`
---
-ALTER TABLE `examination_rooms`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `department_id` (`department_id`),
-  ADD KEY `doctor_id` (`doctor_id`);
-
---
--- Chỉ mục cho bảng `icd10_codes`
---
-ALTER TABLE `icd10_codes`
-  ADD PRIMARY KEY (`code`);
-
---
--- Chỉ mục cho bảng `invoices`
---
-ALTER TABLE `invoices`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `patient_id` (`patient_id`),
-  ADD KEY `appointment_id` (`appointment_id`),
-  ADD KEY `status` (`status`),
-  ADD KEY `created_at` (`created_at`),
-  ADD KEY `fk_inv_admission` (`admission_id`),
-  ADD KEY `fk_inv_creator` (`created_by`),
-  ADD KEY `fk_inv_updated_by` (`updated_by`),
-  ADD KEY `fk_invoices_prescriptions` (`prescription_id`);
-
---
--- Chỉ mục cho bảng `invoice_items`
---
-ALTER TABLE `invoice_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `invoice_id` (`invoice_id`),
-  ADD KEY `service_id` (`service_id`),
-  ADD KEY `medicine_id` (`medicine_id`),
-  ADD KEY `room_id` (`room_id`);
-
---
--- Chỉ mục cho bảng `lab_orders`
---
-ALTER TABLE `lab_orders`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `patient_id` (`patient_id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `appointment_id` (`appointment_id`),
-  ADD KEY `status` (`status`);
-
---
--- Chỉ mục cho bảng `lab_results`
---
-ALTER TABLE `lab_results`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `lab_order_id` (`lab_order_id`),
-  ADD KEY `technician_id` (`technician_id`);
-
---
--- Chỉ mục cho bảng `medical_devices`
---
-ALTER TABLE `medical_devices`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `department_id` (`department_id`);
-
---
--- Chỉ mục cho bảng `medical_records`
---
-ALTER TABLE `medical_records`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `patient_id` (`patient_id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `appointment_id` (`appointment_id`),
-  ADD KEY `created_at` (`created_at`),
-  ADD KEY `fk_mr_created_by` (`created_by`),
-  ADD KEY `fk_mr_updated_by` (`updated_by`),
-  ADD KEY `fk_medical_records_icd10` (`icd10_code`);
-
---
--- Chỉ mục cho bảng `medicines`
---
-ALTER TABLE `medicines`
-  ADD PRIMARY KEY (`id`);
-
---
--- Chỉ mục cho bảng `notifications`
---
-ALTER TABLE `notifications`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `status` (`status`);
-
---
--- Chỉ mục cho bảng `nurses`
---
-ALTER TABLE `nurses`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `department_id` (`department_id`);
-
---
--- Chỉ mục cho bảng `nurse_shifts`
---
-ALTER TABLE `nurse_shifts`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_nurse_shift` (`nurse_id`,`shift_id`),
-  ADD KEY `fk_ns_shift` (`shift_id`);
-
---
--- Chỉ mục cho bảng `nursing_records`
---
-ALTER TABLE `nursing_records`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `admission_id` (`admission_id`),
-  ADD KEY `nurse_id` (`nurse_id`);
-
---
--- Chỉ mục cho bảng `online_meetings`
---
-ALTER TABLE `online_meetings`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `appointment_id` (`appointment_id`),
-  ADD KEY `meeting_id` (`meeting_id`),
-  ADD KEY `start_time` (`start_time`);
-
---
--- Chỉ mục cho bảng `patients`
---
-ALTER TABLE `patients`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `date_of_birth` (`date_of_birth`);
-
---
--- Chỉ mục cho bảng `patient_services`
---
-ALTER TABLE `patient_services`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `patient_id` (`patient_id`),
-  ADD KEY `service_id` (`service_id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `service_date` (`service_date`);
-
---
--- Chỉ mục cho bảng `prescriptions`
---
-ALTER TABLE `prescriptions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `medical_record_id` (`medical_record_id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `fk_pres_approved_by` (`approved_by`);
-
---
--- Chỉ mục cho bảng `prescription_items`
---
-ALTER TABLE `prescription_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `prescription_id` (`prescription_id`),
-  ADD KEY `medicine_id` (`medicine_id`);
-
---
--- Chỉ mục cho bảng `queue_tickets`
---
-ALTER TABLE `queue_tickets`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_ticket_date` (`ticket_number`,`queue_date`),
-  ADD KEY `fk_qt_patient` (`patient_id`),
-  ADD KEY `fk_qt_dept` (`department_id`),
-  ADD KEY `fk_qt_doctor` (`doctor_id`),
-  ADD KEY `fk_qt_exroom` (`examination_room_id`),
-  ADD KEY `fk_qt_appt` (`appointment_id`),
-  ADD KEY `fk_qt_creator` (`created_by`),
-  ADD KEY `idx_queue_date_status` (`queue_date`,`status`),
-  ADD KEY `idx_department_date` (`department_id`,`queue_date`);
-
---
--- Chỉ mục cho bảng `rooms`
---
-ALTER TABLE `rooms`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `department_id` (`department_id`);
-
---
--- Chỉ mục cho bảng `services`
---
-ALTER TABLE `services`
-  ADD PRIMARY KEY (`id`);
-
---
--- Chỉ mục cho bảng `shifts`
---
-ALTER TABLE `shifts`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `shift_date` (`shift_date`),
-  ADD KEY `department_id` (`department_id`);
-
---
--- Chỉ mục cho bảng `technicians`
---
-ALTER TABLE `technicians`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `department_id` (`department_id`);
-
---
--- Chỉ mục cho bảng `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `phone` (`phone`),
-  ADD KEY `role` (`role`);
-
---
--- AUTO_INCREMENT cho các bảng đã đổ
---
-
---
--- AUTO_INCREMENT cho bảng `admissions`
---
-ALTER TABLE `admissions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT cho bảng `appointments`
---
-ALTER TABLE `appointments`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
-
---
--- AUTO_INCREMENT cho bảng `audit_logs`
---
-ALTER TABLE `audit_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=309;
-
---
--- AUTO_INCREMENT cho bảng `beds`
---
-ALTER TABLE `beds`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
-
---
--- AUTO_INCREMENT cho bảng `departments`
---
-ALTER TABLE `departments`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT cho bảng `doctors`
---
-ALTER TABLE `doctors`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT cho bảng `doctor_departments`
---
-ALTER TABLE `doctor_departments`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT cho bảng `doctor_shifts`
---
-ALTER TABLE `doctor_shifts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
--- AUTO_INCREMENT cho bảng `equipment`
---
-ALTER TABLE `equipment`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-
---
--- AUTO_INCREMENT cho bảng `examination_rooms`
---
-ALTER TABLE `examination_rooms`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT cho bảng `invoices`
---
-ALTER TABLE `invoices`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
-
---
--- AUTO_INCREMENT cho bảng `invoice_items`
---
-ALTER TABLE `invoice_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
-
---
--- AUTO_INCREMENT cho bảng `lab_orders`
---
-ALTER TABLE `lab_orders`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT cho bảng `lab_results`
---
-ALTER TABLE `lab_results`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT cho bảng `medical_devices`
---
-ALTER TABLE `medical_devices`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT cho bảng `medical_records`
---
-ALTER TABLE `medical_records`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
--- AUTO_INCREMENT cho bảng `medicines`
---
-ALTER TABLE `medicines`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
-
---
--- AUTO_INCREMENT cho bảng `notifications`
---
-ALTER TABLE `notifications`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
-
---
--- AUTO_INCREMENT cho bảng `nurses`
---
-ALTER TABLE `nurses`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT cho bảng `nurse_shifts`
---
-ALTER TABLE `nurse_shifts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT cho bảng `nursing_records`
---
-ALTER TABLE `nursing_records`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT cho bảng `online_meetings`
---
-ALTER TABLE `online_meetings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
-
---
--- AUTO_INCREMENT cho bảng `patients`
---
-ALTER TABLE `patients`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT cho bảng `patient_services`
---
-ALTER TABLE `patient_services`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT cho bảng `prescriptions`
---
-ALTER TABLE `prescriptions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
-
---
--- AUTO_INCREMENT cho bảng `prescription_items`
---
-ALTER TABLE `prescription_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
-
---
--- AUTO_INCREMENT cho bảng `queue_tickets`
---
-ALTER TABLE `queue_tickets`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
-
---
--- AUTO_INCREMENT cho bảng `rooms`
---
-ALTER TABLE `rooms`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT cho bảng `services`
---
-ALTER TABLE `services`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT cho bảng `shifts`
---
-ALTER TABLE `shifts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
-
---
--- AUTO_INCREMENT cho bảng `technicians`
---
-ALTER TABLE `technicians`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT cho bảng `users`
---
-ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
-
---
--- Ràng buộc đối với các bảng kết xuất
---
-
---
--- Ràng buộc cho bảng `admissions`
+-- Constraints for table `admissions`
 --
 ALTER TABLE `admissions`
   ADD CONSTRAINT `fk_adm_bed` FOREIGN KEY (`bed_id`) REFERENCES `beds` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -1954,7 +1876,13 @@ ALTER TABLE `admissions`
   ADD CONSTRAINT `fk_adm_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `appointments`
+-- Constraints for table `api_refresh_tokens`
+--
+ALTER TABLE `api_refresh_tokens`
+  ADD CONSTRAINT `api_refresh_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `appointments`
 --
 ALTER TABLE `appointments`
   ADD CONSTRAINT `fk_appt_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -1963,41 +1891,48 @@ ALTER TABLE `appointments`
   ADD CONSTRAINT `fk_appt_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `beds`
+-- Constraints for table `beds`
 --
 ALTER TABLE `beds`
   ADD CONSTRAINT `fk_beds_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `doctors`
+-- Constraints for table `chat_histories`
+--
+ALTER TABLE `chat_histories`
+  ADD CONSTRAINT `fk_chat_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_chat_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `doctors`
 --
 ALTER TABLE `doctors`
   ADD CONSTRAINT `fk_doctors_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_doctors_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `doctor_departments`
+-- Constraints for table `doctor_departments`
 --
 ALTER TABLE `doctor_departments`
   ADD CONSTRAINT `fk_dd_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_dd_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `doctor_shifts`
+-- Constraints for table `doctor_shifts`
 --
 ALTER TABLE `doctor_shifts`
   ADD CONSTRAINT `fk_ds_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_ds_shift` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `examination_rooms`
+-- Constraints for table `examination_rooms`
 --
 ALTER TABLE `examination_rooms`
   ADD CONSTRAINT `fk_exroom_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_exroom_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `invoices`
+-- Constraints for table `invoices`
 --
 ALTER TABLE `invoices`
   ADD CONSTRAINT `fk_inv_admission` FOREIGN KEY (`admission_id`) REFERENCES `admissions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2008,7 +1943,7 @@ ALTER TABLE `invoices`
   ADD CONSTRAINT `fk_invoices_prescriptions` FOREIGN KEY (`prescription_id`) REFERENCES `prescriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `invoice_items`
+-- Constraints for table `invoice_items`
 --
 ALTER TABLE `invoice_items`
   ADD CONSTRAINT `fk_ii_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -2017,7 +1952,7 @@ ALTER TABLE `invoice_items`
   ADD CONSTRAINT `fk_ii_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `lab_orders`
+-- Constraints for table `lab_orders`
 --
 ALTER TABLE `lab_orders`
   ADD CONSTRAINT `fk_lo_appt` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2025,20 +1960,20 @@ ALTER TABLE `lab_orders`
   ADD CONSTRAINT `fk_lo_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `lab_results`
+-- Constraints for table `lab_results`
 --
 ALTER TABLE `lab_results`
   ADD CONSTRAINT `fk_lr_order` FOREIGN KEY (`lab_order_id`) REFERENCES `lab_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_lr_tech` FOREIGN KEY (`technician_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `medical_devices`
+-- Constraints for table `medical_devices`
 --
 ALTER TABLE `medical_devices`
   ADD CONSTRAINT `fk_mdev_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `medical_records`
+-- Constraints for table `medical_records`
 --
 ALTER TABLE `medical_records`
   ADD CONSTRAINT `fk_medical_records_icd10` FOREIGN KEY (`icd10_code`) REFERENCES `icd10_codes` (`code`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2049,46 +1984,46 @@ ALTER TABLE `medical_records`
   ADD CONSTRAINT `fk_mr_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `notifications`
+-- Constraints for table `notifications`
 --
 ALTER TABLE `notifications`
   ADD CONSTRAINT `fk_notif_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `nurses`
+-- Constraints for table `nurses`
 --
 ALTER TABLE `nurses`
   ADD CONSTRAINT `fk_nurses_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_nurses_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `nurse_shifts`
+-- Constraints for table `nurse_shifts`
 --
 ALTER TABLE `nurse_shifts`
   ADD CONSTRAINT `fk_ns_nurse` FOREIGN KEY (`nurse_id`) REFERENCES `nurses` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_ns_shift` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `nursing_records`
+-- Constraints for table `nursing_records`
 --
 ALTER TABLE `nursing_records`
   ADD CONSTRAINT `fk_nr_admission` FOREIGN KEY (`admission_id`) REFERENCES `admissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_nr_nurse` FOREIGN KEY (`nurse_id`) REFERENCES `nurses` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `online_meetings`
+-- Constraints for table `online_meetings`
 --
 ALTER TABLE `online_meetings`
   ADD CONSTRAINT `fk_om_appt` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `patients`
+-- Constraints for table `patients`
 --
 ALTER TABLE `patients`
   ADD CONSTRAINT `fk_patients_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `patient_services`
+-- Constraints for table `patient_services`
 --
 ALTER TABLE `patient_services`
   ADD CONSTRAINT `fk_ps_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2096,7 +2031,14 @@ ALTER TABLE `patient_services`
   ADD CONSTRAINT `fk_ps_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `prescriptions`
+-- Constraints for table `payment_transactions`
+--
+ALTER TABLE `payment_transactions`
+  ADD CONSTRAINT `fk_pay_txn_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_pay_txn_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `prescriptions`
 --
 ALTER TABLE `prescriptions`
   ADD CONSTRAINT `fk_pres_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2104,14 +2046,14 @@ ALTER TABLE `prescriptions`
   ADD CONSTRAINT `fk_pres_record` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `prescription_items`
+-- Constraints for table `prescription_items`
 --
 ALTER TABLE `prescription_items`
   ADD CONSTRAINT `fk_pi_med` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_pi_pres` FOREIGN KEY (`prescription_id`) REFERENCES `prescriptions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `queue_tickets`
+-- Constraints for table `queue_tickets`
 --
 ALTER TABLE `queue_tickets`
   ADD CONSTRAINT `fk_qt_appt` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2122,19 +2064,19 @@ ALTER TABLE `queue_tickets`
   ADD CONSTRAINT `fk_qt_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `rooms`
+-- Constraints for table `rooms`
 --
 ALTER TABLE `rooms`
   ADD CONSTRAINT `fk_rooms_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `shifts`
+-- Constraints for table `shifts`
 --
 ALTER TABLE `shifts`
   ADD CONSTRAINT `fk_shifts_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ràng buộc cho bảng `technicians`
+-- Constraints for table `technicians`
 --
 ALTER TABLE `technicians`
   ADD CONSTRAINT `fk_tech_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,

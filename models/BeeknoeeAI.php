@@ -135,6 +135,14 @@ class BeeknoeeAI extends BaseAI {
         if ($httpCode !== 200) {
             $errorBody = json_decode($response, true);
             $errorMsg = $errorBody['error']['message'] ?? "HTTP Error {$httpCode}";
+            
+            // Tự động hồi phục nếu model được chỉ định không tồn tại trên Beeknoee
+            if ((strpos($errorMsg, 'không tồn tại') !== false || strpos($errorMsg, 'not exist') !== false || strpos($errorMsg, 'vô hiệu') !== false) && $payload['model'] !== 'gpt-5.5') {
+                error_log("Beeknoee model {$payload['model']} not found, retrying with gpt-5.5...");
+                $payload['model'] = 'gpt-5.5';
+                return $this->sendRequest($payload, $isChat);
+            }
+
             return [
                 'success' => false,
                 'data'    => null,

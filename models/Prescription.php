@@ -253,4 +253,64 @@ class Prescription {
         }
         return $result;
     }
+
+    // Lấy đơn thuốc phân trang phục vụ API
+    public function getPatientPrescriptionsForApi($patientId, $filters = []) {
+        $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+        $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+        if ($limit > 50) $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT pr.id, pr.created_at, 
+                       du.name as doctor_name, pr.status,
+                       (SELECT COUNT(*) FROM prescription_items pi WHERE pi.prescription_id = pr.id) as total_items
+                FROM prescriptions pr
+                JOIN doctors d ON pr.doctor_id = d.id
+                JOIN users du ON d.user_id = du.id
+                JOIN medical_records mr ON pr.medical_record_id = mr.id
+                WHERE mr.patient_id = :patient_id AND mr.deleted_at IS NULL";
+
+        $params = [':patient_id' => $patientId];
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND pr.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        $sql .= " ORDER BY pr.created_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $prescriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Đếm tổng số đơn thuốc cho meta
+        $countSql = "SELECT COUNT(*) as total 
+                     FROM prescriptions pr 
+                     JOIN medical_records mr ON pr.medical_record_id = mr.id 
+                     WHERE mr.patient_id = :patient_id AND mr.deleted_at IS NULL";
+        if (!empty($filters['status'])) {
+            $countSql .= " AND pr.status = :status";
+        }
+        $countStmt = $this->conn->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->fetch()['total'];
+
+        return [
+            'data' => $prescriptions,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
+    }
 }

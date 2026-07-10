@@ -145,6 +145,53 @@ class MedicalRecord {
         return $result;
     }
 
+    // Lấy hồ sơ bệnh án phân trang phục vụ API
+    public function getPatientRecordsForApi($patientId, $filters = []) {
+        $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+        $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+        if ($limit > 50) $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT m.id, m.created_at as visit_date, 
+                       ud.name as doctor_name, 
+                       dep.name as department_name, 
+                       m.diagnosis, m.icd10_code
+                FROM medical_records m
+                JOIN doctors d ON m.doctor_id = d.id
+                JOIN users ud ON d.user_id = ud.id
+                LEFT JOIN departments dep ON d.department_id = dep.id
+                WHERE m.patient_id = :patient_id AND m.deleted_at IS NULL
+                ORDER BY m.created_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':patient_id', $patientId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Map status hoàn thành ('completed')
+        foreach ($records as &$rec) {
+            $rec['status'] = 'completed';
+        }
+
+        // Đếm tổng
+        $countSql = "SELECT COUNT(*) as total FROM medical_records m WHERE m.patient_id = :patient_id AND m.deleted_at IS NULL";
+        $countStmt = $this->conn->prepare($countSql);
+        $countStmt->execute([':patient_id' => $patientId]);
+        $total = (int)$countStmt->fetch()['total'];
+
+        return [
+            'data' => $records,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
+    }
+
     public function getRecentByPatientId($patientId, $limit = 3) {
         $sql = "SELECT m.*, d.user_id as doctor_user_id, ud.name as doctor_name
                 FROM medical_records m

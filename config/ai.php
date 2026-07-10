@@ -13,7 +13,7 @@ $env = file_exists(__DIR__ . '/../env.php') ? require __DIR__ . '/../env.php' : 
 // ==========================================
 // Cung cấp bởi platform.beeknoee
 define('BEEKNOEE_API_KEY', $env['BEEKNOEE_API_KEY'] ?? 'YOUR_API_KEY_HERE');
-define('BEEKNOEE_MODEL', 'gpt-5'); // Sử dụng model gpt-5 của Beeknoee
+define('BEEKNOEE_MODEL', 'gpt-5.5'); // Sử dụng model gpt-5.5 của Beeknoee
 define('BEEKNOEE_API_URL', 'https://platform.beeknoee.com/api/v1/chat/completions');
 
 // ==========================================

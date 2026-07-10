@@ -290,9 +290,7 @@ class PrescriptionController {
         }
 
         // Đảm bảo các hằng số cấu hình AI tồn tại trước khi khởi tạo Model
-        if (!defined('AI_SYSTEM_PROMPT')) define('AI_SYSTEM_PROMPT', 'Bạn là trợ lý AI y tế thông minh.');
-        if (!defined('AI_TEMPERATURE')) define('AI_TEMPERATURE', 0.2);
-
+        // (BaseAI sẽ tự động require config/ai.php để define)
         require_once __DIR__ . '/../models/BeeknoeeAI.php';
         $ai = new BeeknoeeAI();
         

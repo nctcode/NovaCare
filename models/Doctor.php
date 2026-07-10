@@ -219,6 +219,85 @@ class Doctor {
         return $stmt->execute();
     }
 
+    // Lấy bác sĩ phục vụ API (bảo mật, hỗ trợ phân trang & lọc)
+    public function getAllForApi($filters = []) {
+        $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+        $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+        if ($limit > 50) $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT d.id, u.name, d.specialty, d.experience_years,
+                       (SELECT GROUP_CONCAT(dep.name SEPARATOR ', ') 
+                        FROM doctor_departments dd 
+                        JOIN departments dep ON dd.department_id = dep.id 
+                        WHERE dd.doctor_id = d.id) as department_name 
+                FROM doctors d 
+                JOIN users u ON d.user_id = u.id 
+                WHERE d.deleted_at IS NULL AND u.deleted_at IS NULL";
+
+        $conditions = [];
+        $params = [];
+
+        if (!empty($filters['department_id'])) {
+            $conditions[] = "d.id IN (SELECT doctor_id FROM doctor_departments WHERE department_id = :dept_id)";
+            $params[':dept_id'] = $filters['department_id'];
+        }
+
+        if (!empty($filters['keyword'])) {
+            $conditions[] = "(u.name LIKE :kw OR d.specialty LIKE :kw)";
+            $params[':kw'] = '%' . $filters['keyword'] . '%';
+        }
+
+        if (!empty($conditions)) {
+            $sql .= " AND " . implode(' AND ', $conditions);
+        }
+
+        $sql .= " ORDER BY u.name ASC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Map null cho avatar và bio, lấy danh sách department_ids
+        foreach ($doctors as &$doc) {
+            $doc['avatar'] = null;
+            $doc['bio'] = null;
+            
+            $sqlDepts = "SELECT department_id FROM doctor_departments WHERE doctor_id = :doctor_id";
+            $stmtDepts = $this->conn->prepare($sqlDepts);
+            $stmtDepts->bindValue(':doctor_id', $doc['id'], PDO::PARAM_INT);
+            $stmtDepts->execute();
+            $doc['department_ids'] = array_map('intval', $stmtDepts->fetchAll(PDO::FETCH_COLUMN));
+        }
+
+        // Đếm tổng số bản ghi
+        $countSql = "SELECT COUNT(*) as total FROM doctors d JOIN users u ON d.user_id = u.id WHERE d.deleted_at IS NULL AND u.deleted_at IS NULL";
+        if (!empty($conditions)) {
+            $countSql .= " AND " . implode(' AND ', $conditions);
+        }
+        $countStmt = $this->conn->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->fetch()['total'];
+
+        return [
+            'data' => $doctors,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
+    }
+
     // Lấy danh sách departments
     public function getDepartments() {
         $sql = "SELECT * FROM departments ORDER BY name ASC";

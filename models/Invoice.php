@@ -399,4 +399,140 @@ class Invoice {
         $stmt->execute();
         return $stmt->fetch();
     }
+
+    // Lấy hóa đơn phân trang phục vụ API
+    public function getPatientInvoicesForApi($patientId, $filters = []) {
+        $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+        $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+        if ($limit > 50) $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT i.id, i.created_at, i.total_amount, i.discount, 
+                       i.insurance_coverage as insurance_discount, 
+                       i.final_amount, i.status as payment_status
+                FROM invoices i
+                WHERE i.patient_id = :patient_id AND i.deleted_at IS NULL";
+
+        $params = [':patient_id' => $patientId];
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND i.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        $sql .= " ORDER BY i.created_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Map invoice code
+        foreach ($invoices as &$inv) {
+            $inv['invoice_code'] = "INV-" . str_pad($inv['id'], 6, "0", STR_PAD_LEFT);
+        }
+
+        // Đếm tổng
+        $countSql = "SELECT COUNT(*) as total FROM invoices i WHERE i.patient_id = :patient_id AND i.deleted_at IS NULL";
+        if (!empty($filters['status'])) {
+            $countSql .= " AND i.status = :status";
+        }
+        $countStmt = $this->conn->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->fetch()['total'];
+
+        return [
+            'data' => $invoices,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
+    }
+
+    // Lấy lịch sử giao dịch thanh toán phân trang phục vụ API
+    public function getPaymentHistoryForApi($patientId, $filters = []) {
+        $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+        $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+        if ($limit > 50) $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT pt.id, pt.invoice_id, pt.provider, pt.transaction_ref, 
+                       pt.amount, pt.status, pt.paid_at, pt.created_at
+                FROM payment_transactions pt
+                WHERE pt.patient_id = :patient_id";
+
+        $params = [':patient_id' => $patientId];
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND pt.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        if (!empty($filters['provider'])) {
+            $sql .= " AND pt.provider = :provider";
+            $params[':provider'] = $filters['provider'];
+        }
+
+        if (!empty($filters['from_date'])) {
+            $sql .= " AND DATE(pt.created_at) >= :from_date";
+            $params[':from_date'] = $filters['from_date'];
+        }
+
+        if (!empty($filters['to_date'])) {
+            $sql .= " AND DATE(pt.created_at) <= :to_date";
+            $params[':to_date'] = $filters['to_date'];
+        }
+
+        $sql .= " ORDER BY pt.created_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Đếm tổng số bản ghi
+        $countSql = "SELECT COUNT(*) as total FROM payment_transactions pt WHERE pt.patient_id = :patient_id";
+        if (!empty($filters['status'])) {
+            $countSql .= " AND pt.status = :status";
+        }
+        if (!empty($filters['provider'])) {
+            $countSql .= " AND pt.provider = :provider";
+        }
+        if (!empty($filters['from_date'])) {
+            $countSql .= " AND DATE(pt.created_at) >= :from_date";
+        }
+        if (!empty($filters['to_date'])) {
+            $countSql .= " AND DATE(pt.created_at) <= :to_date";
+        }
+        $countStmt = $this->conn->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->fetch()['total'];
+
+        return [
+            'data' => $transactions,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
+    }
 }

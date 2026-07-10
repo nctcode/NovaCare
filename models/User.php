@@ -23,6 +23,15 @@ class User {
         return $stmt->fetch();
     }
 
+    // Tìm user theo số điện thoại (dùng để check trùng lặp)
+    public function findByPhone($phone) {
+        $sql = "SELECT * FROM {$this->table} WHERE phone = :phone AND deleted_at IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':phone', $phone);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
     // Tìm user theo ID
     public function findById($id) {
         $sql = "SELECT * FROM {$this->table} WHERE id = :id AND deleted_at IS NULL LIMIT 1";

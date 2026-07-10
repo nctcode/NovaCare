@@ -22,13 +22,13 @@ class AuditLog {
      * @param array|null $newData - Dữ liệu mới (cho create/update)
      * @param string|null $logType - Loại log: auth, data_change, system
      */
-    public static function log($action, $tableName = null, $recordId = null, $oldData = null, $newData = null, $logType = null) {
+    public static function log($action, $tableName = null, $recordId = null, $oldData = null, $newData = null, $logType = null, $userId = null) {
         try {
             $db = new Database();
             $conn = $db->getConnection();
 
-            // Lấy thông tin user từ session
-            $userId = $_SESSION['user']['id'] ?? null;
+            // Lấy thông tin user từ parameter hoặc session
+            $userId = $userId ?? $_SESSION['user']['id'] ?? null;
             
             // Lấy IP
             $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
@@ -68,36 +68,36 @@ class AuditLog {
     /**
      * Shortcut: Log hành động tạo mới
      */
-    public static function logCreate($tableName, $recordId, $newData = null) {
-        self::log('INSERT', $tableName, $recordId, null, $newData);
+    public static function logCreate($tableName, $recordId, $newData = null, $userId = null) {
+        self::log('INSERT', $tableName, $recordId, null, $newData, null, $userId);
     }
 
     /**
      * Shortcut: Log hành động cập nhật
      */
-    public static function logUpdate($tableName, $recordId, $oldData = null, $newData = null) {
-        self::log('UPDATE', $tableName, $recordId, $oldData, $newData);
+    public static function logUpdate($tableName, $recordId, $oldData = null, $newData = null, $userId = null) {
+        self::log('UPDATE', $tableName, $recordId, $oldData, $newData, null, $userId);
     }
 
     /**
      * Shortcut: Log hành động xóa (soft delete)
      */
-    public static function logDelete($tableName, $recordId, $oldData = null) {
-        self::log('DELETE', $tableName, $recordId, $oldData, null);
+    public static function logDelete($tableName, $recordId, $oldData = null, $userId = null) {
+        self::log('DELETE', $tableName, $recordId, $oldData, null, null, $userId);
     }
 
     /**
      * Shortcut: Log đăng nhập
      */
     public static function logLogin($userId, $email) {
-        self::log('LOGIN', 'users', $userId, null, ['email' => $email]);
+        self::log('LOGIN', 'users', $userId, null, ['email' => $email], null, $userId);
     }
 
     /**
      * Shortcut: Log đăng xuất
      */
-    public static function logLogout() {
-        self::log('LOGOUT', 'users', $_SESSION['user']['id'] ?? null);
+    public static function logLogout($userId = null) {
+        self::log('LOGOUT', 'users', $userId ?? $_SESSION['user']['id'] ?? null, null, null, null, $userId);
     }
 
     /**

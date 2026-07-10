@@ -110,9 +110,9 @@ class Notification {
      * @param string $message Nội dung thông báo
      * @return int|bool ID thông báo vừa tạo hoặc false nếu thất bại
      */
-    public function create($userId, $title, $message) {
-        $sql = "INSERT INTO {$this->table} (user_id, title, message, status) 
-                VALUES (:user_id, :title, :message, 'unread')";
+    public function create($userId, $title, $message, $type = 'general') {
+        $sql = "INSERT INTO {$this->table} (user_id, title, message, status, type) 
+                VALUES (:user_id, :title, :message, 'unread', :type)";
         $stmt = $this->conn->prepare($sql);
         
         // Hỗ trợ NULL cho thông báo chung cho toàn hệ thống
@@ -124,6 +124,7 @@ class Notification {
         
         $stmt->bindParam(':title', $title);
         $stmt->bindParam(':message', $message);
+        $stmt->bindParam(':type', $type);
         
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
@@ -138,7 +139,7 @@ class Notification {
      * @return bool Kết quả thực thi
      */
     public function markAsRead($id) {
-        $sql = "UPDATE {$this->table} SET status = 'read' WHERE id = :id";
+        $sql = "UPDATE {$this->table} SET status = 'read', read_at = NOW() WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
@@ -151,7 +152,7 @@ class Notification {
      * @return bool Kết quả thực thi
      */
     public function markAllAsReadForUser($userId) {
-        $sql = "UPDATE {$this->table} SET status = 'read' 
+        $sql = "UPDATE {$this->table} SET status = 'read', read_at = NOW() 
                 WHERE (user_id = :user_id OR user_id IS NULL) AND status = 'unread'";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
@@ -200,6 +201,69 @@ class Notification {
         $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return ($result['cnt'] ?? 0) > 0;
+    }
+
+    // Lấy thông báo phân trang phục vụ API
+    public function getNotificationsForApi($userId, $filters = []) {
+        $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+        $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+        if ($limit > 50) $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT id, title, message, type, 
+                       CASE WHEN status = 'read' THEN 1 ELSE 0 END as is_read, 
+                       created_at
+                FROM {$this->table} 
+                WHERE (user_id = :user_id OR user_id IS NULL)";
+
+        $params = [':user_id' => $userId];
+
+        if (isset($filters['is_read'])) {
+            $statusVal = $filters['is_read'] ? 'read' : 'unread';
+            $sql .= " AND status = :status";
+            $params[':status'] = $statusVal;
+        }
+
+        $sql .= " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Convert is_read to boolean
+        foreach ($notifications as &$noti) {
+            $noti['is_read'] = (bool)$noti['is_read'];
+            if (empty($noti['type'])) {
+                $noti['type'] = 'general';
+            }
+        }
+
+        // Đếm tổng
+        $countSql = "SELECT COUNT(*) as total FROM {$this->table} WHERE (user_id = :user_id OR user_id IS NULL)";
+        if (isset($filters['is_read'])) {
+            $countSql .= " AND status = :status";
+        }
+        $countStmt = $this->conn->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->fetch()['total'];
+
+        return [
+            'data' => $notifications,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
     }
 }
 ?>

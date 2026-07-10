@@ -195,7 +195,8 @@ $qrDataMomo = "2|99|0909123456|||0|0|" . intval($payAmount) . "|" . $invoiceDesc
 // VietQR (VNPay) - Sử dụng API img.vietqr.io để sinh QR chuẩn ngân hàng
 // Khi quét bằng bất kỳ app ngân hàng nào -> tự hiện số tiền cần thanh toán
 $vietqrBank = "MB";  // Ngân hàng MB Bank (demo)
-$vietqrAccount = "0909123456";  // Số tài khoản demo
+$vietqrAccount = "0909123456";
+// 0909123456  // Số tài khoản demo
 $vietqrTemplate = "compact2";
 $vietqrAmount = intval($payAmount);
 $vietqrDesc = urlencode($invoiceDesc);
